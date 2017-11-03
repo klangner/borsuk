@@ -34,15 +34,10 @@ object Main {
 
   /** Routing */
   def route(): Route = {
-    val restApi = new RestApi()
 
-    path("api" / "execute") {
-      post {
-        entity(as[String])(restApi.ping)
-      }
-    } ~ path("api" / "convert") {
-      post {
-        entity(as[String])(restApi.ping)
+    path("api" / "data") {
+       post {
+        entity(as[String])(DataRoute.addData)
       }
     } ~ pathPrefix("static") {
       getFromDirectory("static")
@@ -54,8 +49,8 @@ object Main {
     val params = parseArg(args)
     StatsD.init("dss", params.statsDHost)
 
-    Log.info("Server started. Open http://localhost:8080/static/index.html")
-    Await.result(Http().bindAndHandle(route(), "0.0.0.0", 8080), Duration.Inf)
+    Log.info("Server started. Open http://localhost:7074/static/index.html")
+    Await.result(Http().bindAndHandle(route(), "0.0.0.0", 7074), Duration.Inf)
   }
 
 }
