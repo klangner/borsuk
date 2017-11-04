@@ -3,28 +3,26 @@ package pl.klangner.dss
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
 import org.slf4j.LoggerFactory
-import spray.json.{JsArray, JsValue, JsonParser}
+import spray.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, JsonParser}
 
 
-object DataRoute {
+class DataRoute(dataPath: String) {
 
   private val Log = LoggerFactory.getLogger(getClass.getName)
 
-  val storage = new FileStorage()
+  val storage = new FileStorage(dataPath)
 
   def addData(str: String): StandardRoute = {
     val fields = JsonParser(str).asJsObject.fields
-    val dataset = fields("dataset").toString()
-    val features = seqFromJsValue(fields("features"))
-    val target = fields("target").toString()
-    storage.add(dataset, features, target)
+    val dataset = stringValue(fields("dataset"))
+    val data = fields("data").asJsObject.compactPrint
+    storage.add(dataset, data)
     complete("1")
   }
 
-  /** Convert Json array into sequence */
-  private def seqFromJsValue(jsVal: JsValue): Seq[String] = jsVal match {
-    case JsArray(vs) => vs.map(_.toString)
-    case _ => Seq()
+  private def stringValue(json: JsValue): String = json match {
+    case JsString(value) => value
+    case _ => json.toString()
   }
 
 }

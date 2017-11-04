@@ -1,6 +1,7 @@
 .idea
 target/
 *.iml
+data/
 
 # npm and webpack related files folders from test-site folder
 build/
@@ -14,4 +15,3 @@ dist/
 .sw[a-z]
 bundle.js
 docker_build.sh
-dataset-server.yaml

@@ -11,7 +11,7 @@ java -jar target/scala-2.12/dss.jar
  ```
  
 ```bash
-curl -H "Content-Type: application/json" -X POST -d '{"dataset": "a", "features": ["1"], "target":"2"}' http://localhost:7074/api/data
+curl -H "Content-Type: application/json" -X POST -d '{"dataset": "console", "data": {"di":"1", "target":"2"}}' http://localhost:7074/api/data
 ``` 
 
 # Redistributing

@@ -18,12 +18,13 @@ object Main {
   implicit val system: ActorSystem = ActorSystem("dss")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  case class Params(statsDHost: String)
+  case class Params(dataPath: String, statsDHost: String)
 
   /** Parse application arguments */
   def parseArg(args: Array[String]): Params = {
-    val statsDHost = stringArg(args, "statsDHost")
-    Params(statsDHost)
+    val dataPath = stringArg(args, "data-path", "data")
+    val statsDHost = stringArg(args, "statsd-host")
+    Params(dataPath, statsDHost)
   }
 
   /** Parse single argument */
@@ -33,11 +34,13 @@ object Main {
   }
 
   /** Routing */
-  def route(): Route = {
+  def route(dataPath: String): Route = {
+
+    val dataRoute = new DataRoute(dataPath)
 
     path("api" / "data") {
        post {
-        entity(as[String])(DataRoute.addData)
+        entity(as[String])(dataRoute.addData)
       }
     } ~ pathPrefix("static") {
       getFromDirectory("static")
@@ -50,7 +53,7 @@ object Main {
     StatsD.init("dss", params.statsDHost)
 
     Log.info("Server started. Open http://localhost:7074/static/index.html")
-    Await.result(Http().bindAndHandle(route(), "0.0.0.0", 7074), Duration.Inf)
+    Await.result(Http().bindAndHandle(route(params.dataPath), "0.0.0.0", 7074), Duration.Inf)
   }
 
 }
