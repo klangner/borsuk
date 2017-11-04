@@ -3,7 +3,7 @@ package pl.klangner.dss
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
 import org.slf4j.LoggerFactory
-import spray.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, JsonParser}
+import spray.json.{JsString, JsValue, JsonParser}
 
 
 class DataRoute(dataPath: String) {
