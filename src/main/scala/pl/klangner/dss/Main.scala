@@ -20,6 +20,21 @@ object Main {
 
   case class Params(dataPath: String, statsDHost: String)
 
+  /** Routing */
+  def route(storage: FileStorage): Route = {
+
+    path("api" / "data" / Remaining) { datasetName =>
+      post {
+        entity(as[String]) { data =>
+          storage.add(datasetName, data)
+          complete("ok")
+        }
+      }
+    } ~ pathPrefix("static") {
+      getFromDirectory("static")
+    }
+  }
+
   /** Parse application arguments */
   def parseArg(args: Array[String]): Params = {
     val dataPath = stringArg(args, "data-path", "data")
@@ -33,27 +48,13 @@ object Main {
     args.find(_.contains(name)).map(_.substring(name.length)).getOrElse(default).trim
   }
 
-  /** Routing */
-  def route(dataPath: String): Route = {
-
-    val dataRoute = new DataRoute(dataPath)
-
-    path("api" / "data") {
-       post {
-        entity(as[String])(dataRoute.addData)
-      }
-    } ~ pathPrefix("static") {
-      getFromDirectory("static")
-    }
-
-  }
-
   def main(args: Array[String]) {
     val params = parseArg(args)
     StatsD.init("dss", params.statsDHost)
+    val storage = new FileStorage(params.dataPath)
 
     Log.info("Server started. Open http://localhost:7074/static/index.html")
-    Await.result(Http().bindAndHandle(route(params.dataPath), "0.0.0.0", 7074), Duration.Inf)
+    Await.result(Http().bindAndHandle(route(storage), "0.0.0.0", 7074), Duration.Inf)
   }
 
 }
