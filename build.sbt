@@ -1,4 +1,4 @@
-name := "dataset-server"
+name := "borsuk"
 
 version := "0.1"
 
@@ -25,4 +25,4 @@ assemblyMergeStrategy in assembly := {
 
 scalacOptions := Seq("-unchecked", "-deprecation")
 
-assemblyJarName in assembly := "dss.jar"
+assemblyJarName in assembly := "borsuk.jar"
