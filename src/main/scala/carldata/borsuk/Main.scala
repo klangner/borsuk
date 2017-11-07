@@ -30,10 +30,10 @@ object Main {
           complete("ok")
         }
       }
-    } ~ path("model" / Remaining) { datasetName =>
+    } ~ path("model" / Remaining) { modelName =>
       post {
         entity(as[String]) { data =>
-          new TimeSeriesModel(storage).addSample(datasetName, data)
+          new TimeSeriesModel(storage).addSample(modelName, data)
           complete("ok")
         }
       }
