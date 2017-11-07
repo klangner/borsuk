@@ -30,6 +30,13 @@ object Main {
           complete("ok")
         }
       }
+    } ~ path("model" / Remaining) { modelName =>
+      post {
+        entity(as[String]) { data =>
+          new TimeSeriesModel(storage).addSample(modelName, data)
+          complete("ok")
+        }
+      }
     } ~ pathPrefix("static") {
       getFromDirectory("static")
     }
