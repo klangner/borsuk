@@ -1,4 +1,4 @@
-package pl.klangner.dss
+package carldata.borsuk
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http

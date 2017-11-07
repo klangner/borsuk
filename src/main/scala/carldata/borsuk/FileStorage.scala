@@ -1,4 +1,4 @@
-package pl.klangner.dss
+package carldata.borsuk
 
 import java.io._
 import java.time.format.DateTimeFormatter
@@ -7,7 +7,7 @@ import java.time.{LocalDateTime, ZoneOffset}
 import org.slf4j.LoggerFactory
 
 /**
-  * Stores datasets into storage
+  * Stores datasets onto storage
   */
 class FileStorage(dataPath: String) {
 

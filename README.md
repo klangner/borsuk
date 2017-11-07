@@ -1,7 +1,7 @@
 # Borsuk
 
 Server for Machine Learning models.
-This server mangaes datasets and build prediction models which ca be accessed via REST HTTP API.
+This server manages datasets and build prediction models which can be accessed via REST HTTP API.
 
  
 ## Running the server
@@ -11,10 +11,22 @@ sbt assembly
 java -jar target/scala-2.12/borsuk.jar 
  ```
  
+Add sample to the "test" dataset (which is of type TimeSeriesModel) 
 ```bash
-curl --data 'dataset=console&data={"ts":"2017"}' http://localhost:7074/api/data
-
+curl -H "Content-Type: application/json" -X POST -d '{"index":"2017", "value": 12.3}' http://localhost:7074/model/test
 ``` 
+
+Get next value prediction
+```bash
+curl http://localhost:7074/model/test/prediction
+``` 
+
+ 
+## Datasets
+
+Datasets are stored on the file system using scheme:
+<model_name>/<model_name>-<date>.csv
+ 
 
 # Redistributing
 

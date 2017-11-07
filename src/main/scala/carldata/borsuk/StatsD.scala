@@ -1,4 +1,4 @@
-package pl.klangner.dss
+package carldata.borsuk
 
 import com.timgroup.statsd.{NonBlockingStatsDClient, StatsDClient}
 import org.slf4j.LoggerFactory

@@ -1,4 +1,4 @@
-package pl.klangner.dss
+package carldata.borsuk
 
 import java.time.LocalDateTime
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
