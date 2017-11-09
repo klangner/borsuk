@@ -3,10 +3,10 @@ package carldata.borsuk
 import carldata.borsuk.model.Model
 
 /** List of registered models with meta information about it */
-class ModelsDB(storage: FileStorage, configFile: String) {
+class ModelDB(configFile: String) {
 
-  def getModel(name: String): Option[Model] = {
-    None
+  def getModels[A](name: String): Seq[Model[A]] = {
+    Seq()
   }
 
 }

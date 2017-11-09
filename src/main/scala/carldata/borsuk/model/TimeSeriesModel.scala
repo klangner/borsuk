@@ -1,23 +1,24 @@
 package carldata.borsuk.model
 
-import carldata.borsuk.FileStorage
+import carldata.borsuk.DatasetStorage
 import spray.json._
 
-class TimeSeriesModel(name: String, storage: FileStorage) extends Model {
 
-  override def addSample(str: String): Unit = {
-    str.parseJson match {
-      case JsObject(fields) =>
-        val index = stringFromValue(fields("index"))
-        val value = stringFromValue(fields("value"))
-        storage.add(name, index + "," + value)
-      case _ =>
-    }
+class TimeSeriesModel(name: String, storage: DatasetStorage) extends Model[Float] {
+
+  /** Prediction model based on the last value */
+  var lastValue: Float = 0
+
+
+  override def update(data: String): Unit = {
+    val json = data.parseJson
+    val features = getFeatures(json)
+    val targetValue = getTargetValue(json)
+    val prediction = predict(features)
+    updateScore(prediction, targetValue)
+    updateModel(features, targetValue)
   }
 
-  private def stringFromValue(jsVal: JsValue): String = jsVal match {
-    case JsString(str) => str
-    case v: JsValue => v.toString
-  }
-
+  /** Predict value based on given features */
+  def predict(data: String) = lastValue
 }
