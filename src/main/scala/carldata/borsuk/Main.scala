@@ -32,7 +32,7 @@ object Main {
       }
     } ~ path("model" / Remaining) { modelName =>
 
-      new ConfigParser().load(modelName) match {
+      Config.load(modelName) match {
         case Some(model) => model match {
           case "TimeSeriesModel" =>
             post {

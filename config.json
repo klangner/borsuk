@@ -1,0 +1,12 @@
+{
+  "models": [
+    {
+      "name": "TimeSeries",
+      "type": "TimeSeriesModel"
+    },
+    {
+      "name": "Batch",
+      "type": "Regression"
+    }
+  ]
+}
