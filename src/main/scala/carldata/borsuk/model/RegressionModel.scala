@@ -4,7 +4,7 @@ import carldata.borsuk.{DatasetStorage, Jsons}
 import spray.json._
 
 
-class TimeSeriesModel(name: String, storage: DatasetStorage) extends Model[Float] {
+class RegressionModel(name: String, storage: DatasetStorage) extends Model[Float] {
 
   /** Prediction model based on the last value */
   var lastValue: Float = 0

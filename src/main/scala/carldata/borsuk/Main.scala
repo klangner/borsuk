@@ -21,18 +21,13 @@ object Main {
   case class Params(dataPath: String, statsDHost: String)
 
   /** Routing */
-  def route(datasetStorage: DatasetStorage, models: ModelDB): Route = {
+  def route(datasetStorage: DatasetStorage, models: ModelConfig): Route = {
 
     path("model" / Remaining) { modelName =>
       post {
         entity(as[String]) { data =>
           datasetStorage.addDataPoint(modelName, data)
-          models.getModels(modelName).foreach { model =>
-            val json = data.parseJson
-            val features = model.getFeatures(json)
-            val target = model.getTargetValue(json)
-            model.update(features, target)
-          }
+          models.getModels(modelName).foreach(_.update(data))
           complete("ok")
         }
       }
@@ -58,7 +53,7 @@ object Main {
     val params = parseArg(args)
     StatsD.init("dss", params.statsDHost)
     val storage = new DatasetStorage(params.dataPath)
-    val models = new ModelDB("config.json")
+    val models = new ModelConfig("config.json")
 
 
     Log.info("Server started. Open http://localhost:7074/static/index.html")
