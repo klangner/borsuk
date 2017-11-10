@@ -1,7 +1,7 @@
 # Borsuk
 
-Server for Machine Learning models.
-This server manages datasets and build prediction models which can be accessed via REST HTTP API.
+Server for Machine Learning datasets.
+Datasets points can be added via HTTP REST API or Kafka topic. 
 
  
 ## Running the server

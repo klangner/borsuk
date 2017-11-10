@@ -26,6 +26,7 @@ class DatasetStorage(dataPath: String) {
     val fw = new FileWriter(filePath, true)
     try {
       fw.write(data + "\n")
+      StatsD.increment("data")
     } catch {
       case e: IOException =>
         Log.info(e.toString)
