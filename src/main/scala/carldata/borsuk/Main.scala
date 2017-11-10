@@ -15,19 +15,19 @@ object Main {
 
   private val Log = LoggerFactory.getLogger(Main.getClass.getName)
 
-  implicit val system: ActorSystem = ActorSystem("dss")
+  implicit val system: ActorSystem = ActorSystem("borsuk")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   case class Params(dataPath: String, statsDHost: String)
 
   /** Routing */
-  def route(datasetStorage: DatasetStorage, models: ModelConfig): Route = {
+  def route(datasetStorage: DatasetStorage): Route = {
 
-    path("model" / Remaining) { modelName =>
+    path("dataset" / Remaining) { dataset =>
       post {
         entity(as[String]) { data =>
-          datasetStorage.addDataPoint(modelName, data)
-          models.getModels(modelName).foreach(_.update(data))
+          datasetStorage.addDataPoint(dataset, data)
+          StatsD.increment("data")
           complete("ok")
         }
       }
@@ -51,13 +51,12 @@ object Main {
 
   def main(args: Array[String]) {
     val params = parseArg(args)
-    StatsD.init("dss", params.statsDHost)
+    StatsD.init("borsuk", params.statsDHost)
     val storage = new DatasetStorage(params.dataPath)
-    val models = new ModelConfig("config.json")
 
 
     Log.info("Server started. Open http://localhost:7074/static/index.html")
-    Await.result(Http().bindAndHandle(route(storage, models), "0.0.0.0", 7074), Duration.Inf)
+    Await.result(Http().bindAndHandle(route(storage), "0.0.0.0", 7074), Duration.Inf)
   }
 
 }

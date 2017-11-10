@@ -13,15 +13,9 @@ java -jar target/scala-2.12/borsuk.jar
  
 Add sample to the "test" dataset (which is of type TimeSeriesModel) 
 ```bash
-curl -H "Content-Type: application/json" -X POST -d '{"index":"2017", "value": 12.3}' http://localhost:7074/model/test
+curl -H "Content-Type: application/json" -X POST -d '{"index":"2017", "value": 12.3}' http://localhost:7074/dataset/test
 ``` 
 
-Get next value prediction
-```bash
-curl http://localhost:7074/model/test/prediction
-``` 
-
- 
 ## Datasets
 
 Datasets are stored on the file system using scheme:
