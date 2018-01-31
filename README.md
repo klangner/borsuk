@@ -1,25 +1,18 @@
 # Borsuk
 
-Server for Machine Learning datasets.
-Datasets points can be added via HTTP REST API or Kafka topic. 
+Machine Learning server for predcition Time Series data.
 
  
 ## Running the server
- 
- ```bash
-sbt assembly
-java -jar target/scala-2.12/borsuk.jar 
- ```
- 
-Add sample to the "test" dataset (which is of type TimeSeriesModel) 
-```bash
-curl -H "Content-Type: application/json" -X POST -d '{"index":"2017", "value": 12.3}' http://localhost:7074/dataset/test
-``` 
+
+  * Train the model
+  * Run Flask app
+  * Make prediction: Show how to use API
+
 
 ## Datasets
 
-Datasets are stored on the file system using scheme:
-<model_name>/<model_name>-<date>.csv
+Training is done on included datasets.
  
 
 # Redistributing
