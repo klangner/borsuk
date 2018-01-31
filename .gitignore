@@ -1,17 +1,9 @@
 .idea
-target/
 *.iml
-data/
+datasets/
 
-# npm and webpack related files folders from test-site folder
-build/
+__pycache__/
+*.gz
+.ipynb_checkpoints/
+logs/
 .vscode/
-node_modules/
-typings/
-npm-debug.log
-build/stats-dev.json*
-tmp/
-dist/
-.sw[a-z]
-bundle.js
-docker_build.sh

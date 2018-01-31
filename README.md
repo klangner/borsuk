@@ -5,9 +5,15 @@ Machine Learning server for predcition Time Series data.
  
 ## Running the server
 
-  * Train the model
-  * Run Flask app
-  * Make prediction: Show how to use API
+### Train the model
+
+### Run Flask app
+
+```
+FLASK_APP=borsuk.py flask run
+```
+
+### Make prediction: Show how to use API
 
 
 ## Datasets
