@@ -1,6 +1,6 @@
 # Borsuk
 
-Machine Learning server for predcition Time Series data.
+Machine Learning server for Time Series data.
 
  
 ## Running the server
@@ -18,7 +18,7 @@ FLASK_APP=borsuk.py flask run
 
 ## Datasets
 
-Training is done on included datasets.
+Training is done on included datasets before server is deployed.
  
 
 # Redistributing
