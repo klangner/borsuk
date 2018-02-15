@@ -4,21 +4,12 @@ Machine Learning server for Time Series data.
 
  
 ## Running the server
-
-### Train the model
-
-### Run Flask app
-
-```
-FLASK_APP=borsuk.py flask run
-```
-
-### Make prediction: Show how to use API
-
-
-## Datasets
-
-Training is done on included datasets before server is deployed.
+ 
+ ```bash
+sbt assembly
+java -jar target/scala-2.12/borsuk.jar 
+ ```
+ 
  
 
 # Redistributing
