@@ -13,7 +13,6 @@ java -jar target/scala-2.12/borsuk.jar
  ```
  
  
-
 # Redistributing
 
 Dataset Server source code is distributed under the Apache-2.0 license.
