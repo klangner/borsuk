@@ -1,5 +1,7 @@
 # Borsuk
 
+[![Build status](https://travis-ci.org/carldata/borsuk.svg?branch=master)](https://travis-ci.org/carldata/borsuk)
+
 Machine Learning server for Time Series data.
 
  
