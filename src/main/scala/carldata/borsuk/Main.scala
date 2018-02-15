@@ -26,9 +26,14 @@ object Main {
 
   /** Routing */
   def route(projectsUrl: String): Route = {
-
+    val prediction = new Prediction()
     path("api" / "healthcheck") {
       complete("Ok")
+    } ~ (path("api" / "prediction"/ Remaining) & parameters("flow".as[String], "day".as[String])) {
+      (project, flow, day) =>
+        get {
+          prediction.find()
+        }
     }
   }
 
