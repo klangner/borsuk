@@ -47,7 +47,6 @@ object Main {
 
   def main(args: Array[String]) {
     val params = parseArg(args)
-    StatsD.init("borsuk", params.statsDHost)
 
     // HTTP listener will run in main thread
     Log.info("Server started on port 7074.")

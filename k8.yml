@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: borsuk
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: borsuk
+    spec:
+      containers:
+      - name: borsuk
+        image: flowworks-carlsolutions.azurecr.io/flowworks/borsuk
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PROJECTS_URL
+          value: "https://storage.googleapis.com/argo-projects/"
+      dnsPolicy: ClusterFirst
+      hostNetwork: true
+      imagePullSecrets:
+      - name: regsecret

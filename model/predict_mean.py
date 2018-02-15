@@ -1,2 +1,0 @@
-
-print('Train prediction model')
