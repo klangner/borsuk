@@ -7,3 +7,5 @@ __pycache__/
 .ipynb_checkpoints/
 logs/
 .vscode/
+target/
+docker_build.sh

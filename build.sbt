@@ -2,11 +2,12 @@ name := "borsuk"
 
 version := "0.3"
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.3"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % "10.0.10",
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.10",
+  "io.github.carldata" %% "timeseries" % "0.6.0",
 
   // Log dependencies
   "org.slf4j" % "slf4j-api" % "1.7.25",
