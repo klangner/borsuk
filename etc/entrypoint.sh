@@ -1,3 +1,3 @@
 #!/bin/sh
-java -jar /root/borsuk.jar --projects-url=$PROJECTS_URL
+java -jar /root/borsuk.jar --data-url=$DATA_URL
 

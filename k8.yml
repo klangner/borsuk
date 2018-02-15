@@ -15,9 +15,7 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: PROJECTS_URL
+        - name: DATA_URL
           value: "https://storage.googleapis.com/argo-projects/"
-      dnsPolicy: ClusterFirst
-      hostNetwork: true
       imagePullSecrets:
       - name: regsecret

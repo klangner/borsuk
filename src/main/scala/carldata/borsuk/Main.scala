@@ -22,7 +22,7 @@ object Main {
   val DATA_TOPIC = "borsuk"
   val POLL_TIMEOUT = 1000
 
-  case class Params(projectsUrl: String, statsDHost: String)
+  case class Params(dataUrl: String)
 
   /** Routing */
   def route(projectsUrl: String): Route = {
@@ -34,9 +34,8 @@ object Main {
 
   /** Parse application arguments */
   def parseArg(args: Array[String]): Params = {
-    val projectsUrl = stringArg(args, "projects-url", "data")
-    val statsDHost = stringArg(args, "statsd-host")
-    Params(projectsUrl, statsDHost)
+    val dataUrl = stringArg(args, "data-url", "data")
+    Params(dataUrl)
   }
 
   /** Parse single argument */
@@ -49,8 +48,8 @@ object Main {
     val params = parseArg(args)
 
     // HTTP listener will run in main thread
-    Log.info("Server started on port 7074.")
-    Await.result(Http().bindAndHandle(route(params.projectsUrl), "0.0.0.0", 7074), Duration.Inf)
+    Log.info("Server started on port 8080.")
+    Await.result(Http().bindAndHandle(route(params.dataUrl), "0.0.0.0", 8080), Duration.Inf)
   }
 
 }
