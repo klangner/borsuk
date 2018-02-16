@@ -14,7 +14,7 @@ object ApiRoutes {
     val csv = Source.fromURL(url)
     val ts: TimeSeries[Double] = Csv.fromString(csv.mkString)
     val ts2: TimeSeries[Double] = ts.slice(ts.index.head, dateParse(day))
-    complete(Prediction.find)
+    complete(Csv.toCsv(Prediction.predict))
   }
 
   def dateParse(str: String): Instant = Instant.parse(str ++ "T00:00:00.00Z")
