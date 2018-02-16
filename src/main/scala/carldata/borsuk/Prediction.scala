@@ -1,12 +1,23 @@
 package carldata.borsuk
 
-import java.time.Instant
+import java.time._
 
-import carldata.series.{Csv, Gen, TimeSeries}
+import carldata.series.{Gen, TimeSeries}
 
 object Prediction {
-  def predict(): TimeSeries[Double] = {
-    val idx = (for (i <- 0 to 288) yield Instant.parse("2018-02-15T00:00:00.00Z").plusSeconds(60 * 60 * i)).toVector
+  def fit(ts: TimeSeries[Double]): Prediction = {
+    new Prediction(ts)
+  }
+}
+
+class Prediction(ts: TimeSeries[Double]) {
+  def predict(day: LocalDate): TimeSeries[Double] = {
+    val idx = (for (i <- 0 to 287) yield
+      LocalDateTime.of(day, LocalTime.MIDNIGHT)
+        .plusSeconds(60 * 60 * i)
+        .toInstant(ZoneOffset.UTC)).toVector
+
     Gen.randomNoise(idx, 0.5, 0.7)
   }
+
 }
