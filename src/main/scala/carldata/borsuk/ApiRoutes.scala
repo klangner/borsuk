@@ -10,7 +10,7 @@ import scala.io.Source
 
 object ApiRoutes {
   def predict(project: String, flow: String, day: String, projectsUrl: String): StandardRoute = {
-    val url: String = "https://" ++ projectsUrl ++ "/" ++ project ++ "/" ++ flow ++ ".csv"
+    val url: String = "https://" ++ projectsUrl ++ "/" ++ project.replace("/","") ++ "/" ++ flow ++ ".csv"
     val csv = Source.fromURL(url)
     val ts: TimeSeries[Double] = Csv.fromString(csv.mkString)
     val ts2: TimeSeries[Double] = ts.slice(ts.index.head, dateParse(day))
