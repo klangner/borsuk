@@ -16,19 +16,19 @@ object Prediction {
     }
 
     val xs = TimeSeries.interpolate(ts, duration).addMissing(duration, f)
-    val xs2 = Patterns.daily(xs)
-    new Prediction(xs2)
+    val dailyPattern = Patterns.daily(xs)
+    new Prediction(dailyPattern)
   }
 }
 
-class Prediction(ts: TimeSeries[Double]) {
+class Prediction(dailyPattern: TimeSeries[Double]) {
   def predict(day: LocalDate): TimeSeries[Double] = {
-    val idx = ts.idx.map { x =>
+    val idx = dailyPattern.idx.map { x =>
       LocalDateTime.of(day, LocalTime.MIDNIGHT)
         .plusSeconds(x.getEpochSecond)
         .toInstant(ZoneOffset.UTC)
     }
-    new TimeSeries[Double](idx, ts.values)
+    new TimeSeries[Double](idx, dailyPattern.values)
   }
 
 }
