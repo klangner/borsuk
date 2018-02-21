@@ -2,11 +2,15 @@ package carldata.borsuk
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
+import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import org.slf4j.LoggerFactory
 
+import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -22,10 +26,17 @@ object Main {
   val DATA_TOPIC = "borsuk"
   val POLL_TIMEOUT = 1000
 
+  val settings = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
+    HttpMethods.GET,
+    HttpMethods.POST,
+    HttpMethods.DELETE,
+    HttpMethods.HEAD,
+    HttpMethods.OPTIONS))
+
   case class Params(dataUrl: String)
 
   /** Routing */
-  def route(projectsUrl: String): Route = {
+  def route(projectsUrl: String): Route = cors(settings) {
     path("api" / "healthcheck") {
       complete("Ok")
     } ~ (path("api" / "prediction" / Remaining) & parameters("flow".as[String], "day".as[String])) {
