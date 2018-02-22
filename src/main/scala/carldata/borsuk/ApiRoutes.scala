@@ -11,11 +11,9 @@ import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
 import scala.collection.immutable.Seq
 
-
 case class Parameters(project: String, flow: String, projectsUrl: String)
 
-
-object ApiRoutes {
+class ApiRoutes(storage: Storage) {
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
@@ -25,7 +23,7 @@ object ApiRoutes {
     HttpMethods.OPTIONS))
 
   /** Routing */
-  def route(storage: Storage): Route = cors(settings) {
+  def route(): Route = cors(settings) {
     path("api" / "healthcheck") {
       complete("Ok")
     } ~ (path("api" / "prediction" / Remaining) & parameters("flow".as[String], "rain" ?, "day".as[String])) {
@@ -33,23 +31,17 @@ object ApiRoutes {
         get {
           val flowTs = storage.getTimeSeries(project, flow)
           val rainTs = if (rain.isDefined) storage.getTimeSeries(project, rain.get) else TimeSeries.empty[Double]
-          new ApiRoutes(storage, flowTs, rainTs).predict(day)
+          predict(day, flowTs, rainTs)
         }
     }
   }
-}
 
-class ApiRoutes(storage: Storage, flow: TimeSeries[Double], rain: TimeSeries[Double]) {
-  def predict(day: String): StandardRoute = {
-    val partialFlow = takeToDate(flow, day)
-    val partialRain = takeToDate(rain, day)
-    val prediction = Prediction.fit(partialFlow, partialRain).predict(LocalDate.parse(day))
+  def predict(day: String, flow: TimeSeries[Double], rain: TimeSeries[Double]): StandardRoute = {
+    val partialFlow = flow.slice(flow.index.head, dateParse(day))
+    val prediction = Prediction.fit(partialFlow, rain).predict(LocalDate.parse(day))
     complete(Csv.toCsv(prediction))
   }
 
   def dateParse(str: String): Instant = Instant.parse(str ++ "T00:00:00.00Z")
 
-  def takeToDate(ts: TimeSeries[Double], day: String): TimeSeries[Double] = {
-    if (ts.isEmpty) ts else ts.slice(ts.index.head, dateParse(day))
-  }
 }

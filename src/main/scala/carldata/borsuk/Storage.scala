@@ -8,7 +8,7 @@ case class Project(name: String, flow: Seq[String], rain: Seq[String],
                    startDate: LocalDate, endDate: LocalDate, splitDate: LocalDate)
 
 trait Storage {
-  def getProject(project: String): Project
+  def getProject(projectName: String): Project
 
-  def getTimeSeries(project: String, flow: String): TimeSeries[Double]
+  def getTimeSeries(projectName: String, seriesName: String): TimeSeries[Double]
 }
