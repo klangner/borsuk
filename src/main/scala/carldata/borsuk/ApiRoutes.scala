@@ -2,19 +2,43 @@ package carldata.borsuk
 
 import java.time.{Instant, LocalDate}
 
-import akka.http.scaladsl.server.Directives.complete
-import akka.http.scaladsl.server.StandardRoute
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.{Route, StandardRoute}
 import carldata.series.{Csv, TimeSeries}
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
+import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
-import scala.io.Source
+import scala.collection.immutable.Seq
 
-object ApiRoutes {
-  def predict(project: String, flow: String, day: String, projectsUrl: String): StandardRoute = {
-    val url: String = "https://" ++ projectsUrl ++ "/" ++ project.replace("/","") ++ "/" ++ flow ++ ".csv"
-    val csv = Source.fromURL(url)
-    val ts: TimeSeries[Double] = Csv.fromString(csv.mkString)
-    val ts2: TimeSeries[Double] = ts.slice(ts.index.head, dateParse(day))
-    val prediction = Prediction.fit(ts2).predict(LocalDate.parse(day))
+case class Parameters(project: String, flow: String, projectsUrl: String)
+
+class ApiRoutes(storage: Storage) {
+
+  val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
+    HttpMethods.GET,
+    HttpMethods.POST,
+    HttpMethods.DELETE,
+    HttpMethods.HEAD,
+    HttpMethods.OPTIONS))
+
+  /** Routing */
+  def route(): Route = cors(settings) {
+    path("api" / "healthcheck") {
+      complete("Ok")
+    } ~ (path("api" / "prediction" / Remaining) & parameters("flow".as[String], "rain" ?, "day".as[String])) {
+      (project, flow, rain, day) =>
+        get {
+          val flowTs = storage.getTimeSeries(project, flow)
+          val rainTs = if (rain.isDefined) storage.getTimeSeries(project, rain.get) else TimeSeries.empty[Double]
+          predict(day, flowTs, rainTs)
+        }
+    }
+  }
+
+  def predict(day: String, flow: TimeSeries[Double], rain: TimeSeries[Double]): StandardRoute = {
+    val partialFlow = flow.slice(flow.index.head, dateParse(day))
+    val prediction = Prediction.fit(partialFlow, rain).predict(LocalDate.parse(day))
     complete(Csv.toCsv(prediction))
   }
 
