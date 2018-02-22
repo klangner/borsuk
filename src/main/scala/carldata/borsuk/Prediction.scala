@@ -6,7 +6,7 @@ import carldata.series.{Patterns, TimeSeries}
 
 
 object Prediction {
-  def fit(ts: TimeSeries[Double]): Prediction = {
+  def fit(flow: TimeSeries[Double], rain: TimeSeries[Double]): Prediction = {
     val duration = Duration.ofMinutes(5)
 
     def f(x1: (Instant, Double), x2: (Instant, Double), tsh: Instant): Double = {
@@ -15,7 +15,7 @@ object Prediction {
       (ty / (tx + ty) * x1._2) + (tx / (tx + ty) * x2._2)
     }
 
-    val xs = TimeSeries.interpolate(ts, duration).addMissing(duration, f)
+    val xs = TimeSeries.interpolate(flow, duration).addMissing(duration, f)
     val dailyPattern = Patterns.daily(xs)
     new Prediction(dailyPattern)
   }

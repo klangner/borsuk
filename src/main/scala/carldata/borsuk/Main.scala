@@ -2,17 +2,11 @@ package carldata.borsuk
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
-import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
+import carldata.borsuk.Storages.GoogleCloudStorage
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable.Seq
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 
@@ -26,26 +20,7 @@ object Main {
   val DATA_TOPIC = "borsuk"
   val POLL_TIMEOUT = 1000
 
-  val settings = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
-    HttpMethods.GET,
-    HttpMethods.POST,
-    HttpMethods.DELETE,
-    HttpMethods.HEAD,
-    HttpMethods.OPTIONS))
-
   case class Params(dataUrl: String)
-
-  /** Routing */
-  def route(projectsUrl: String): Route = cors(settings) {
-    path("api" / "healthcheck") {
-      complete("Ok")
-    } ~ (path("api" / "prediction" / Remaining) & parameters("flow".as[String], "day".as[String])) {
-      (project, flow, day) =>
-        get {
-          ApiRoutes.predict(project, flow, day, projectsUrl)
-        }
-    }
-  }
 
   /** Parse application arguments */
   def parseArg(args: Array[String]): Params = {
@@ -61,10 +36,11 @@ object Main {
 
   def main(args: Array[String]) {
     val params = parseArg(args)
+    val storage = new GoogleCloudStorage(params.dataUrl)
 
     // HTTP listener will run in main thread
     Log.info("Server started on port 8080.")
-    Await.result(Http().bindAndHandle(route(params.dataUrl), "0.0.0.0", 8080), Duration.Inf)
+    Await.result(Http().bindAndHandle(ApiRoutes.route(storage), "0.0.0.0", 8080), Duration.Inf)
   }
 
 }
