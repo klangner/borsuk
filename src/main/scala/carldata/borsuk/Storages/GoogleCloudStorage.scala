@@ -1,5 +1,7 @@
 package carldata.borsuk.Storages
 
+import java.time.LocalDateTime
+
 import carldata.borsuk.{JsonConverters, Project, Storage}
 import carldata.series.{Csv, TimeSeries}
 import spray.json._
@@ -13,11 +15,12 @@ class GoogleCloudStorage(projectsUrl: String) extends Storage {
     val url: String = "https://" ++ projectsUrl ++ "/" ++ project.replace("/", "") ++ "/" ++ "project.json"
     val json = Source.fromURL(url).mkString.parseJson.asJsObject.fields
 
-    val startDate = JsonConverters.timestampFromValue(json.getOrElse("start-date", JsString(""))).toLocalDate
-    val endDate = JsonConverters.timestampFromValue(json.getOrElse("end-date", JsString(""))).toLocalDate
-    val splitDate = JsonConverters.timestampFromValue(json.getOrElse("split-date", JsString(""))).toLocalDate
+    val startDate = json.get("start-date").map(JsonConverters.timestampFromValue).getOrElse(LocalDateTime.MIN).toLocalDate
+    val endDate = json.get("end-date").map(JsonConverters.timestampFromValue).getOrElse(LocalDateTime.MIN).toLocalDate
+    val splitDate = json.get("split-date").map(JsonConverters.timestampFromValue).getOrElse(LocalDateTime.MIN).toLocalDate
     val flows = JsonConverters.arrayFromValue(json.getOrElse("flows", JsArray()))
     val rainfalls = JsonConverters.arrayFromValue(json.getOrElse("rainfalls", JsArray()))
+
 
     Project(project, flows, rainfalls, startDate, endDate, splitDate)
   }
