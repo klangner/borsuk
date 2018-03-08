@@ -10,6 +10,7 @@ import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
 import scala.collection.immutable.Seq
+import scala.language.postfixOps
 
 case class Parameters(project: String, flow: String, projectsUrl: String)
 
@@ -33,6 +34,12 @@ class ApiRoutes(storage: Storage) {
           val rainTs = if (rain.isDefined) storage.getTimeSeries(project, rain.get) else TimeSeries.empty[Double]
           predict(day, flowTs, rainTs)
         }
+    } ~ (path("api" / "anomaly" / Remaining) & parameters("series".as[String])) {
+      (project, series) =>
+        get {
+          val ts = storage.getTimeSeries(project, series)
+          anomaly(ts)
+        }
     }
   }
 
@@ -40,6 +47,11 @@ class ApiRoutes(storage: Storage) {
     val partialFlow = flow.slice(flow.index.head, dateParse(day))
     val prediction = Prediction.fit(partialFlow, rain).predict(LocalDate.parse(day))
     complete(Csv.toCsv(prediction))
+  }
+
+  def anomaly(ts: TimeSeries[Double]): StandardRoute = {
+    val cleanedTs = new Anomaly(ts).find
+    complete(Csv.toCsv(cleanedTs))
   }
 
   def dateParse(str: String): Instant = Instant.parse(str ++ "T00:00:00.00Z")
