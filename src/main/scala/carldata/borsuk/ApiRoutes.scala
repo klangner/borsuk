@@ -50,7 +50,7 @@ class ApiRoutes(storage: Storage) {
   }
 
   def anomaly(ts: TimeSeries[Double]): StandardRoute = {
-    val cleanedTs = new Anomaly(ts).find
+    val cleanedTs = Anomaly.fixAnomalies(ts)
     complete(Csv.toCsv(cleanedTs))
   }
 
