@@ -2,13 +2,11 @@ package carldata.borsuk
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
+import carldata.borsuk.Storages.GoogleCloudStorage
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 
@@ -20,18 +18,6 @@ object Main {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   case class Params(dataUrl: String)
-
-  /** Routing */
-  def route(projectsUrl: String): Route = {
-    path("api" / "healthcheck") {
-      complete("Ok")
-    } ~ (path("api" / "prediction" / Remaining) & parameters("flow".as[String], "day".as[String])) {
-      (project, flow, day) =>
-        get {
-          Prediction.find()
-        }
-    }
-  }
 
   /** Parse application arguments */
   def parseArg(args: Array[String]): Params = {
@@ -47,10 +33,11 @@ object Main {
 
   def main(args: Array[String]) {
     val params = parseArg(args)
+    val storage = new GoogleCloudStorage(params.dataUrl)
 
     // HTTP listener will run in main thread
     Log.info("Server started on port 8080.")
-    Await.result(Http().bindAndHandle(route(params.dataUrl), "0.0.0.0", 8080), Duration.Inf)
+    Await.result(Http().bindAndHandle(new ApiRoutes(storage).route, "0.0.0.0", 8080), Duration.Inf)
   }
 
 }

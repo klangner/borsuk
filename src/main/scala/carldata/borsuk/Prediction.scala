@@ -1,16 +1,34 @@
 package carldata.borsuk
 
-import java.time.Instant
+import java.time._
 
-import akka.http.scaladsl.server.Directives.complete
-import akka.http.scaladsl.server.StandardRoute
-import carldata.series.{Csv, Gen}
+import carldata.series.{Patterns, TimeSeries}
+
 
 object Prediction {
-  def find(): StandardRoute = {
-    val idx = (for (i <- 0 to 288) yield Instant.parse("2018-02-15T00:00:00.00Z").plusSeconds(60 * 60 * i)).toVector
-    val ts = Gen.randomNoise(idx, 0.5, 0.7)
-    val csv = Csv.toCsv(ts)
-    complete(csv)
+  def fit(flow: TimeSeries[Double], rain: TimeSeries[Double]): Prediction = {
+    val duration = Duration.ofMinutes(5)
+
+    def f(x1: (Instant, Double), x2: (Instant, Double), tsh: Instant): Double = {
+      val tx = Duration.between(tsh, x1._1).toMillis
+      val ty = Duration.between(tsh, x2._1).toMillis
+      (ty / (tx + ty) * x1._2) + (tx / (tx + ty) * x2._2)
+    }
+
+    val xs = TimeSeries.interpolate(flow, duration).addMissing(duration, f)
+    val dailyPattern = Patterns.daily(xs)
+    new Prediction(dailyPattern)
   }
+}
+
+class Prediction(dailyPattern: TimeSeries[Double]) {
+  def predict(day: LocalDate): TimeSeries[Double] = {
+    val idx = dailyPattern.idx.map { x =>
+      LocalDateTime.of(day, LocalTime.MIDNIGHT)
+        .plusSeconds(x.getEpochSecond)
+        .toInstant(ZoneOffset.UTC)
+    }
+    new TimeSeries[Double](idx, dailyPattern.values)
+  }
+
 }
