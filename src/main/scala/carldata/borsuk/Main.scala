@@ -37,7 +37,7 @@ object Main {
 
     // HTTP listener will run in main thread
     Log.info("Server started on port 8080.")
-    Await.result(Http().bindAndHandle(new ApiRoutes(storage).route, "0.0.0.0", 8080), Duration.Inf)
+    Await.result(Http().bindAndHandle(new ApiRoutes(storage).route(), "0.0.0.0", 8080), Duration.Inf)
   }
 
 }
