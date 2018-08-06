@@ -19,9 +19,6 @@ object Main {
   implicit val system: ActorSystem = ActorSystem("borsuk")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  val DATA_TOPIC = "borsuk"
-  val POLL_TIMEOUT = 1000
-
   case class Params(dataUrl: String)
 
   /** Routing */
