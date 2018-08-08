@@ -7,7 +7,7 @@ Machine Learning server for Time Series data.
 
 ## API
 
-#### Create model
+### Create model
 
 URI:
 ```
@@ -30,7 +30,7 @@ Return:
 ```
 
  
-#### Fit model
+### Fit model
 
 URI:
 ```
@@ -56,7 +56,31 @@ Pleas keep in mind that the fitting process can take lots of time. This function
 immediately.
  
 
-#### Check model status
+### Predict
+
+Use model to predict labels based on the features
+
+URI:
+```
+POST /api/model/<id>/predict
+```
+
+Payload:
+```json
+{
+  "features": [[1,2,3], [3,4,5]]
+}
+```
+
+Return:
+```json
+{
+  "labels": [1,2,3]
+}
+```
+ 
+ 
+### Check model status
 
 Check model status. 
 Since model is training in asynchronous mode, this function can be used to check which model is currently served  
@@ -82,31 +106,6 @@ Model build number which is currently served
 sbt assembly
 java -jar target/scala-2.12/borsuk.jar 
  ```
-
- 
-#### Predict
-
-Use model to predict labels based on the features
-
-URI:
-```
-POST /api/model/<id>/predict
-```
-
-Payload:
-```json
-{
-  "features": [[1,2,3], [3,4,5]]
-}
-```
-
-Return:
-```json
-{
-  "labels": [1,2,3]
-}
-```
- 
 
  
 # Redistributing
