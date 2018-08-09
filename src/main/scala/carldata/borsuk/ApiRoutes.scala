@@ -1,15 +1,13 @@
 package carldata.borsuk
 
 import java.time.Instant
-import java.util.UUID.randomUUID
 
-import akka.http.scaladsl.model.{HttpMethods, StatusCodes}
+import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Route, StandardRoute}
 import carldata.series.{Csv, TimeSeries}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
-import spray.json._
 
 import scala.collection.immutable.Seq
 import scala.language.postfixOps
@@ -17,7 +15,8 @@ import scala.language.postfixOps
 case class Parameters(project: String, flow: String, projectsUrl: String)
 
 class ApiRoutes(storage: Storage) {
-  val models = collection.mutable.Map.empty[String, String]
+  val modelApi = new ModelAPI()
+
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
     HttpMethods.POST,
@@ -34,17 +33,7 @@ class ApiRoutes(storage: Storage) {
       post {
         entity(as[String]) {
           body =>
-            if (body.isEmpty) complete("type:error\nEmpty body.")
-            else {
-              val json = body.parseJson.asJsObject
-              if (json.fields.contains("type")) {
-                val id = randomUUID().toString
-                models += id -> "props"
-
-                complete("{\"id\": \"" + id + "\"}")
-              }
-              else complete("type:error\nModel type not provided.")
-            }
+            modelApi.create(body)
         }
       }
     } ~ path("api" / "model" / Segment / "fit") {
@@ -52,17 +41,7 @@ class ApiRoutes(storage: Storage) {
         post {
           entity(as[String]) {
             body =>
-              if (models.contains(id)) {
-                if (body.isEmpty) complete("type:error\nEmpty body.")
-                else {
-                  val json = body.parseJson.asJsObject
-                  if (json.fields.contains("features") && json.fields.contains("labels")) {
-                    complete(StatusCodes.OK)
-                  }
-                  else complete("type:error\nFeatures or labels not provided.")
-                }
-              }
-              else complete(StatusCodes.NotFound)
+              modelApi.fit(id, body)
           }
         }
     } ~ path("api" / "model" / Segment / "predict") {
@@ -70,27 +49,13 @@ class ApiRoutes(storage: Storage) {
         post {
           entity(as[String]) {
             body =>
-              if (models.contains(id)) {
-                if (body.isEmpty) complete("type:error\nEmpty body.")
-                else {
-                  val json = body.parseJson.asJsObject
-                  if (json.fields.contains("features")) {
-                    complete("{\n  \"labels\": [1,2,3]\n}")
-                  }
-                  else complete("type:error\nFeatures not provided.")
-
-                }
-              }
-              else complete(StatusCodes.NotFound)
+              modelApi.predict(id, body)
           }
         }
     } ~ path("api" / "model" / Segment / "status") {
       id =>
         post {
-          if (models.contains(id)) {
-            complete("{\n  \"build\": \"1\"\n}")
-          }
-          else complete(StatusCodes.NotFound)
+          modelApi.status(id)
         }
     }
   }
