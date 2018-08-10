@@ -2,7 +2,13 @@
 
 [![Build status](https://travis-ci.org/carldata/borsuk.svg?branch=master)](https://travis-ci.org/carldata/borsuk)
 
-Machine Learning server for Time Series data.
+Server for Time Series analysis
+
+## Features
+
+  * [ ] Predict series
+  * [ ] Find events (e.g. storms in rainfall data)
+  * [ ] Mark anomalies
 
 
 ## API
@@ -83,7 +89,7 @@ Return:
 ### Check model status
 
 Check model status. 
-Since model is training in asynchronous mode, this function can be used to check which model is currently served  
+Since model is training in asynchronous mode, this function can be used to check which model version is currently served.
 
 URI:
 ```
@@ -110,7 +116,7 @@ java -jar target/scala-2.12/borsuk.jar
  
 # Redistributing
 
-Dataset Server source code is distributed under the Apache-2.0 license.
+Borsuk source code is distributed under the Apache-2.0 license.
 
 #### Contributions
 
