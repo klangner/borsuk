@@ -1,6 +1,6 @@
 package carldata.borsuk
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
 
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
@@ -15,6 +15,7 @@ import scala.language.postfixOps
 case class Parameters(project: String, flow: String, projectsUrl: String)
 
 class ApiRoutes(storage: Storage) {
+  val modelApi = new ModelAPI()
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
@@ -23,31 +24,42 @@ class ApiRoutes(storage: Storage) {
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
 
+
   /** Routing */
   def route(): Route = cors(settings) {
     path("api" / "healthcheck") {
       complete("Ok")
-    } ~ (path("api" / "prediction" / Remaining) & parameters("flow".as[String], "rain" ?, "day".as[String])) {
-      (project, flow, rain, day) =>
-        get {
-          val flowTs = storage.getTimeSeries(project, flow)
-          val rainTs = if (rain.isDefined) storage.getTimeSeries(project, rain.get) else TimeSeries.empty[Double]
-          predict(day, flowTs, rainTs)
+    } ~ path("api" / "model") {
+      post {
+        entity(as[String]) {
+          body =>
+            modelApi.create(body)
         }
-    } ~ (path("api" / "anomaly" / Remaining) & parameters("series".as[String])) {
-      (project, series) =>
-        get {
-          val ts = storage.getTimeSeries(project, series)
-          anomaly(ts)
+      }
+    } ~ path("api" / "model" / Segment / "fit") {
+      id =>
+        post {
+          entity(as[String]) {
+            body =>
+              modelApi.fit(id, body)
+          }
+        }
+    } ~ path("api" / "model" / Segment / "predict") {
+      id =>
+        post {
+          entity(as[String]) {
+            body =>
+              modelApi.predict(id, body)
+          }
+        }
+    } ~ path("api" / "model" / Segment / "status") {
+      id =>
+        post {
+          modelApi.status(id)
         }
     }
   }
 
-  def predict(day: String, flow: TimeSeries[Double], rain: TimeSeries[Double]): StandardRoute = {
-    val partialFlow = flow.slice(flow.index.head, dateParse(day))
-    val prediction = Prediction.fit(partialFlow, rain).predict(LocalDate.parse(day))
-    complete(Csv.toCsv(prediction))
-  }
 
   def anomaly(ts: TimeSeries[Double]): StandardRoute = {
     val cleanedTs = Anomaly.fixAnomalies(ts)
