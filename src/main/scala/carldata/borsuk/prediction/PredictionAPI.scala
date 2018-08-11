@@ -1,4 +1,4 @@
-package carldata.borsuk
+package carldata.borsuk.prediction
 
 import java.util.UUID.randomUUID
 
@@ -31,7 +31,7 @@ class PredictionAPI() {
 
   /**
     * Predict series values.
-    * Model first should be trainied with function fit
+    * Model first should be trained with function fit
     */
   def predict(modelId: String, data: String): StandardRoute = {
     if (models.contains(modelId)) {
@@ -41,7 +41,7 @@ class PredictionAPI() {
   }
 
   /**
-    * Check model status. This function can be used to chech if new revision of the model is trained
+    * Check model status. This function can be used to check if new revision of the model is trained
     * and the current model metric score.
     */
   def status(modelId: String): StandardRoute = {
