@@ -3,7 +3,6 @@ package carldata.borsuk
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
-import carldata.borsuk.Storages.GoogleCloudStorage
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -33,11 +32,10 @@ object Main {
 
   def main(args: Array[String]) {
     val params = parseArg(args)
-    val storage = new GoogleCloudStorage(params.dataUrl)
 
     // HTTP listener will run in main thread
     Log.info("Server started on port 8080.")
-    Await.result(Http().bindAndHandle(new ApiRoutes(storage).route(), "0.0.0.0", 8080), Duration.Inf)
+    Await.result(Http().bindAndHandle(new Routing().route(), "0.0.0.0", 8080), Duration.Inf)
   }
 
 }
