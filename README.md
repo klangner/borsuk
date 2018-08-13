@@ -6,106 +6,14 @@ Server for Time Series analysis
 
 ## Features
 
-  * [ ] Predict series
-  * [ ] Find events (e.g. storms in rainfall data)
-  * [ ] Mark anomalies
+  * [ ] [Prediction](https://github.com/carldata/borsuk/wiki/Prediction-module)
+  * [ ] Anomaly detection
+  * [ ] Search
+  * Hydrological module
+    * [ ] Find storms
+    * [ ] RDII analysis
 
 
-## API
-
-### Create model
-
-URI:
-```
-POST /api/model/
-```
-
-Payload:
-```json
-{ "type": "prediction"}
-```
-
-Supported model types:
-
-  * prediction - Predicts next values
-  * anomalies - Find anomalies and approximate correct values
-
-Return:
-```json
-{ "id": "id"}
-```
-
- 
-### Fit model
-
-URI:
-```
-POST /api/model/<id>/fit
-```
-
-Payload:
-```json
-{
-  "features": [[1,2,3], [3,4,5]],
-  "labels": [1,2,1]
-}
-```
-
-Where:
-  * features - matrix with each feature as a column and each row is single data point
-  * labels - List of target values
-
-Return:
-HTTP OK 
- 
-Pleas keep in mind that the fitting process can take lots of time. This function will start learning process and return
-immediately.
- 
-
-### Predict
-
-Use model to predict labels based on the features
-
-URI:
-```
-POST /api/model/<id>/predict
-```
-
-Payload:
-```json
-{
-  "features": [[1,2,3], [3,4,5]]
-}
-```
-
-Return:
-```json
-{
-  "labels": [1,2,3]
-}
-```
- 
- 
-### Check model status
-
-Check model status. 
-Since model is training in asynchronous mode, this function can be used to check which model version is currently served.
-
-URI:
-```
-GET /api/model/<id>/status
-```
-
-Return:
-```json
-{
-  "build": "1"
-}
-```
-
-Model build number which is currently served
- 
- 
 ## Running the server
  
  ```bash

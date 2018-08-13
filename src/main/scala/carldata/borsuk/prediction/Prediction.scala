@@ -1,4 +1,4 @@
-package carldata.borsuk
+package carldata.borsuk.prediction
 
 import java.time._
 
