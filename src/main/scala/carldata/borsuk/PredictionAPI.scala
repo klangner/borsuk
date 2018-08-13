@@ -1,10 +1,11 @@
-package carldata.borsuk.prediction
+package carldata.borsuk
 
 import java.util.UUID.randomUUID
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
+import carldata.borsuk.ApiObjects.CreatePredictionParams
 
 
 
@@ -15,7 +16,7 @@ class PredictionAPI() {
     * Create new prediction model.
     * Use fit function to train this model
     */
-  def create(): StandardRoute = {
+  def create(params: CreatePredictionParams): StandardRoute = {
     val id = randomUUID().toString
     models.put(id, id)
     complete(s"""{"id": "$id"}""")
