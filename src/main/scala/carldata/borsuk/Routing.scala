@@ -1,14 +1,17 @@
 package carldata.borsuk
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import carldata.borsuk.ApiObjects.CreatePredictionParams
+import carldata.borsuk.ApiObjectsJsonProtocol._
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
 import scala.collection.immutable.Seq
 import scala.language.postfixOps
+
 
 
 class Routing() {
@@ -21,7 +24,6 @@ class Routing() {
     HttpMethods.DELETE,
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
-
 
   /** Routing */
   def route(): Route = cors(settings) {

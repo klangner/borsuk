@@ -2,11 +2,12 @@ package carldata.borsuk
 
 import java.util.UUID.randomUUID
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.ApiObjects.CreatePredictionParams
-
+import carldata.borsuk.ApiObjects.{CreatePredictionParams, ModelCreatedResponse}
+import carldata.borsuk.ApiObjectsJsonProtocol._
+import spray.json._
 
 
 class PredictionAPI() {
@@ -19,7 +20,12 @@ class PredictionAPI() {
   def create(params: CreatePredictionParams): StandardRoute = {
     val id = randomUUID().toString
     models.put(id, id)
-    complete(s"""{"id": "$id"}""")
+    val response = ModelCreatedResponse(id)
+
+    complete(HttpResponse(
+      StatusCodes.OK,
+      entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+    ))
   }
 
   /** Fit the model to the training data */

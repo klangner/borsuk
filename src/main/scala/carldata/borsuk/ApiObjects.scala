@@ -6,26 +6,35 @@ import java.time.temporal.ChronoField
 
 import spray.json.{DefaultJsonProtocol, JsArray, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
 
+
 /**
   * Here are definition of objects used in REST API with their json serialization
   */
-object ApiObjects extends DefaultJsonProtocol {
-
-  // Object definition -------------------------------------------------------------------------------------------------
+object ApiObjects {
 
   case class CreatePredictionParams(modelType: String)
+
   case class ModelCreatedResponse(id: String)
+
   case class FitParams(startDate: LocalDateTime, values: Vector[Float])
+
   case class PredictionRequest(startDate: LocalDateTime, samples: Int)
+
   case class PredictionResponse(values: Vector[Float])
 
+}
 
-  // JSON serialization ------------------------------------------------------------------------------------------------
+/**
+  * JSON serialization
+  */
+object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
+
+  import ApiObjects._
 
   /**
     * CreatePredictionParams formatter
     */
-  implicit object createPredictionParamsFormat extends RootJsonFormat[CreatePredictionParams] {
+  implicit object CreatePredictionParamsFormat extends RootJsonFormat[CreatePredictionParams] {
     def write(params: CreatePredictionParams): JsObject = {
       JsObject(
         "type" -> JsString(params.modelType)
