@@ -4,12 +4,70 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 
-import spray.json.{JsArray, JsNumber, JsString, JsValue}
+import spray.json.{DefaultJsonProtocol, JsArray, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
+
 
 /**
-  * Custom function for simplify json access
+  * Here are definition of objects used in REST API with their json serialization
   */
-object JsonConverters {
+object ApiObjects {
+
+  case class CreatePredictionParams(modelType: String)
+
+  case class ModelCreatedResponse(id: String)
+
+  case class FitParams(startDate: LocalDateTime, values: Vector[Float])
+
+  case class PredictionRequest(startDate: LocalDateTime, samples: Int)
+
+  case class PredictionResponse(values: Vector[Float])
+
+}
+
+/**
+  * JSON serialization
+  */
+object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
+
+  import ApiObjects._
+
+  /**
+    * CreatePredictionParams formatter
+    */
+  implicit object CreatePredictionParamsFormat extends RootJsonFormat[CreatePredictionParams] {
+    def write(params: CreatePredictionParams): JsObject = {
+      JsObject(
+        "type" -> JsString(params.modelType)
+      )
+    }
+
+    def read(value: JsValue): CreatePredictionParams = value match {
+      case JsObject(request) =>
+        val modelType = request.get("type").map(stringFromValue).getOrElse("daily-pattern-v0")
+        CreatePredictionParams(modelType)
+      case _ => CreatePredictionParams("daily-pattern-v0")
+    }
+  }
+
+  /**
+    * ModelCreatedResponse formatter
+    */
+  implicit object modelCreatedResponseJsonFormat extends RootJsonFormat[ModelCreatedResponse] {
+    def write(response: ModelCreatedResponse): JsObject = {
+      JsObject(
+        "id" -> JsString(response.id)
+      )
+    }
+
+    def read(value: JsValue): ModelCreatedResponse = value match {
+      case JsObject(response) =>
+        val id = response.get("id").map(stringFromValue).getOrElse("")
+        ModelCreatedResponse(id)
+      case _ => ModelCreatedResponse("")
+    }
+  }
+
+  // JSON Helpers ------------------------------------------------------------------------------------------------------
 
   def stringFromValue(jsVal: JsValue): String = jsVal match {
     case JsString(str) => str
@@ -30,11 +88,6 @@ object JsonConverters {
   def floatFromValue(jsVal: JsValue): Float = jsVal match {
     case JsNumber(v) => v.toFloat
     case _ => Float.NaN
-  }
-
-  def textFromLines(jsVal: JsValue): String = jsVal match {
-    case JsArray(vs) => vs.map(stringFromValue).mkString("\n")
-    case _ => ""
   }
 
   def dateParse(str: String): LocalDateTime = {

@@ -5,10 +5,10 @@ version := "0.3"
 scalaVersion := "2.12.3"
 
 libraryDependencies ++= Seq(
-  "ch.megard" %% "akka-http-cors" % "0.2.2",
-  "com.typesafe.akka" %% "akka-http" % "10.0.10",
-  "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.10",
+  "com.typesafe.akka" %% "akka-http" % "10.1.3",
+  "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.3",
   "io.github.carldata" %% "timeseries" % "0.6.2",
+  "ch.megard" %% "akka-http-cors" % "0.2.2",
 
   // Log dependencies
   "org.slf4j" % "slf4j-api" % "1.7.25",
@@ -17,7 +17,7 @@ libraryDependencies ++= Seq(
   // Test dependencies
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-  "com.typesafe.akka" %% "akka-http-testkit" % "10.0.10"
+  "com.typesafe.akka" %% "akka-http-testkit" % "10.1.3"
 )
 
 assemblyMergeStrategy in assembly := {

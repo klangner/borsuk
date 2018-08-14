@@ -1,9 +1,11 @@
 package carldata.borsuk
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import carldata.borsuk.prediction.PredictionAPI
+import carldata.borsuk.ApiObjects.CreatePredictionParams
+import carldata.borsuk.ApiObjectsJsonProtocol._
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
@@ -23,7 +25,6 @@ class Routing() {
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
 
-
   /** Routing */
   def route(): Route = cors(settings) {
 
@@ -31,11 +32,11 @@ class Routing() {
       complete("Ok")
     } ~ path("prediction") {
       post{
-        predictionApi.create()
+        entity(as[CreatePredictionParams])(params => predictionApi.create(params))
       }
     } ~ path("prediction" / Segment / "fit") { id =>
       post {
-        entity(as[String]) ( data => predictionApi.fit(id, data) )
+        entity(as[String])( data => predictionApi.fit(id, data) )
       }
     } ~ path("prediction" / Segment / "predict") { id =>
       post {

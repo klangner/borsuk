@@ -1,34 +1,14 @@
 package carldata.borsuk.prediction
 
-import java.time._
-
-import carldata.series.{Patterns, TimeSeries}
+import java.util.UUID.randomUUID
 
 
-object Prediction {
-  def fit(flow: TimeSeries[Double], rain: TimeSeries[Double]): Prediction = {
-    val duration = Duration.ofMinutes(5)
+class Prediction(modelType: String) {
 
-    def f(x1: (Instant, Double), x2: (Instant, Double), tsh: Instant): Double = {
-      val tx = Duration.between(tsh, x1._1).toMillis
-      val ty = Duration.between(tsh, x2._1).toMillis
-      (ty / (tx + ty) * x1._2) + (tx / (tx + ty) * x2._2)
-    }
+  val id: String = randomUUID().toString
 
-    val xs = TimeSeries.interpolate(flow, duration).addMissing(duration, f)
-    val dailyPattern = Patterns.daily(xs)
-    new Prediction(dailyPattern)
+  /** Fit model */
+  def fit(data: Vector[Float]): Unit = {
+
   }
-}
-
-class Prediction(dailyPattern: TimeSeries[Double]) {
-  def predict(day: LocalDate): TimeSeries[Double] = {
-    val idx = dailyPattern.idx.map { x =>
-      LocalDateTime.of(day, LocalTime.MIDNIGHT)
-        .plusSeconds(x.getEpochSecond)
-        .toInstant(ZoneOffset.UTC)
-    }
-    new TimeSeries[Double](idx, dailyPattern.values)
-  }
-
 }
