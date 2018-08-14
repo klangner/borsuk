@@ -7,6 +7,7 @@ scalaVersion := "2.12.3"
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % "10.1.3",
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.3",
+  "com.github.haifengl" %% "smile-scala" % "1.5.1",
   "io.github.carldata" %% "timeseries" % "0.6.2",
   "ch.megard" %% "akka-http-cors" % "0.2.2",
 

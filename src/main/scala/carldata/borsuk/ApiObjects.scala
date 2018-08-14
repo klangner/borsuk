@@ -67,6 +67,26 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
+  /**
+    * FitParams formatter
+    */
+  implicit object FitParamsFormat extends RootJsonFormat[FitParams] {
+    def write(params: FitParams): JsObject = {
+      JsObject(
+        "start-date" -> JsString(params.startDate.toString),
+        "values" -> JsArray(params.values.map(JsNumber(_)))
+      )
+    }
+
+    def read(value: JsValue): FitParams = value match {
+      case JsObject(request) =>
+        val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
+        val values = request.get("start-date").map(arrayFromValue).getOrElse(Vector.empty[Float])
+        FitParams(startDate,  values)
+      case _ => FitParams(LocalDateTime.now(), Vector.empty)
+    }
+  }
+
   // JSON Helpers ------------------------------------------------------------------------------------------------------
 
   def stringFromValue(jsVal: JsValue): String = jsVal match {
@@ -117,9 +137,9 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     LocalDateTime.parse(str, formatter)
   }
 
-  def arrayFromValue(jsVal: JsValue): Seq[String] = jsVal match {
-    case JsArray(vs) => vs.map(stringFromValue)
-    case _ => Seq()
+  def arrayFromValue(jsVal: JsValue): Vector[Float] = jsVal match {
+    case JsArray(vs) => vs.map(floatFromValue)
+    case _ => Vector.empty[Float]
   }
 
 }
