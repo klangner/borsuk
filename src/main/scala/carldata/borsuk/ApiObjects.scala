@@ -82,8 +82,28 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
         val values = request.get("start-date").map(arrayFromValue).getOrElse(Vector.empty[Float])
-        FitParams(startDate,  values)
+        FitParams(startDate, values)
       case _ => FitParams(LocalDateTime.now(), Vector.empty)
+    }
+  }
+
+  /**
+    * PredictionRequest formatter
+    */
+  implicit object PredictionRequestFormat extends RootJsonFormat[PredictionRequest] {
+    def write(req: PredictionRequest): JsObject = {
+      JsObject(
+        "start-date" -> JsString(req.startDate.toString),
+        "samples" -> JsNumber(req.samples.toString)
+      )
+    }
+
+    def read(value: JsValue): PredictionRequest = value match {
+      case JsObject(request) =>
+        val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
+        val samples = request.get("start-date").map(floatFromValue).map(_.toInt).getOrElse(0)
+        PredictionRequest(startDate, samples)
+      case _ => PredictionRequest(LocalDateTime.now(), 0)
     }
   }
 
