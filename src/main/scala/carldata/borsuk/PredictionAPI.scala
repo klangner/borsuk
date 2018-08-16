@@ -5,7 +5,7 @@ import java.util.UUID.randomUUID
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.ApiObjects.{CreatePredictionParams, ModelCreatedResponse}
+import carldata.borsuk.ApiObjects.{CreatePredictionParams, FitParams, ModelCreatedResponse}
 import carldata.borsuk.ApiObjectsJsonProtocol._
 import spray.json._
 
@@ -29,7 +29,7 @@ class PredictionAPI() {
   }
 
   /** Fit the model to the training data */
-  def fit(modelId: String, data: String): StandardRoute = {
+  def fit(modelId: String, params: FitParams): StandardRoute = {
     if (models.contains(modelId)) {
       complete(StatusCodes.OK)
     }
