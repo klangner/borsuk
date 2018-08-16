@@ -1,7 +1,5 @@
 package carldata.borsuk
 
-import java.util.UUID.randomUUID
-
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
