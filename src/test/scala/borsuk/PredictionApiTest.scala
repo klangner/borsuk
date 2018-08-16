@@ -31,5 +31,39 @@ class PredictionApiTest extends WordSpec with Matchers with ScalatestRouteTest w
         status shouldEqual StatusCodes.OK
       }
     }
+
+    "not fit if model doesn't exist" in {
+      val params = CreatePredictionParams("daily-pattern-v0")
+      val request = HttpRequest(
+        HttpMethods.POST,
+        uri = "/prediction/000/fit",
+        entity = HttpEntity(MediaTypes.`application/json`, params.toJson.compactPrint))
+
+      request ~> mainRoute() ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
+    "not predict if model doesn't exist" in {
+      val params = CreatePredictionParams("daily-pattern-v0")
+      val request = HttpRequest(
+        HttpMethods.POST,
+        uri = "/prediction/000/predict",
+        entity = HttpEntity(MediaTypes.`application/json`, params.toJson.compactPrint))
+
+      request ~> mainRoute() ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "not give status if model doesn't exist" in {
+      val request = HttpRequest(
+        HttpMethods.GET,
+        uri = "/prediction/000")
+      
+      request ~> mainRoute() ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
+
   }
 }
