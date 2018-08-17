@@ -4,7 +4,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 
-import spray.json.{DefaultJsonProtocol, JsArray, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
+import spray.json._
 
 
 /**
@@ -16,11 +16,13 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitParams(startDate: LocalDateTime, values: Vector[Float])
+  case class FitParams(startDate: LocalDateTime, values: Array[Double])
 
   case class PredictionRequest(startDate: LocalDateTime, samples: Int)
 
-  case class PredictionResponse(values: Vector[Float])
+  case class PredictionResponse(values: Array[Double])
+
+  case class ModelStatus(build: Int, score: Double)
 
 }
 
@@ -74,16 +76,36 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def write(params: FitParams): JsObject = {
       JsObject(
         "start-date" -> JsString(params.startDate.toString),
-        "values" -> JsArray(params.values.map(JsNumber(_)))
+        "values" -> JsArray(params.values.map(JsNumber(_)).toVector)
       )
     }
 
     def read(value: JsValue): FitParams = value match {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
-        val values = request.get("values").map(arrayFromValue).getOrElse(Vector.empty[Float])
+        val values = request.get("values").map(arrayFromValue).getOrElse(Array.empty[Double])
         FitParams(startDate, values)
-      case _ => FitParams(LocalDateTime.now(), Vector.empty)
+      case _ => FitParams(LocalDateTime.now(), Array.empty)
+    }
+  }
+
+  /**
+    * ModelStatus formatter
+    */
+  implicit object ModelStatusFormat extends RootJsonFormat[ModelStatus] {
+    def write(status: ModelStatus): JsObject = {
+      JsObject(
+        "build" -> JsNumber(status.build),
+        "score" -> JsNumber(status.score)
+      )
+    }
+
+    def read(value: JsValue): ModelStatus = value match {
+      case JsObject(request) =>
+        val build = request.get("build").map(doubleFromValue).map(_.toInt).getOrElse(0)
+        val score = request.get("score").map(doubleFromValue).getOrElse(0.0)
+        ModelStatus(build, score)
+      case _ => ModelStatus(0, 0.0)
     }
   }
 
@@ -101,9 +123,27 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def read(value: JsValue): PredictionRequest = value match {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
-        val samples = request.get("samples").map(floatFromValue).map(_.toInt).getOrElse(0)
+        val samples = request.get("samples").map(doubleFromValue).map(_.toInt).getOrElse(0)
         PredictionRequest(startDate, samples)
       case _ => PredictionRequest(LocalDateTime.now(), 0)
+    }
+  }
+
+  /**
+    * PredictionResponse formatter
+    */
+  implicit object PredictionResponseFormat extends RootJsonFormat[PredictionResponse] {
+    def write(res: PredictionResponse): JsObject = {
+      JsObject(
+        "values" -> JsArray(res.values.map(JsNumber(_)).toVector)
+      )
+    }
+
+    def read(value: JsValue): PredictionResponse = value match {
+      case JsObject(request) =>
+        val values = request.get("values").map(arrayFromValue).getOrElse(Array.empty[Double])
+        PredictionResponse(values)
+      case _ => PredictionResponse(Array.empty)
     }
   }
 
@@ -125,9 +165,9 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     case _ => LocalDateTime.now()
   }
 
-  def floatFromValue(jsVal: JsValue): Float = jsVal match {
-    case JsNumber(v) => v.toFloat
-    case _ => Float.NaN
+  def doubleFromValue(jsVal: JsValue): Double = jsVal match {
+    case JsNumber(v) => v.toDouble
+    case _ => Double.NaN
   }
 
   def dateParse(str: String): LocalDateTime = {
@@ -157,9 +197,9 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     LocalDateTime.parse(str, formatter)
   }
 
-  def arrayFromValue(jsVal: JsValue): Vector[Float] = jsVal match {
-    case JsArray(vs) => vs.map(floatFromValue)
-    case _ => Vector.empty[Float]
+  def arrayFromValue(jsVal: JsValue): Array[Double] = jsVal match {
+    case JsArray(vs) => vs.map(doubleFromValue).toArray
+    case _ => Array.empty[Double]
   }
 
 }
