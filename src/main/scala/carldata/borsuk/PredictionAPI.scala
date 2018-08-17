@@ -56,12 +56,6 @@ class PredictionAPI() {
       case None =>
         complete(StatusCodes.NotFound)
     }
-
-
-    if (models.contains(modelId)) {
-      complete(s"""{"labels": [1,2,3]}""")
-    }
-    else complete(StatusCodes.NotFound)
   }
 
   /**
