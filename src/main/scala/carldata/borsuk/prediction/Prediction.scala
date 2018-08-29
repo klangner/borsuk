@@ -22,7 +22,7 @@ class Prediction(modelType: String) {
 
   /** Predict values for the next 24h */
   def predict(): Array[Double] = {
-    val features = 0.to(24).map(i => Array(i.toDouble)).toArray
+    val features = 0.until(24).map(i => Array(i.toDouble)).toArray
     model.map(_.predict(features)).getOrElse(Array())
   }
 }
