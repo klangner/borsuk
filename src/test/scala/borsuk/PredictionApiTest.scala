@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import carldata.borsuk.ApiObjects._
+import carldata.borsuk.PredictionApiObjects._
 import carldata.borsuk.ApiObjectsJsonProtocol._
 import carldata.borsuk.Routing
 import org.scalatest.{Matchers, WordSpec}

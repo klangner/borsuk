@@ -10,7 +10,7 @@ import spray.json._
 /**
   * Here are definition of objects used in REST API with their json serialization
   */
-object ApiObjects {
+object PredictionApiObjects {
 
   case class CreatePredictionParams(modelType: String)
 
@@ -31,7 +31,7 @@ object ApiObjects {
   */
 object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
-  import ApiObjects._
+  import PredictionApiObjects._
 
   /**
     * CreatePredictionParams formatter

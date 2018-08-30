@@ -9,3 +9,4 @@ logs/
 .vscode/
 target/
 docker_build.sh
+borsuk.yaml
