@@ -1,5 +1,7 @@
 package carldata.borsuk
 
+import java.time.LocalDateTime
+
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
@@ -39,11 +41,27 @@ class RDIIApi {
     }
   }
 
-  /** Fit the model to the training data */
+  /** List the models of the training data */
   def list(modelId: String, params: ListRequest): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
         val response = ListResponse(Array())
+
+        complete(HttpResponse(
+          StatusCodes.OK,
+          entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+        ))
+
+      case None =>
+        complete(StatusCodes.NotFound)
+    }
+  }
+
+  /** Get the model of the training data */
+  def get(modelId: String, rdiiId: String): StandardRoute = {
+    models.get(modelId) match {
+      case Some(model) =>
+        val response = GetResponse(LocalDateTime.now, LocalDateTime.now, Array(), Array(), Array(), Array())
 
         complete(HttpResponse(
           StatusCodes.OK,

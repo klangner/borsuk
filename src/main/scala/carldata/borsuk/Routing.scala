@@ -26,6 +26,8 @@ class Routing() {
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
 
+
+
   /** Routing */
   def route(): Route = cors(settings) {
 
@@ -62,6 +64,11 @@ class Routing() {
           val params = RDIIApiObjects.ListRequest(DateTimeHelper.dateParse(startDate), DateTimeHelper.dateParse(endDate)
             , stormSessionWindows, stormIntensityWindow, dryDayWindow)
           rdiiApi.list(id, params)
+        }
+    } ~ path("rdii" / Segment / Segment) {
+      (modelId, rdiiId) =>
+        get {
+          rdiiApi.get(modelId, rdiiId)
         }
     } ~ path("rdii" / Segment) { id =>
       get {

@@ -120,7 +120,37 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
         }
       }
     }
+    "try get model- not existed" in {
+      val route = mainRoute()
+      val trainData = 0.to(1000).map(_ => 1.0).toArray
+      val windowData = 1.to(4).map(x => x * 60).toArray
+      val fitParams = FitRDIIParams(LocalDateTime.now, trainData, trainData, windowData)
 
+      createModelRequest ~> route ~> check {
+        val mcr = responseAs[ModelCreatedResponse]
+        val fitRequest = HttpRequest(
+          HttpMethods.POST,
+          uri = s"/rdii/${mcr.id}/fit",
+          entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
+
+        fitRequest ~> route ~> check {
+          status shouldEqual StatusCodes.OK
+          val listRequest = HttpRequest(HttpMethods.GET, uri = s"/rdii/${mcr.id}/list?startDate=2018-01-02" +
+            s"&endDate=2018-01-05&stormSessionWindows=60" +
+            s"&stormIntensityWindow=120&dryDayWindow=160")
+
+          listRequest ~> route ~> check {
+            responseAs[ListResponse].rdii.length shouldEqual 0
+            val getRequest = HttpRequest(HttpMethods.GET, uri = s"/rdii/${mcr.id}/test)")
+
+            getRequest ~> route ~> check {
+              responseAs[GetResponse].flow shouldEqual Array()
+            }
+          }
+
+        }
+      }
+    }
 
   }
 }

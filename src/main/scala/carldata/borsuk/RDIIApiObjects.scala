@@ -2,8 +2,6 @@ package carldata.borsuk
 
 import java.time.LocalDateTime
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.helper.JsonHelper._
 import spray.json._
@@ -43,9 +41,6 @@ object RDIIApiObjects {
 object RDIIApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
   import RDIIApiObjects._
-
-  //implicit val system = ActorSystem("test")
-  //implicit val materializer = ActorMaterializer()
 
   /**
     * CreateRDIIParams formatter
@@ -132,8 +127,8 @@ object RDIIApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def write(rdii: RDIIObject): JsObject = {
       JsObject(
         "id" -> rdii.id.toJson,
-        "startDate" -> rdii.startDate.toString.toJson,
-        "endDate" -> rdii.endDate.toString.toJson
+        "start-date" -> rdii.startDate.toString.toJson,
+        "end-date" -> rdii.endDate.toString.toJson
       )
     }
 
@@ -170,13 +165,33 @@ object RDIIApiObjectsJsonProtocol extends DefaultJsonProtocol {
         }
         case _ => ListResponse(Array())
       }
-
-      //ListResponse(Array())
     }
-
-    // ListResponse(value.convertTo[List[RDIIObject]].toArray)
-
   }
 
+  /**
+    * Model List formatter
+    */
+  implicit object GetResponseFormat extends RootJsonFormat[GetResponse] {
+    def write(response: GetResponse): JsObject = {
+      JsObject(
+        "start-date" -> JsString(response.startDate.toString),
+        "end-date" -> JsString(response.endDate.toString),
+        "flow" -> JsArray(response.flow.map(_.toJson).toVector),
+        "rainfall" -> JsArray(response.flow.map(_.toJson).toVector),
+        "dwp" -> JsArray(response.flow.map(_.toJson).toVector),
+        "rdii" -> JsArray(response.flow.map(_.toJson).toVector))
+    }
+
+    def read(value: JsValue): GetResponse = {
+      val fields = value.asJsObject.fields
+      val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
+      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
+      val flow = fields("flow").convertTo[Array[Double]]
+      val rainfall = fields("rainfall").convertTo[Array[Double]]
+      val dwp = fields("dwp").convertTo[Array[Double]]
+      val rdii = fields("rdii").convertTo[Array[Double]]
+      GetResponse(startDate, endDate, flow, rainfall, dwp, rdii)
+    }
+  }
 
 }
