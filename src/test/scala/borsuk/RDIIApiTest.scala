@@ -23,7 +23,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
     val params = CreateRDIIParams("rdii-v0")
     HttpRequest(
       HttpMethods.POST,
-      uri = "/prediction",
+      uri = "/rdii",
       entity = HttpEntity(MediaTypes.`application/json`, params.toJson.compactPrint))
   }
 
@@ -78,7 +78,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
         val mcr = responseAs[ModelCreatedResponse]
         val fitRequest = HttpRequest(
           HttpMethods.POST,
-          uri = s"/prediction/${mcr.id}/fit",
+          uri = s"/rdii/${mcr.id}/fit",
           entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
 
         fitRequest ~> route ~> check {

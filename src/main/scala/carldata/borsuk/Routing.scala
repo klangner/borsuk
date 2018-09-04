@@ -1,12 +1,12 @@
 package carldata.borsuk
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import carldata.borsuk.ApiObjectsJsonProtocol._
-import carldata.borsuk.PredictionApiObjects.{CreatePredictionParams, FitParams}
+import carldata.borsuk.ApiObjects.{CreatePredictionParams, FitPredictionParams}
 import carldata.borsuk.RDIIApiObjects.CreateRDIIParams
 import carldata.borsuk.RDIIApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitParamsFormat}
 import carldata.borsuk.helper.DateTimeHelper
@@ -15,7 +15,8 @@ import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
 import scala.collection.immutable.Seq
 import scala.language.postfixOps
-class Routing() extends SprayJsonSupport {
+
+class Routing() {
   val predictionApi = new PredictionAPI()
   val rdiiApi = new RDIIApi()
 
@@ -25,7 +26,9 @@ class Routing() extends SprayJsonSupport {
     HttpMethods.DELETE,
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
+
   import spray.json._
+
   /** Routing */
   def route(): Route = cors(settings) {
 
@@ -37,8 +40,7 @@ class Routing() extends SprayJsonSupport {
       }
     } ~ path("prediction" / Segment / "fit") { id =>
       post {
-
-        entity(as[PredictionApiObjects.FitParams])(data => predictionApi.fit(id, data))
+        entity(as[FitPredictionParams])(data => predictionApi.fit(id, data))
       }
     } ~ path("prediction" / Segment / "predict") { id =>
       post {
@@ -66,7 +68,7 @@ class Routing() extends SprayJsonSupport {
         }
     } ~ path("rdii" / Segment) { id =>
       get {
-        predictionApi.status(id)
+        rdiiApi.status(id)
       }
     }
   }

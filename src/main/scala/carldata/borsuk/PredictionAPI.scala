@@ -3,7 +3,7 @@ package carldata.borsuk
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.PredictionApiObjects._
+import carldata.borsuk.ApiObjects._
 import carldata.borsuk.ApiObjectsJsonProtocol._
 import carldata.borsuk.prediction.Prediction
 import spray.json._
@@ -28,7 +28,7 @@ class PredictionAPI() {
   }
 
   /** Fit the model to the training data */
-  def fit(modelId: String, params: FitParams): StandardRoute = {
+  def fit(modelId: String, params: FitPredictionParams): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
         model.fit(params.values)

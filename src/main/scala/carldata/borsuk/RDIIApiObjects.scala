@@ -1,13 +1,11 @@
 package carldata.borsuk
 
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatterBuilder
-import java.time.temporal.ChronoField
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import carldata.borsuk.helper.JsonHelper._
 import spray.json._
-import helper.JsonHelper._
 /**
   * Here are definition of objects used in REST API with their json serialization
   */
@@ -43,7 +41,6 @@ object RDIIApiObjects {
 object RDIIApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
   import RDIIApiObjects._
-  import akka.stream.Materializer
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
   /**
