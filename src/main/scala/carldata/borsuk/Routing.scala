@@ -1,12 +1,11 @@
 package carldata.borsuk
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.unmarshalling.Unmarshaller
-import carldata.borsuk.ApiObjectsJsonProtocol._
 import carldata.borsuk.ApiObjects.{CreatePredictionParams, FitPredictionParams}
+import carldata.borsuk.ApiObjectsJsonProtocol._
 import carldata.borsuk.RDIIApiObjects.CreateRDIIParams
 import carldata.borsuk.RDIIApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitParamsFormat}
 import carldata.borsuk.helper.DateTimeHelper
@@ -26,8 +25,6 @@ class Routing() {
     HttpMethods.DELETE,
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
-
-  import spray.json._
 
   /** Routing */
   def route(): Route = cors(settings) {

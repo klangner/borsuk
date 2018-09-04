@@ -5,8 +5,8 @@ import java.time.LocalDateTime
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import carldata.borsuk.RDIIApiObjectsJsonProtocol._
 import carldata.borsuk.RDIIApiObjects._
+import carldata.borsuk.RDIIApiObjectsJsonProtocol._
 import carldata.borsuk.Routing
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
@@ -93,6 +93,34 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
         }
       }
     }
+
+    "list the model" in {
+      val route = mainRoute()
+      val trainData = 0.to(1000).map(_ => 1.0).toArray
+      val windowData = 1.to(4).map(x => x * 60).toArray
+      val fitParams = FitRDIIParams(LocalDateTime.now, trainData, trainData, windowData)
+
+      createModelRequest ~> route ~> check {
+        val mcr = responseAs[ModelCreatedResponse]
+        val fitRequest = HttpRequest(
+          HttpMethods.POST,
+          uri = s"/rdii/${mcr.id}/fit",
+          entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
+
+        fitRequest ~> route ~> check {
+          status shouldEqual StatusCodes.OK
+          val request = HttpRequest(HttpMethods.GET, uri = s"/rdii/${mcr.id}/list?startDate=2018-01-02" +
+            s"&endDate=2018-01-05&stormSessionWindows=60" +
+            s"&stormIntensityWindow=120&dryDayWindow=160")
+
+          request ~> route ~> check {
+            responseAs[ListResponse].rdii.length shouldEqual 0
+          }
+
+        }
+      }
+    }
+
 
   }
 }

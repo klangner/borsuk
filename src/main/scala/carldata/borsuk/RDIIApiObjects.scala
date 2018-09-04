@@ -4,8 +4,10 @@ import java.time.LocalDateTime
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.helper.JsonHelper._
 import spray.json._
+
 /**
   * Here are definition of objects used in REST API with their json serialization
   */
@@ -41,8 +43,10 @@ object RDIIApiObjects {
 object RDIIApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
   import RDIIApiObjects._
-  implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
+
+  //implicit val system = ActorSystem("test")
+  //implicit val materializer = ActorMaterializer()
+
   /**
     * CreateRDIIParams formatter
     */
@@ -121,7 +125,58 @@ object RDIIApiObjectsJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
+  /**
+    * RDIIObject formatter
+    */
+  implicit object RDIIObjectFormat extends RootJsonFormat[RDIIObject] {
+    def write(rdii: RDIIObject): JsObject = {
+      JsObject(
+        "id" -> rdii.id.toJson,
+        "startDate" -> rdii.startDate.toString.toJson,
+        "endDate" -> rdii.endDate.toString.toJson
+      )
+    }
 
+    def read(json: JsValue): RDIIObject = {
+      val fields = json.asJsObject.fields
+      val id: String = fields("id").toString
+      val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("startDate").toString)
+      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("endDate").toString)
+      RDIIObject(id, startDate, endDate)
+    }
+
+
+  }
+
+
+  /**
+    * Model List formatter
+    */
+  implicit object ListResponseFormat extends RootJsonFormat[ListResponse] {
+    def write(status: ListResponse): JsObject = {
+      JsObject(
+        "rdii" -> JsArray(status.rdii.map {
+          _.toJson
+        }.toVector)
+      )
+    }
+
+    def read(value: JsValue): ListResponse = {
+      value.asJsObject().fields("rdii") match {
+        case JsArray(arr) => {
+          ListResponse(arr.map { a =>
+            a.convertTo[RDIIObject]
+          }.toArray)
+        }
+        case _ => ListResponse(Array())
+      }
+
+      //ListResponse(Array())
+    }
+
+    // ListResponse(value.convertTo[List[RDIIObject]].toArray)
+
+  }
 
 
 }

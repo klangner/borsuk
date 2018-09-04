@@ -3,7 +3,7 @@ package carldata.borsuk
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.RDIIApiObjects.{ModelStatus, _}
+import carldata.borsuk.RDIIApiObjects._
 import carldata.borsuk.RDIIApiObjectsJsonProtocol._
 import carldata.borsuk.iandi.RDII
 import spray.json._
@@ -43,8 +43,12 @@ class RDIIApi {
   def list(modelId: String, params: ListRequest): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        //TODO: list model
-        complete(StatusCodes.OK)
+        val response = ListResponse(Array())
+
+        complete(HttpResponse(
+          StatusCodes.OK,
+          entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+        ))
 
       case None =>
         complete(StatusCodes.NotFound)

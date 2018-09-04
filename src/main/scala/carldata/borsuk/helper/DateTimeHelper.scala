@@ -33,7 +33,7 @@ object DateTimeHelper {
       .parseDefaulting(ChronoField.NANO_OF_SECOND, 0)
       .toFormatter
 
-    LocalDateTime.parse(str, formatter)
+    LocalDateTime.parse(str.replaceAll("\"",""), formatter)
   }
 
   def isDateHoliday(dt: LocalDate): Boolean = {
