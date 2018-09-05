@@ -5,18 +5,18 @@ import java.time.LocalDateTime
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import RDIIApiObjects._
-import RDIIApiObjectsJsonProtocol._
+import ApiObjects._
+import ApiObjectsJsonProtocol._
 import spray.json._
 
-class RDIIApi {
+class AutoIIApi {
   val models = collection.mutable.Map.empty[String, RDII]
 
   /**
     * Create new rdii model.
     * Use fit function to train this model
     */
-  def create(params: CreateRDIIParams): StandardRoute = {
+  def create(params: CreateParams): StandardRoute = {
     val rdii = new RDII(params.modelType)
     models.put(rdii.id, rdii)
     val response = ModelCreatedResponse(rdii.id)
@@ -29,7 +29,7 @@ class RDIIApi {
   }
 
   /** Fit the model to the training data */
-  def fit(modelId: String, params: FitRDIIParams): StandardRoute = {
+  def fit(modelId: String, params: FitAutoIIParams): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
         model.fit(params)
@@ -41,7 +41,8 @@ class RDIIApi {
   }
 
   /** List the models of the training data */
-  def list(modelId: String, params: ListRequest): StandardRoute = {
+  def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime, stormSessionWindows: Int
+           , stormIntensityWindow: Int, dryDayWindow: Int): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
         val response = ListResponse(Array())

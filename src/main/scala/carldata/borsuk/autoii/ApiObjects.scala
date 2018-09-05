@@ -9,24 +9,17 @@ import spray.json._
 /**
   * Here are definition of objects used in REST API with their json serialization
   */
-object RDIIApiObjects {
+object ApiObjects {
 
-  case class CreateRDIIParams(modelType: String)
+  case class CreateParams(modelType: String)
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitRDIIParams(startDate: LocalDateTime, flow: Array[Double], rainfall: Array[Double], window: Array[Int])
-
-  case class ListRequest(startDate: LocalDateTime, endDate: LocalDateTime, stormSessionWindows: Int
-                         , stormIntensityWindow: Int, dryDayWindow: Int)
+  case class FitAutoIIParams(startDate: LocalDateTime, flow: Array[Double], rainfall: Array[Double], window: Array[Int])
 
   case class RDIIObject(id: String, startDate: LocalDateTime, endDate: LocalDateTime)
 
   case class ListResponse(rdii: Array[RDIIObject])
-
-  case class GetRequest(startDate: LocalDateTime, endDate: LocalDateTime, stormSessionWindows: Int
-                        , stormIntensityWindow: Int, dryDayWindow: Int)
-
 
   case class GetResponse(startDate: LocalDateTime, endDate: LocalDateTime, flow: Array[Double]
                          , rainfall: Array[Double], dwp: Array[Double], rdii: Array[Double])
@@ -38,25 +31,25 @@ object RDIIApiObjects {
 /**
   * JSON serialization
   */
-object RDIIApiObjectsJsonProtocol extends DefaultJsonProtocol {
+object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
-  import RDIIApiObjects._
+  import ApiObjects._
 
   /**
     * CreateRDIIParams formatter
     */
-  implicit object CreateRDIIParamsFormat extends RootJsonFormat[CreateRDIIParams] {
-    def write(params: CreateRDIIParams): JsObject = {
+  implicit object CreateRDIIParamsFormat extends RootJsonFormat[CreateParams] {
+    def write(params: CreateParams): JsObject = {
       JsObject(
         "type" -> JsString(params.modelType)
       )
     }
 
-    def read(value: JsValue): CreateRDIIParams = value match {
+    def read(value: JsValue): CreateParams = value match {
       case JsObject(request) =>
         val modelType = request.get("type").map(stringFromValue).getOrElse("daily-pattern-v0")
-        CreateRDIIParams(modelType)
-      case _ => CreateRDIIParams("daily-pattern-v0")
+        CreateParams(modelType)
+      case _ => CreateParams("daily-pattern-v0")
     }
   }
 
@@ -81,8 +74,8 @@ object RDIIApiObjectsJsonProtocol extends DefaultJsonProtocol {
   /**
     * FitParams formatter
     */
-  implicit object FitParamsFormat extends RootJsonFormat[FitRDIIParams] {
-    def write(params: FitRDIIParams): JsObject = {
+  implicit object FitAutoIIParamsFormat extends RootJsonFormat[FitAutoIIParams] {
+    def write(params: FitAutoIIParams): JsObject = {
       JsObject(
         "start-date" -> JsString(params.startDate.toString),
         "flow" -> JsArray(params.flow.map(JsNumber(_)).toVector),
@@ -91,14 +84,14 @@ object RDIIApiObjectsJsonProtocol extends DefaultJsonProtocol {
       )
     }
 
-    def read(value: JsValue): FitRDIIParams = value match {
+    def read(value: JsValue): FitAutoIIParams = value match {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
         val flow = request.get("flow").map(arrayFromValue).map(_.map(doubleFromValue)).getOrElse(Array.empty[Double])
         val rainfall = request.get("rainfall").map(arrayFromValue).map(_.map(doubleFromValue)).getOrElse(Array.empty[Double])
         val window = request.get("window").map(arrayFromValue).map(_.map(intFromValue)).getOrElse(Array.empty[Int])
-        FitRDIIParams(startDate, flow, rainfall, window)
-      case _ => FitRDIIParams(LocalDateTime.now(), Array.empty, Array.empty, Array.empty)
+        FitAutoIIParams(startDate, flow, rainfall, window)
+      case _ => FitAutoIIParams(LocalDateTime.now(), Array.empty, Array.empty, Array.empty)
     }
   }
 

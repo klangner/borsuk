@@ -5,8 +5,8 @@ import java.time.LocalDateTime
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import carldata.borsuk.autoii.RDIIApiObjects._
-import carldata.borsuk.autoii.RDIIApiObjectsJsonProtocol._
+import carldata.borsuk.autoii.ApiObjects._
+import carldata.borsuk.autoii.ApiObjectsJsonProtocol._
 import carldata.borsuk.Routing
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
@@ -20,7 +20,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
   }
 
   private val createModelRequest: HttpRequest = {
-    val params = CreateRDIIParams("rdii-v0")
+    val params = CreateParams("rdii-v0")
     HttpRequest(
       HttpMethods.POST,
       uri = "/autoii",
@@ -37,7 +37,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
     }
 
     "not fit if model doesn't exist" in {
-      val params = FitRDIIParams(LocalDateTime.now, Array(), Array(), Array())
+      val params = FitAutoIIParams(LocalDateTime.now, Array(), Array(), Array())
       val request = HttpRequest(
         HttpMethods.POST,
         uri = "/autoii/000/fit",
@@ -72,7 +72,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val route = mainRoute()
       val trainData = 0.to(1000).map(_ => 1.0).toArray
       val windowData = 1.to(4).map(x => x * 60).toArray
-      val fitParams = FitRDIIParams(LocalDateTime.now, trainData, trainData, windowData)
+      val fitParams = FitAutoIIParams(LocalDateTime.now, trainData, trainData, windowData)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -98,7 +98,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val route = mainRoute()
       val trainData = 0.to(1000).map(_ => 1.0).toArray
       val windowData = 1.to(4).map(x => x * 60).toArray
-      val fitParams = FitRDIIParams(LocalDateTime.now, trainData, trainData, windowData)
+      val fitParams = FitAutoIIParams(LocalDateTime.now, trainData, trainData, windowData)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -124,7 +124,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val route = mainRoute()
       val trainData = 0.to(1000).map(_ => 1.0).toArray
       val windowData = 1.to(4).map(x => x * 60).toArray
-      val fitParams = FitRDIIParams(LocalDateTime.now, trainData, trainData, windowData)
+      val fitParams = FitAutoIIParams(LocalDateTime.now, trainData, trainData, windowData)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
