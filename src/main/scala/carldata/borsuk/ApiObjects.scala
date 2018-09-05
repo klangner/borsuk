@@ -16,7 +16,7 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitParams(startDate: LocalDateTime, values: Array[Double])
+  case class FitPredictionParams(startDate: LocalDateTime, values: Array[Double])
 
   case class PredictionRequest(startDate: LocalDateTime, samples: Int)
 
@@ -72,20 +72,20 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   /**
     * FitParams formatter
     */
-  implicit object FitParamsFormat extends RootJsonFormat[FitParams] {
-    def write(params: FitParams): JsObject = {
+  implicit object FitPredictionParamsFormat extends RootJsonFormat[FitPredictionParams] {
+    def write(params: FitPredictionParams): JsObject = {
       JsObject(
         "start-date" -> JsString(params.startDate.toString),
         "values" -> JsArray(params.values.map(JsNumber(_)).toVector)
       )
     }
 
-    def read(value: JsValue): FitParams = value match {
+    def read(value: JsValue): FitPredictionParams = value match {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
         val values = request.get("values").map(arrayFromValue).getOrElse(Array.empty[Double])
-        FitParams(startDate, values)
-      case _ => FitParams(LocalDateTime.now(), Array.empty)
+        FitPredictionParams(startDate, values)
+      case _ => FitPredictionParams(LocalDateTime.now(), Array.empty)
     }
   }
 

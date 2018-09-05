@@ -1,37 +1,38 @@
-package carldata.borsuk
+package carldata.borsuk.autoii
+
+import java.time.LocalDateTime
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.ApiObjects._
-import carldata.borsuk.ApiObjectsJsonProtocol._
-import carldata.borsuk.prediction.Prediction
+import ApiObjects._
+import ApiObjectsJsonProtocol._
 import spray.json._
 
-
-class PredictionAPI() {
-  val models = collection.mutable.Map.empty[String, Prediction]
+class AutoIIApi {
+  val models = collection.mutable.Map.empty[String, RDII]
 
   /**
-    * Create new prediction model.
+    * Create new rdii model.
     * Use fit function to train this model
     */
-  def create(params: CreatePredictionParams): StandardRoute = {
-    val prediction = new Prediction(params.modelType)
-    models.put(prediction.id, prediction)
-    val response = ModelCreatedResponse(prediction.id)
+  def create(params: CreateParams): StandardRoute = {
+    val rdii = new RDII(params.modelType)
+    models.put(rdii.id, rdii)
+    val response = ModelCreatedResponse(rdii.id)
 
     complete(HttpResponse(
       StatusCodes.OK,
       entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
     ))
+
   }
 
   /** Fit the model to the training data */
-  def fit(modelId: String, params: FitPredictionParams): StandardRoute = {
+  def fit(modelId: String, params: FitAutoIIParams): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        model.fit(params.values)
+        model.fit(params)
         complete(StatusCodes.OK)
 
       case None =>
@@ -39,15 +40,29 @@ class PredictionAPI() {
     }
   }
 
-  /**
-    * Predict series values.
-    * Model first should be trained with function fit
-    */
-  def predict(modelId: String, data: String): StandardRoute = {
+  /** List the models of the training data */
+  def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime, stormSessionWindows: Int
+           , stormIntensityWindow: Int, dryDayWindow: Int): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        val values = model.predict()
-        val response = PredictionResponse(values)
+        val response = ListResponse(Array())
+
+        complete(HttpResponse(
+          StatusCodes.OK,
+          entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+        ))
+
+      case None =>
+        complete(StatusCodes.NotFound)
+    }
+  }
+
+  /** Get the model of the training data */
+  def get(modelId: String, rdiiId: String): StandardRoute = {
+    models.get(modelId) match {
+      case Some(model) =>
+        val response = GetResponse(LocalDateTime.now, LocalDateTime.now, Array(), Array(), Array(), Array())
+
         complete(HttpResponse(
           StatusCodes.OK,
           entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
@@ -65,7 +80,7 @@ class PredictionAPI() {
   def status(modelId: String): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        val status = ModelStatus(model.buildNumber, model.score)
+        val status = ModelStatus(model.buildNumber)
         complete(HttpResponse(
           StatusCodes.OK,
           entity = HttpEntity(MediaTypes.`application/json`, status.toJson.compactPrint)

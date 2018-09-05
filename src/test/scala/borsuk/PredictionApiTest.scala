@@ -37,7 +37,7 @@ class PredictionApiTest extends WordSpec with Matchers with ScalatestRouteTest w
     }
 
     "not fit if model doesn't exist" in {
-      val params = FitParams(LocalDateTime.now, Array())
+      val params = FitPredictionParams(LocalDateTime.now, Array())
       val request = HttpRequest(
         HttpMethods.POST,
         uri = "/prediction/000/fit",
@@ -73,7 +73,7 @@ class PredictionApiTest extends WordSpec with Matchers with ScalatestRouteTest w
     "fit the model" in {
       val route = mainRoute()
       val trainData = 0.to(1000).map(_ => 1.0).toArray
-      val fitParams = FitParams(LocalDateTime.now, trainData)
+      val fitParams = FitPredictionParams(LocalDateTime.now, trainData)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
