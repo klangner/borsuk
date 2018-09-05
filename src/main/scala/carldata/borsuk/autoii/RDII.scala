@@ -1,8 +1,8 @@
-package carldata.borsuk.iandi
+package carldata.borsuk.autoii
 
 import java.util.UUID.randomUUID
 
-import carldata.borsuk.RDIIApiObjects.FitRDIIParams
+import RDIIApiObjects.FitRDIIParams
 import smile.regression.{RandomForest, randomForest}
 
 class RDII(modelType: String) {

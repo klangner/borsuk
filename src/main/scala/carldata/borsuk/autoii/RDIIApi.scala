@@ -1,13 +1,12 @@
-package carldata.borsuk
+package carldata.borsuk.autoii
 
 import java.time.LocalDateTime
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.RDIIApiObjects._
-import carldata.borsuk.RDIIApiObjectsJsonProtocol._
-import carldata.borsuk.iandi.RDII
+import RDIIApiObjects._
+import RDIIApiObjectsJsonProtocol._
 import spray.json._
 
 class RDIIApi {

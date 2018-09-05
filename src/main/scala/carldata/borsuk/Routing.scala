@@ -6,9 +6,10 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import carldata.borsuk.ApiObjects.{CreatePredictionParams, FitPredictionParams}
 import carldata.borsuk.ApiObjectsJsonProtocol._
-import carldata.borsuk.RDIIApiObjects.CreateRDIIParams
-import carldata.borsuk.RDIIApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitParamsFormat}
+import carldata.borsuk.autoii.RDIIApiObjects.CreateRDIIParams
+import carldata.borsuk.autoii.RDIIApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitParamsFormat}
 import carldata.borsuk.helper.DateTimeHelper
+import carldata.borsuk.autoii.{RDIIApi, RDIIApiObjects}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
@@ -49,15 +50,15 @@ class Routing() {
       get {
         predictionApi.status(id)
       }
-    } ~ path("rdii") {
+    } ~ path("autoii") {
       post {
         entity(as[CreateRDIIParams])(params => rdiiApi.create(params))
       }
-    } ~ path("rdii" / Segment / "fit") { id =>
+    } ~ path("autoii" / Segment / "fit") { id =>
       post {
         entity(as[RDIIApiObjects.FitRDIIParams])(data => rdiiApi.fit(id, data))
       }
-    } ~ (path("rdii" / Segment / "list") & parameters("startDate".as[String], "endDate".as[String]
+    } ~ (path("autoii" / Segment / "rdii") & parameters("startDate".as[String], "endDate".as[String]
       , "stormSessionWindows".as[Int], "stormIntensityWindow".as[Int], "dryDayWindow".as[Int])) {
       (id, startDate, endDate, stormSessionWindows, stormIntensityWindow, dryDayWindow) =>
         get {
@@ -65,12 +66,12 @@ class Routing() {
             , stormSessionWindows, stormIntensityWindow, dryDayWindow)
           rdiiApi.list(id, params)
         }
-    } ~ path("rdii" / Segment / Segment) {
+    } ~ path("autoii" / Segment / "rdii" / Segment) {
       (modelId, rdiiId) =>
         get {
           rdiiApi.get(modelId, rdiiId)
         }
-    } ~ path("rdii" / Segment) { id =>
+    } ~ path("autoii" / Segment) { id =>
       get {
         rdiiApi.status(id)
       }

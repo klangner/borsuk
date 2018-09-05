@@ -1,4 +1,4 @@
-package carldata.borsuk
+package carldata.borsuk.autoii
 
 import java.time.LocalDateTime
 
