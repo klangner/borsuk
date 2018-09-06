@@ -87,9 +87,9 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def read(value: JsValue): FitAutoIIParams = value match {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
-        val flow = request.get("flow").map(arrayFromValue).map(_.map(doubleFromValue)).getOrElse(Array.empty[Double])
-        val rainfall = request.get("rainfall").map(arrayFromValue).map(_.map(doubleFromValue)).getOrElse(Array.empty[Double])
-        val window = request.get("window").map(arrayFromValue).map(_.map(intFromValue)).getOrElse(Array.empty[Int])
+        val flow = request.get("flow").map(arrayFromValue).getOrElse(Array.empty[Double])
+        val rainfall = request.get("rainfall").map(arrayFromValue).getOrElse(Array.empty[Double])
+        val window = request.get("window").map(arrayFromValue).getOrElse(Array.empty[Double]).map(_.toInt)
         FitAutoIIParams(startDate, flow, rainfall, window)
       case _ => FitAutoIIParams(LocalDateTime.now(), Array.empty, Array.empty, Array.empty)
     }
@@ -151,11 +151,10 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
     def read(value: JsValue): ListResponse = {
       value.asJsObject().fields("rdii") match {
-        case JsArray(arr) => {
+        case JsArray(arr) =>
           ListResponse(arr.map { a =>
             a.convertTo[RDIIObject]
           }.toArray)
-        }
         case _ => ListResponse(Array())
       }
     }

@@ -8,9 +8,9 @@ object JsonHelper {
 
   def parseJsField(js: JsValue, str: String): String = js.asJsObject.fields(str).toString.replace("\"", "")
 
-  def arrayFromValue(jsVal: JsValue): Array[JsValue] = jsVal match {
-    case JsArray(vs) => vs.toArray
-    case _ => Array.empty[JsValue]
+  def arrayFromValue(jsVal: JsValue): Array[Double] = jsVal match {
+    case JsArray(vs) => vs.map(doubleFromValue).toArray
+    case _ => Array.empty[Double]
   }
 
   def stringFromValue(jsVal: JsValue): String = jsVal match {
