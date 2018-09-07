@@ -1,6 +1,6 @@
 package carldata.borsuk.autoii
 
-import java.time.LocalDateTime
+import java.time.{Duration, LocalDateTime}
 
 import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.helper.JsonHelper._
@@ -15,7 +15,9 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitAutoIIParams(startDate: LocalDateTime, flow: Array[Double], rainfall: Array[Double], window: Array[Int])
+  case class FitAutoIIParams(startDate: LocalDateTime, resolution: Duration, flow: Array[Double], rainfall: Array[Double]
+                             , window: Array[Int], stormSessionWindows: Duration, stormIntensityWindow: Duration
+                             , dryDayWindow: Duration)
 
   case class RDIIObject(id: String, startDate: LocalDateTime, endDate: LocalDateTime)
 
@@ -87,11 +89,18 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def read(value: JsValue): FitAutoIIParams = value match {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
+        val resolution = request.get("resolution").map(stringFromValue).map(Duration.parse).getOrElse(Duration.ofHours(1))
         val flow = request.get("flow").map(arrayFromValue).map(_.map(doubleFromValue)).getOrElse(Array.empty[Double])
         val rainfall = request.get("rainfall").map(arrayFromValue).map(_.map(doubleFromValue)).getOrElse(Array.empty[Double])
         val window = request.get("window").map(arrayFromValue).map(_.map(intFromValue)).getOrElse(Array.empty[Int])
-        FitAutoIIParams(startDate, flow, rainfall, window)
-      case _ => FitAutoIIParams(LocalDateTime.now(), Array.empty, Array.empty, Array.empty)
+        val stormSessionWindows: Duration = request.get("stormSessionWindows").map(stringFromValue).map(Duration.parse)
+          .getOrElse(Duration.ofHours(1))
+        val stormIntensityWindow: Duration = request.get("stormIntensityWindow").map(stringFromValue).map(Duration.parse)
+          .getOrElse(Duration.ofHours(1))
+        val dryDayWindow = request.get("dryDayWindow").map(stringFromValue).map(Duration.parse).getOrElse(Duration.ofHours(1))
+
+        FitAutoIIParams(startDate, resolution, flow, rainfall, window, stormSessionWindows, stormIntensityWindow, dryDayWindow)
+      case _ => FitAutoIIParams(LocalDateTime.now(), Duration.ofHours(1), Array.empty, Array.empty, Array.empty, Duration.ofHours(1), Duration.ofHours(1), Duration.ofHours(1))
     }
   }
 
@@ -116,8 +125,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   /**
     * RDIIObject formatter
     */
-  implicit object RDIIObjectFormat extends RootJsonFormat[RDIIObject] {
-    def write(rdii: RDIIObject): JsObject = {
+  implicit object RDIIObjectFormat extends RootJsonFormat[ApiObjects.RDIIObject] {
+    def write(rdii: ApiObjects.RDIIObject): JsObject = {
       JsObject(
         "id" -> rdii.id.toJson,
         "start-date" -> rdii.startDate.toString.toJson,
@@ -125,7 +134,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       )
     }
 
-    def read(json: JsValue): RDIIObject = {
+    def read(json: JsValue): ApiObjects.RDIIObject = {
       val fields = json.asJsObject.fields
       val id: String = fields("id").toString
       val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("startDate").toString)
@@ -153,7 +162,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       value.asJsObject().fields("rdii") match {
         case JsArray(arr) => {
           ListResponse(arr.map { a =>
-            a.convertTo[RDIIObject]
+            a.convertTo[ApiObjects.RDIIObject]
           }.toArray)
         }
         case _ => ListResponse(Array())

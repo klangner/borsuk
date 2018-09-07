@@ -41,8 +41,7 @@ class AutoIIApi {
   }
 
   /** List the models of the training data */
-  def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime, stormSessionWindows: Int
-           , stormIntensityWindow: Int, dryDayWindow: Int): StandardRoute = {
+  def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
         val response = ListResponse(Array())
