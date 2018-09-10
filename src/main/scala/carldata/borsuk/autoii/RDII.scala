@@ -2,6 +2,7 @@ package carldata.borsuk.autoii
 
 import java.time._
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 import java.util.UUID.randomUUID
 
 import carldata.borsuk.autoii.ApiObjects.FitAutoIIParams
@@ -12,13 +13,13 @@ import carldata.series.Sessions.Session
 import carldata.series.{Gen, TimeSeries}
 
 
-case class RDIIObject(rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double], inflows: Seq[TimeSeries[Double]])
+case class RDIIObject(rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
+                      , inflows: Seq[(String, TimeSeries[Double])])
 
 class RDII(modelType: String) {
   val id: String = randomUUID().toString
   var model: Option[RDIIObject] = None
   var buildNumber: Int = 0
-  //var rdiis: scala.collection.mutable.Seq[(String, RDIIObject)] = scala.collection.mutable.Seq()
 
   /** Fit model */
   def fit(params: FitAutoIIParams): Unit = {
@@ -41,10 +42,41 @@ class RDII(modelType: String) {
     }
   }
 
-  def list() = {
-
+  /**
+    * List all rdiis
+    */
+  def list(): Seq[(String, LocalDateTime, LocalDateTime)] = {
+    model.map { x =>
+      x.inflows
+        .flatMap {
+          t =>
+            if (t._2.nonEmpty) Some(t._1, instantToLDT(t._2.index.head), instantToLDT(t._2.index.last))
+            else None
+        }
+    }
+      .getOrElse(Seq())
   }
 
+  /**
+    * For provided rdii id
+    * return series of:
+    * rainfall, flow, dwp and rdii
+    */
+  def get(rdii_id: String): Option[(LocalDateTime, LocalDateTime
+    , Array[Double], Array[Double], Array[Double], Array[Double])] = {
+
+    model.flatMap { x =>
+      val inflows = x.inflows.find(_._1 == rdii_id)
+      if (inflows.nonEmpty) {
+        Some(instantToLDT(x.rainfall.index.head), instantToLDT(x.rainfall.index.last)
+          , x.rainfall.values.toArray
+          , x.flow.values.toArray
+          , x.dwp.values.toArray
+          , x.inflows.find(_._1 == rdii_id).head._2.values.toArray)
+      }
+      else None
+    }
+  }
 }
 
 
@@ -108,8 +140,8 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-      val inflows: Seq[TimeSeries[Double]] = flowWindows.map(x => Inflow.fromSession(Session(sd, ed), flow, allDWPDays, Duration.ofMinutes(x)))
-        .map(x => x.slice(sd, ed))
+      val inflows: Seq[(String, TimeSeries[Double])] = flowWindows.map(x => Inflow.fromSession(Session(sd, ed), flow, allDWPDays, Duration.ofMinutes(x)))
+        .map(x => x.slice(sd, ed)).map((randomUUID.toString, _))
 
       val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(sd, ed)
       //Adjust indexes in all series, dwp && inflows already are OK

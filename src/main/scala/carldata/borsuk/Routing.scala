@@ -61,8 +61,7 @@ class Routing() {
       , "stormSessionWindows".as[Int], "stormIntensityWindow".as[Int], "dryDayWindow".as[Int])) {
       (id, startDate, endDate, stormSessionWindows, stormIntensityWindow, dryDayWindow) =>
         get {
-          autoIIApi.list(id, DateTimeHelper.dateParse(startDate), DateTimeHelper.dateParse(endDate)
-            , stormSessionWindows, stormIntensityWindow, dryDayWindow)
+          autoIIApi.list(id, DateTimeHelper.dateParse(startDate), DateTimeHelper.dateParse(endDate))
         }
     } ~ path("autoii" / Segment / "rdii" / Segment) {
       (modelId, rdiiId) =>
