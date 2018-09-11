@@ -161,8 +161,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
         fitRequest ~> route ~> check {
           status shouldEqual StatusCodes.OK
           val listRequest = HttpRequest(HttpMethods.GET, uri = s"/autoii/${mcr.id}/rdii?startDate=2018-01-02" +
-            s"&endDate=2018-01-05&stormSessionWindows=60" +
-            s"&stormIntensityWindow=120&dryDayWindow=160")
+            s"&endDate=2018-01-05")
 
           listRequest ~> route ~> check {
             responseAs[ListResponse].rdii.length shouldEqual 0

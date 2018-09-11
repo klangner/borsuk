@@ -58,9 +58,8 @@ class Routing() {
       post {
         entity(as[FitAutoIIParams])(data => autoIIApi.fit(id, data))
       }
-    } ~ (path("autoii" / Segment / "rdii") & parameters("startDate".as[String], "endDate".as[String]
-      , "stormSessionWindows".as[Int], "stormIntensityWindow".as[Int], "dryDayWindow".as[Int])) {
-      (id, startDate, endDate, stormSessionWindows, stormIntensityWindow, dryDayWindow) =>
+    } ~ (path("autoii" / Segment / "rdii") & parameters("startDate".as[String], "endDate".as[String])) {
+      (id, startDate, endDate) =>
         get {
           autoIIApi.list(id, DateTimeHelper.dateParse(startDate), DateTimeHelper.dateParse(endDate))
         }
