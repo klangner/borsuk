@@ -1,11 +1,10 @@
-package carldata.borsuk
+package carldata.borsuk.prediction
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.ApiObjects._
-import carldata.borsuk.ApiObjectsJsonProtocol._
-import carldata.borsuk.prediction.Prediction
+import carldata.borsuk.prediction.ApiObjects._
+import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
 import spray.json._
 
 

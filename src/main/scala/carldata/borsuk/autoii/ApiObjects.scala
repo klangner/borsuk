@@ -90,9 +90,9 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
         val resolution = request.get("resolution").map(stringFromValue).map(Duration.parse).getOrElse(Duration.ofHours(1))
-        val flow = request.get("flow").map(arrayFromValue).map(_.map(doubleFromValue)).getOrElse(Array.empty[Double])
-        val rainfall = request.get("rainfall").map(arrayFromValue).map(_.map(doubleFromValue)).getOrElse(Array.empty[Double])
-        val window = request.get("window").map(arrayFromValue).map(_.map(intFromValue)).getOrElse(Array.empty[Int])
+        val flow = request.get("flow").map(arrayFromValue).getOrElse(Array.empty[Double])
+        val rainfall = request.get("rainfall").map(arrayFromValue).getOrElse(Array.empty[Double])
+        val window = request.get("window").map(arrayFromValue).map(_.map(_.toInt)).getOrElse(Array.empty[Int])
         val stormSessionWindows: Duration = request.get("stormSessionWindows").map(stringFromValue).map(Duration.parse)
           .getOrElse(Duration.ofHours(1))
         val stormIntensityWindow: Duration = request.get("stormIntensityWindow").map(stringFromValue).map(Duration.parse)
