@@ -33,7 +33,11 @@ object DateTimeHelper {
       .parseDefaulting(ChronoField.NANO_OF_SECOND, 0)
       .toFormatter
 
-    LocalDateTime.parse(str.replaceAll("\"",""), formatter)
+    LocalDateTime.parse(str.replaceAll("\"", ""), formatter)
+  }
+
+  def instantToLDT(dt: Instant): LocalDateTime = {
+    LocalDateTime.ofInstant(dt, ZoneOffset.UTC)
   }
 
   def isDateHoliday(dt: LocalDate): Boolean = {
@@ -41,7 +45,7 @@ object DateTimeHelper {
   }
 
   def isHoliday(dt: Instant): Boolean = {
-    val day = LocalDateTime.ofInstant(dt, ZoneOffset.UTC).toLocalDate
+    val day = instantToLDT(dt).toLocalDate
     day.getDayOfWeek.getValue == 6 || day.getDayOfWeek.getValue == 7
   }
 
@@ -58,7 +62,7 @@ object DateTimeHelper {
   }
 
   def instantToTime(dt: Instant): LocalTime = {
-    LocalDateTime.ofInstant(dt, ZoneOffset.UTC).toLocalTime
+    instantToLDT(dt).toLocalTime
   }
 
 

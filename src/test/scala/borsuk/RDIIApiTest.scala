@@ -1,13 +1,13 @@
 package borsuk
 
-import java.time.LocalDateTime
+import java.time.{Duration, LocalDateTime}
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import carldata.borsuk.Routing
 import carldata.borsuk.autoii.ApiObjects._
 import carldata.borsuk.autoii.ApiObjectsJsonProtocol._
-import carldata.borsuk.Routing
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
@@ -37,11 +37,18 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
     }
 
     "not fit if model doesn't exist" in {
-      val params = FitAutoIIParams(LocalDateTime.now, Array(), Array(), Array())
+      val resolution: Duration = Duration.ofMinutes(10)
+      val stormSessionWindows: Duration = Duration.ofHours(1)
+      val stormIntensityWindow: Duration = Duration.ofHours(1)
+      val dryDayWindow = Duration.ofHours(1)
+
+      val fitParams = FitAutoIIParams(LocalDateTime.now, resolution, Array(), Array(), Array()
+        , stormSessionWindows, stormIntensityWindow, dryDayWindow)
+
       val request = HttpRequest(
         HttpMethods.POST,
         uri = "/autoii/000/fit",
-        entity = HttpEntity(MediaTypes.`application/json`, params.toJson.compactPrint))
+        entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
 
       request ~> mainRoute() ~> check {
         status shouldEqual StatusCodes.NotFound
@@ -72,7 +79,13 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val route = mainRoute()
       val trainData = 0.to(1000).map(_ => 1.0).toArray
       val windowData = 1.to(4).map(x => x * 60).toArray
-      val fitParams = FitAutoIIParams(LocalDateTime.now, trainData, trainData, windowData)
+      val resolution: Duration = Duration.ofMinutes(10)
+      val stormSessionWindows: Duration = Duration.ofHours(1)
+      val stormIntensityWindow: Duration = Duration.ofHours(1)
+      val dryDayWindow = Duration.ofHours(1)
+
+      val fitParams = FitAutoIIParams(LocalDateTime.now, resolution, trainData, trainData, windowData
+        , stormSessionWindows, stormIntensityWindow, dryDayWindow)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -98,7 +111,13 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val route = mainRoute()
       val trainData = 0.to(1000).map(_ => 1.0).toArray
       val windowData = 1.to(4).map(x => x * 60).toArray
-      val fitParams = FitAutoIIParams(LocalDateTime.now, trainData, trainData, windowData)
+      val resolution: Duration = Duration.ofMinutes(10)
+      val stormSessionWindows: Duration = Duration.ofHours(1)
+      val stormIntensityWindow: Duration = Duration.ofHours(1)
+      val dryDayWindow = Duration.ofHours(1)
+
+      val fitParams = FitAutoIIParams(LocalDateTime.now, resolution, trainData, trainData, windowData
+        , stormSessionWindows, stormIntensityWindow, dryDayWindow)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -124,7 +143,13 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val route = mainRoute()
       val trainData = 0.to(1000).map(_ => 1.0).toArray
       val windowData = 1.to(4).map(x => x * 60).toArray
-      val fitParams = FitAutoIIParams(LocalDateTime.now, trainData, trainData, windowData)
+      val resolution: Duration = Duration.ofMinutes(10)
+      val stormSessionWindows: Duration = Duration.ofHours(1)
+      val stormIntensityWindow: Duration = Duration.ofHours(1)
+      val dryDayWindow = Duration.ofHours(1)
+
+      val fitParams = FitAutoIIParams(LocalDateTime.now, resolution, trainData, trainData, windowData
+        , stormSessionWindows, stormIntensityWindow, dryDayWindow)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]

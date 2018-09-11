@@ -41,12 +41,16 @@ class AutoIIApi {
   }
 
   /** List the models of the training data */
-  def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime, stormSessionWindows: Int
-           , stormIntensityWindow: Int, dryDayWindow: Int): StandardRoute = {
+  def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        val response = ListResponse(Array())
 
+        val response = ListResponse {
+          model
+            .list()
+            .map(x => ApiObjects.RDIIObject(x._1, x._2, x._3))
+            .toArray
+        }
         complete(HttpResponse(
           StatusCodes.OK,
           entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
@@ -61,7 +65,8 @@ class AutoIIApi {
   def get(modelId: String, rdiiId: String): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        val response = GetResponse(LocalDateTime.now, LocalDateTime.now, Array(), Array(), Array(), Array())
+        val response: GetResponse = model.get(rdiiId).map(x => GetResponse(x._1, x._2, x._3, x._4, x._5, x._6))
+          .getOrElse(GetResponse(LocalDateTime.now(), LocalDateTime.now(), Array(), Array(), Array(), Array()))
 
         complete(HttpResponse(
           StatusCodes.OK,
