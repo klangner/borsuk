@@ -38,7 +38,7 @@ class Storms(modelType: String) {
       rainSessions
         .map(x => (randomUUID().toString, x, maxIntensity(x, rainfall, intensitySize)))
         .sortBy(_._3)
-        .filter(x => x._3 > 0)
+        .filter(_._3 > 0)
     }
   }
 
@@ -57,8 +57,7 @@ class Storms(modelType: String) {
     * List all storms
     */
   def list(): Seq[(String, Session)] = {
-    model.map(x => (x._1, x._2)
-    )
+    model.map(x => (x._1, x._2))
   }
 
   /**
