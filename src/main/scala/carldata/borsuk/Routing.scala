@@ -70,6 +70,7 @@ class Routing() {
         }
     } ~ path("autoii" / Segment) { id =>
       get {
+        println("oui")
         autoIIApi.status(id)
       }
     }

@@ -23,7 +23,7 @@ class RDII(modelType: String) {
 
   /** Fit model */
   def fit(params: FitAutoIIParams): Unit = {
-
+    println(params.flow.nonEmpty +"\t"+ params.flow.length +"\t"+ params.rainfall.length)
     if (params.flow.nonEmpty && params.flow.length == params.rainfall.length) {
       val features: Array[Array[Double]] = params.flow.indices.map(_ % 24).map(i => Array(i.toDouble)).toArray
       val endIndex: LocalDateTime = params.startDate.plusSeconds(params.resolution.getSeconds * params.flow.length)
@@ -118,7 +118,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
   def build(): RDIIObject = {
     val sd = startDate.toInstant(ZoneOffset.UTC)
     val ed = endDate.plusDays(1).toInstant(ZoneOffset.UTC)
-
+    println(rainfall.head)
     // This algorithm works only if the series are aligned
     if (rainfall.nonEmpty) {
       val ts = rainfall.slice(rainfall.index.head, ed).join(flow.slice(rainfall.index.head, ed))
@@ -131,6 +131,17 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
         .groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0))
         .index
         .map(instantToDay)
+      println("flow res"+ flow.resolution)
+      println("flow full lenght"+flow.length)
+      println("flow sliced lenght"+flow.slice(sd.minus(1, ChronoUnit.DAYS), ed).length)
+      println("sd"+sd)
+      println("ed"+ed)
+      flow.take(5).map { x =>
+        println(x)
+      0.0
+      }
+
+      sessionDays.take(5).map(println)
       //Find dwp for every day in session
       val patternDays: Seq[(LocalDate, Option[LocalDate])] = sessionDays.map(x => (x, findDryDay(x, allDWPDays)))
       //Take flow from dwp

@@ -80,6 +80,10 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def write(params: FitAutoIIParams): JsObject = {
       JsObject(
         "start-date" -> JsString(params.startDate.toString),
+        "resolution" -> JsString(params.resolution.toString),
+        "stormSessionWindows" -> JsString(params.stormSessionWindows.toString),
+        "stormIntensityWindow" -> JsString(params.stormIntensityWindow.toString),
+        "dryDayWindow" -> JsString(params.dryDayWindow.toString),
         "flow" -> JsArray(params.flow.map(JsNumber(_)).toVector),
         "rainfall" -> JsArray(params.rainfall.map(JsNumber(_)).toVector),
         "window" -> JsArray(params.window.map(JsNumber(_)).toVector)
@@ -88,6 +92,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
     def read(value: JsValue): FitAutoIIParams = value match {
       case JsObject(request) =>
+        println("res try \t"+request.get("resolution").map(stringFromValue).map(Duration.parse))
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
         val resolution = request.get("resolution").map(stringFromValue).map(Duration.parse).getOrElse(Duration.ofHours(1))
         val flow = request.get("flow").map(arrayFromValue).getOrElse(Array.empty[Double])
@@ -137,8 +142,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def read(json: JsValue): ApiObjects.RDIIObject = {
       val fields = json.asJsObject.fields
       val id: String = fields("id").toString
-      val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("startDate").toString)
-      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("endDate").toString)
+      val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
+      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("end-date").toString)
       RDIIObject(id, startDate, endDate)
     }
 

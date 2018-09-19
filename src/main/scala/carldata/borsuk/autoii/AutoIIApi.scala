@@ -10,7 +10,7 @@ import ApiObjectsJsonProtocol._
 import spray.json._
 
 class AutoIIApi {
-  val models = collection.mutable.Map.empty[String, RDII]
+  var models = collection.mutable.Map.empty[String, RDII]
 
   /**
     * Create new rdii model.
@@ -19,6 +19,7 @@ class AutoIIApi {
   def create(params: CreateParams): StandardRoute = {
     val rdii = new RDII(params.modelType)
     models.put(rdii.id, rdii)
+
     val response = ModelCreatedResponse(rdii.id)
 
     complete(HttpResponse(
@@ -42,6 +43,7 @@ class AutoIIApi {
 
   /** List the models of the training data */
   def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime): StandardRoute = {
+
     models.get(modelId) match {
       case Some(model) =>
 
@@ -83,8 +85,9 @@ class AutoIIApi {
     * and the current model metric score.
     */
   def status(modelId: String): StandardRoute = {
-    models.get(modelId) match {
+        models.get(modelId) match {
       case Some(model) =>
+
         val status = ModelStatus(model.buildNumber)
         complete(HttpResponse(
           StatusCodes.OK,
@@ -92,6 +95,7 @@ class AutoIIApi {
         ))
 
       case None =>
+
         complete(StatusCodes.NotFound)
     }
   }
