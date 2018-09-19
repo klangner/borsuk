@@ -77,6 +77,9 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def write(params: FitStormsParams): JsObject = {
       JsObject(
         "start-date" -> JsString(params.startDate.toString),
+        "resolution" -> JsString(params.resolution.toString),
+        "windowSize" -> JsString(params.windowSize.toString),
+        "intensitySize" -> JsString(params.intensitySize.toString),
         "rainfall" -> JsArray(params.rainfall.map(JsNumber(_)).toVector)
       )
     }
@@ -127,8 +130,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def read(json: JsValue): ApiObjects.StormsObject = {
       val fields = json.asJsObject.fields
       val id: String = fields("id").toString
-      val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("startDate").toString)
-      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("endDate").toString)
+      val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
+      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("end-date").toString)
       StormsObject(id, startDate, endDate)
     }
   }
@@ -147,11 +150,10 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
     def read(value: JsValue): ListStormsResponse = {
       value.asJsObject().fields("storms") match {
-        case JsArray(arr) => {
+        case JsArray(arr) =>
           ListStormsResponse(arr.map { a =>
             a.convertTo[StormsObject]
           }.toArray)
-        }
         case _ => ListStormsResponse(Array())
       }
     }
@@ -172,7 +174,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       val fields = value.asJsObject.fields
       val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
       val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
-      val maxIntensity = fields.get("maxIntensity").map(doubleFromValue).getOrElse(0.0)
+      val maxIntensity = fields.get("maxIntensity").map(doubleFromValue).getOrElse(Double.NaN)
       GetStormsResponse(startDate, endDate, maxIntensity)
     }
   }
