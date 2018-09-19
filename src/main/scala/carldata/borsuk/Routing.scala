@@ -11,6 +11,9 @@ import carldata.borsuk.autoii.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, Fi
 import carldata.borsuk.autoii.AutoIIApi
 import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.prediction.PredictionAPI
+import carldata.borsuk.storms.StormsApi
+import carldata.borsuk.storms.ApiObjects.{CreateStormsParams, FitStormsParams}
+import carldata.borsuk.storms.ApiObjectsJsonProtocol.{CreateStormsParamsFormat, FitStormsParamsFormat}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
@@ -20,6 +23,7 @@ import scala.language.postfixOps
 class Routing() {
   val predictionApi = new PredictionAPI()
   val autoIIApi = new AutoIIApi()
+  val stormsApi = new StormsApi()
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
@@ -72,7 +76,28 @@ class Routing() {
       get {
         autoIIApi.status(id)
       }
+    } ~ path("storms") {
+      post {
+        entity(as[CreateStormsParams])(params => stormsApi.create(params))
+      }
+    } ~ path("storms" / Segment / "fit") { id =>
+      post {
+        entity(as[FitStormsParams])(data => stormsApi.fit(id, data))
+      }
+    } ~ (path("storms" / Segment / "storm")) {
+      (id) =>
+        get {
+          stormsApi.list(id)
+        }
+    } ~ path("storms" / Segment / "storm" / Segment) {
+      (modelId, stormId) =>
+        get {
+          stormsApi.get(modelId, stormId)
+        }
+    } ~ path("storms" / Segment) { id =>
+      get {
+        stormsApi.status(id)
+      }
     }
   }
-
 }
