@@ -5,8 +5,8 @@ import java.time.LocalDateTime
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import ApiObjects._
-import ApiObjectsJsonProtocol._
+import carldata.borsuk.autoii.ApiObjects._
+import carldata.borsuk.autoii.ApiObjectsJsonProtocol._
 import spray.json._
 
 class AutoIIApi {
@@ -53,6 +53,7 @@ class AutoIIApi {
             .map(x => ApiObjects.RDIIObject(x._1, x._2, x._3))
             .toArray
         }
+
         complete(HttpResponse(
           StatusCodes.OK,
           entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
@@ -85,7 +86,7 @@ class AutoIIApi {
     * and the current model metric score.
     */
   def status(modelId: String): StandardRoute = {
-        models.get(modelId) match {
+    models.get(modelId) match {
       case Some(model) =>
 
         val status = ModelStatus(model.buildNumber)

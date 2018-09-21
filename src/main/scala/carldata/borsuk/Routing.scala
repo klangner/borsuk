@@ -4,12 +4,12 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams}
-import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
 import carldata.borsuk.autoii.ApiObjects.{CreateParams, FitAutoIIParams}
 import carldata.borsuk.autoii.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitAutoIIParamsFormat}
 import carldata.borsuk.autoii.AutoIIApi
 import carldata.borsuk.helper.DateTimeHelper
+import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams}
+import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
 import carldata.borsuk.prediction.PredictionAPI
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -70,7 +70,6 @@ class Routing() {
         }
     } ~ path("autoii" / Segment) { id =>
       get {
-        println("oui")
         autoIIApi.status(id)
       }
     }

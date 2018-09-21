@@ -2,7 +2,6 @@ package carldata.borsuk.autoii
 
 import java.time._
 import java.time.temporal.ChronoUnit
-import java.util.UUID
 import java.util.UUID.randomUUID
 
 import carldata.borsuk.autoii.ApiObjects.FitAutoIIParams
@@ -23,15 +22,17 @@ class RDII(modelType: String) {
 
   /** Fit model */
   def fit(params: FitAutoIIParams): Unit = {
-    println(params.flow.nonEmpty +"\t"+ params.flow.length +"\t"+ params.rainfall.length)
+
     if (params.flow.nonEmpty && params.flow.length == params.rainfall.length) {
-      val features: Array[Array[Double]] = params.flow.indices.map(_ % 24).map(i => Array(i.toDouble)).toArray
-      val endIndex: LocalDateTime = params.startDate.plusSeconds(params.resolution.getSeconds * params.flow.length)
-      val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.startDate), dtToInstant(endIndex), params.resolution)
+      val sessionStartDate: LocalDateTime = params.sessionStartDate
+      //.plusSeconds(params.resolution.getSeconds * params.flow.length)
+      val sessionEndDate: LocalDateTime = params.sessionEndDate
+      //.plusSeconds(params.resolution.getSeconds * params.flow.length)
+      val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.seriesStartDate), dtToInstant(sessionEndDate), params.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.toVector)
       val flow: TimeSeries[Double] = TimeSeries(index.toVector, params.flow.toVector)
 
-      model = Some(RDIIBuilder(rainfall, flow, params.startDate, endIndex, params.window.toSeq)
+      model = Some(RDIIBuilder(rainfall, flow, sessionStartDate, sessionEndDate, params.window.toSeq)
         .withStormSessionWindows(params.stormSessionWindows)
         .withStormIntensityWindow(params.stormIntensityWindow)
         .withDryDayWindow(params.dryDayWindow)
@@ -49,8 +50,8 @@ class RDII(modelType: String) {
     model.map { x =>
       x.inflows
         .flatMap {
-          t =>
-            if (t._2.nonEmpty) Some(t._1, instantToLDT(t._2.index.head), instantToLDT(t._2.index.last))
+          inflow: (String, TimeSeries[Double]) =>
+            if (inflow._2.nonEmpty) Some(inflow._1, instantToLDT(inflow._2.index.head), instantToLDT(inflow._2.index.last))
             else None
         }
     }
@@ -64,13 +65,12 @@ class RDII(modelType: String) {
     */
   def get(rdii_id: String): Option[(LocalDateTime, LocalDateTime
     , Array[Double], Array[Double], Array[Double], Array[Double])] = {
-
     model.flatMap { x =>
       val inflows = x.inflows.find(_._1 == rdii_id)
       if (inflows.nonEmpty) {
         Some(instantToLDT(x.rainfall.index.head), instantToLDT(x.rainfall.index.last)
-          , x.rainfall.values.toArray
           , x.flow.values.toArray
+          , x.rainfall.values.toArray
           , x.dwp.values.toArray
           , x.inflows.find(_._1 == rdii_id).head._2.values.toArray)
       }
@@ -118,7 +118,6 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
   def build(): RDIIObject = {
     val sd = startDate.toInstant(ZoneOffset.UTC)
     val ed = endDate.plusDays(1).toInstant(ZoneOffset.UTC)
-    println(rainfall.head)
     // This algorithm works only if the series are aligned
     if (rainfall.nonEmpty) {
       val ts = rainfall.slice(rainfall.index.head, ed).join(flow.slice(rainfall.index.head, ed))
@@ -131,17 +130,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
         .groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0))
         .index
         .map(instantToDay)
-      println("flow res"+ flow.resolution)
-      println("flow full lenght"+flow.length)
-      println("flow sliced lenght"+flow.slice(sd.minus(1, ChronoUnit.DAYS), ed).length)
-      println("sd"+sd)
-      println("ed"+ed)
-      flow.take(5).map { x =>
-        println(x)
-      0.0
-      }
 
-      sessionDays.take(5).map(println)
       //Find dwp for every day in session
       val patternDays: Seq[(LocalDate, Option[LocalDate])] = sessionDays.map(x => (x, findDryDay(x, allDWPDays)))
       //Take flow from dwp
