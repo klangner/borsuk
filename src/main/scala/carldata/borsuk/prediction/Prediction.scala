@@ -15,7 +15,7 @@ class Prediction(modelType: String) {
 
   /** Fit model */
   def fit(ts: Array[Double]): Unit = {
-    if (ts.nonEmpty) {
+    if (ts.length > 9) {
       val features: Array[Array[Double]] = ts.indices.map(_ % 24).map(i => Array(i.toDouble)).toArray
       model = Some(randomForest(features, ts, mtry = 1))
       buildNumber += 1

@@ -69,6 +69,31 @@ class PredictionApiTest extends WordSpec with Matchers with ScalatestRouteTest w
         status shouldEqual StatusCodes.NotFound
       }
     }
+    "not fit the model with unsufficient data" in {
+      val route = mainRoute()
+      val trainData = 0.to(8).map(_ => 1.0).toArray
+      val fitParams = FitPredictionParams(LocalDateTime.now, trainData)
+
+      createModelRequest ~> route ~> check {
+        val mcr = responseAs[ModelCreatedResponse]
+        val fitRequest = HttpRequest(
+          HttpMethods.POST,
+          uri = s"/prediction/${mcr.id}/fit",
+          entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
+
+        fitRequest ~> route ~> check {
+          status shouldEqual StatusCodes.OK
+          val request = HttpRequest(HttpMethods.GET, uri = s"/prediction/${mcr.id}")
+
+          request ~> route ~> check {
+            val modelStatus = responseAs[ModelStatus]
+            modelStatus.build shouldEqual 0
+          }
+
+        }
+      }
+    }
+
 
     "fit the model" in {
       val route = mainRoute()
