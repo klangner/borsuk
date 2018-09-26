@@ -4,10 +4,9 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import carldata.borsuk.Routing
+import carldata.borsuk.storms.ApiObjects._
 import carldata.borsuk.storms.ApiObjectsJsonProtocol._
-import carldata.borsuk.storms.ApiObjects.{CreateStormsParams, ModelStormsCreatedResponse}
 import org.scalatest.{Matchers, WordSpec}
-
 import spray.json._
 
 class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport {
@@ -17,7 +16,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
   }
 
   private val createModelRequest: HttpRequest = {
-    val params = CreateStormsParams("storms-v0")
+    val params = CreateStormsParams("storms-v0", "secret-id")
     HttpRequest(
       HttpMethods.POST,
       uri = "/storms",

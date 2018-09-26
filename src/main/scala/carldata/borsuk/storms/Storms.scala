@@ -1,7 +1,6 @@
 package carldata.borsuk.storms
 
 import java.time.{Instant, LocalDateTime}
-import java.util.UUID.randomUUID
 
 import carldata.borsuk.helper.DateTimeHelper.dtToInstant
 import carldata.borsuk.storms.ApiObjects.FitStormsParams
@@ -9,7 +8,7 @@ import carldata.series.Sessions.Session
 import carldata.series.{Gen, TimeSeries}
 
 class Storms(modelType: String) {
-  val id: String = randomUUID().toString
+  val id: String = ""
   var model: Seq[(String, Session, Seq[Double])] = Seq()
   var buildNumber: Int = 0
 

@@ -1,6 +1,7 @@
 package carldata.borsuk.storms
 
 import java.time.{Duration, LocalDateTime}
+import java.util.UUID.randomUUID
 
 import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.helper.JsonHelper._
@@ -11,7 +12,7 @@ import spray.json._
   */
 object ApiObjects {
 
-  case class CreateStormsParams(modelType: String)
+  case class CreateStormsParams(modelType: String, id: String)
 
   case class ModelStormsCreatedResponse(id: String)
 
@@ -40,15 +41,17 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   implicit object CreateStormsParamsFormat extends RootJsonFormat[CreateStormsParams] {
     def write(params: CreateStormsParams): JsObject = {
       JsObject(
-        "type" -> JsString(params.modelType)
+        "type" -> JsString(params.modelType),
+        "id" -> JsString(params.id)
       )
     }
 
     def read(value: JsValue): CreateStormsParams = value match {
       case JsObject(request) =>
         val modelType = request.get("type").map(stringFromValue).getOrElse("storms-v0")
-        CreateStormsParams(modelType)
-      case _ => CreateStormsParams("storms-v0")
+        val id = request.get("id").map(stringFromValue).getOrElse(randomUUID().toString)
+        CreateStormsParams(modelType, id)
+      case _ => CreateStormsParams("storms-v0", randomUUID().toString)
     }
   }
 
