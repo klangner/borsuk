@@ -1,5 +1,7 @@
 package carldata.borsuk
 
+import java.time.Duration
+
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
@@ -84,10 +86,10 @@ class Routing() {
       post {
         entity(as[FitStormsParams])(data => stormsApi.fit(id, data))
       }
-    } ~ (path("storms" / Segment / "storm")) {
-      (id) =>
+    } ~ (path("storms" / Segment / "storm")& parameters("sessionWindow".as[String])) {
+      (id, sessionWindow) =>
         get {
-          stormsApi.list(id)
+          stormsApi.list(id, Duration.parse(sessionWindow))
         }
     } ~ path("storms" / Segment / "storm" / Segment) {
       (modelId, stormId) =>

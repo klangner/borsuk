@@ -1,6 +1,6 @@
 package carldata.borsuk.storms
 
-import java.time.LocalDateTime
+import java.time.{Duration, LocalDateTime}
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
@@ -42,7 +42,7 @@ class StormsApi {
   }
 
   /** List the models of the training data */
-  def list(modelId: String): StandardRoute = {
+  def list(modelId: String, sessionWindow: Duration): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
 
@@ -69,7 +69,7 @@ class StormsApi {
       case Some(model) =>
         val response: GetStormsResponse = model.get(stormId)
           .map(x => GetStormsResponse(instantToLDT(x._1), instantToLDT(x._2), x._3))
-          .getOrElse(GetStormsResponse(LocalDateTime.now(), LocalDateTime.now(), Double.NaN))
+          .getOrElse(GetStormsResponse(LocalDateTime.now(), LocalDateTime.now(), Seq()))
 
         complete(HttpResponse(
           StatusCodes.OK,
