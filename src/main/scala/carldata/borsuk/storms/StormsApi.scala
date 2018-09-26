@@ -1,6 +1,6 @@
 package carldata.borsuk.storms
 
-import java.time.LocalDateTime
+import java.time.{Duration, LocalDateTime}
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
@@ -17,16 +17,22 @@ class StormsApi {
   /**
     * Create new storms model.
     * Use fit function to train this model
+    * Accept only unique id
     */
   def create(params: CreateStormsParams): StandardRoute = {
-    val storm = new Storms(params.modelType)
-    models.put(storm.id, storm)
-    val response = ModelStormsCreatedResponse(storm.id)
+    if (models.contains(params.id)) {
+      complete("Error: Model with this id already exist.")
+    }
+    else {
+      val storm = new Storms(params.modelType, params.id)
+      models.put(params.id, storm)
+      val response = ModelStormsCreatedResponse(params.id)
 
-    complete(HttpResponse(
-      StatusCodes.OK,
-      entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
-    ))
+      complete(HttpResponse(
+        StatusCodes.OK,
+        entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+      ))
+    }
   }
 
   /** Fit the model to the training data */
@@ -42,7 +48,7 @@ class StormsApi {
   }
 
   /** List the models of the training data */
-  def list(modelId: String): StandardRoute = {
+  def list(modelId: String, sessionWindow: Duration): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
 
@@ -69,7 +75,7 @@ class StormsApi {
       case Some(model) =>
         val response: GetStormsResponse = model.get(stormId)
           .map(x => GetStormsResponse(instantToLDT(x._1), instantToLDT(x._2), x._3))
-          .getOrElse(GetStormsResponse(LocalDateTime.now(), LocalDateTime.now(), Double.NaN))
+          .getOrElse(GetStormsResponse(LocalDateTime.now(), LocalDateTime.now(), Seq()))
 
         complete(HttpResponse(
           StatusCodes.OK,
