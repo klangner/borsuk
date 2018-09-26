@@ -1,6 +1,7 @@
 package carldata.borsuk.autoii
 
 import java.time.{Duration, LocalDateTime}
+import java.util.UUID.randomUUID
 
 import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.helper.JsonHelper._
@@ -11,7 +12,7 @@ import spray.json._
   */
 object ApiObjects {
 
-  case class CreateParams(modelType: String)
+  case class CreateParams(modelType: String, id: String)
 
   case class ModelCreatedResponse(id: String)
 
@@ -43,15 +44,17 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   implicit object CreateRDIIParamsFormat extends RootJsonFormat[CreateParams] {
     def write(params: CreateParams): JsObject = {
       JsObject(
-        "type" -> JsString(params.modelType)
+        "type" -> JsString(params.modelType),
+        "id" -> JsString(params.id)
       )
     }
 
     def read(value: JsValue): CreateParams = value match {
       case JsObject(request) =>
         val modelType = request.get("type").map(stringFromValue).getOrElse("daily-pattern-v0")
-        CreateParams(modelType)
-      case _ => CreateParams("daily-pattern-v0")
+        val id = request.get("id").map(stringFromValue).getOrElse(randomUUID().toString)
+        CreateParams(modelType, id)
+      case _ => CreateParams("daily-pattern-v0", randomUUID().toString)
     }
   }
 

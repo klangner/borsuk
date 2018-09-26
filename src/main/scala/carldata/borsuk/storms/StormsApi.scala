@@ -25,8 +25,8 @@ class StormsApi {
     }
     else {
       val storm = new Storms(params.modelType, params.id)
-      models.put(params.id, storm)
-      val response = ModelStormsCreatedResponse(params.id)
+      models.put(storm.id, storm)
+      val response = ModelStormsCreatedResponse(storm.id)
 
       complete(HttpResponse(
         StatusCodes.OK,

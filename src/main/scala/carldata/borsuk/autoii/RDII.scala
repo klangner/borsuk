@@ -16,8 +16,8 @@ import carldata.series.{Gen, TimeSeries}
 case class RDIIObject(rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
                       , inflows: Seq[(String, TimeSeries[Double])])
 
-class RDII(modelType: String) {
-  val id: String = randomUUID().toString
+class RDII(modelType: String, modelId: String) {
+  val id: String = modelId
   var model: Option[RDIIObject] = None
   var buildNumber: Int = 0
 

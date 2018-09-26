@@ -5,8 +5,8 @@ import java.time.LocalDateTime
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import ApiObjects._
-import ApiObjectsJsonProtocol._
+import carldata.borsuk.autoii.ApiObjects._
+import carldata.borsuk.autoii.ApiObjectsJsonProtocol._
 import spray.json._
 
 class AutoIIApi {
@@ -17,15 +17,19 @@ class AutoIIApi {
     * Use fit function to train this model
     */
   def create(params: CreateParams): StandardRoute = {
-    val rdii = new RDII(params.modelType)
-    models.put(rdii.id, rdii)
-    val response = ModelCreatedResponse(rdii.id)
+    if (models.contains(params.id)) {
+      complete("Error: Model with this id already exist.")
+    }
+    else {
+      val rdii = new RDII(params.modelType, params.id)
+      models.put(rdii.id, rdii)
+      val response = ModelCreatedResponse(rdii.id)
 
-    complete(HttpResponse(
-      StatusCodes.OK,
-      entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
-    ))
-
+      complete(HttpResponse(
+        StatusCodes.OK,
+        entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+      ))
+    }
   }
 
   /** Fit the model to the training data */

@@ -7,7 +7,8 @@ import carldata.borsuk.storms.ApiObjects.FitStormsParams
 import carldata.series.Sessions.Session
 import carldata.series.{Gen, TimeSeries}
 
-class Storms(modelType: String, id :String) {
+class Storms(modelType: String, modelId: String) {
+  val id: String = modelId
   var model: Seq[(String, Session, Seq[Double])] = Seq()
   var buildNumber: Int = 0
 

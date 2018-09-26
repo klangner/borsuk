@@ -20,7 +20,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
   }
 
   private val createModelRequest: HttpRequest = {
-    val params = CreateParams("rdii-v0")
+    val params = CreateParams("rdii-v0", "secret-id")
     HttpRequest(
       HttpMethods.POST,
       uri = "/autoii",
@@ -31,8 +31,18 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
 
     "create new model" in {
       createModelRequest ~> mainRoute() ~> check {
-        responseAs[ModelCreatedResponse]
+        val res = responseAs[ModelCreatedResponse]
+        res.id shouldEqual "secret-id"
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "create new model with id already in use" in {
+      val route = mainRoute()
+      createModelRequest ~> route ~> check {
+        createModelRequest
+      } ~> route ~> check {
+        responseAs[String] shouldEqual "Error: Model with this id already exist."
       }
     }
 
