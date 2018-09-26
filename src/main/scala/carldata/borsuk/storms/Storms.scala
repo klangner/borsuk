@@ -7,18 +7,18 @@ import carldata.borsuk.storms.ApiObjects.FitStormsParams
 import carldata.series.Sessions.Session
 import carldata.series.{Gen, TimeSeries}
 
-class Storms(modelType: String, id :String) {
+class Storms(modelType: String, id: String) {
   var model: Seq[(String, Session, Seq[Double])] = Seq()
   var buildNumber: Int = 0
 
   /** Fit model */
   def fit(params: FitStormsParams): Unit = {
 
-    if (params.rainfall.nonEmpty) {
+    if (params.rainfall.values.nonEmpty) {
 
-      val endIndex: LocalDateTime = params.startDate.plusSeconds(params.resolution.getSeconds * params.rainfall.length)
-      val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.startDate), dtToInstant(endIndex), params.resolution)
-      val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.toVector)
+      val endIndex: LocalDateTime = params.rainfall.startDate.plusSeconds(params.rainfall.resolution.getSeconds * params.rainfall.values.length)
+      val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(endIndex), params.rainfall.resolution)
+      val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.values.toVector)
       model = Seq() //TODO: fit model ( tip, use Sessions.findSessions(ts: TimeSeries[V])
 
       buildNumber += 1

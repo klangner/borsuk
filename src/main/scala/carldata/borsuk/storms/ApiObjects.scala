@@ -3,6 +3,8 @@ package carldata.borsuk.storms
 import java.time.{Duration, LocalDateTime}
 import java.util.UUID.randomUUID
 
+import carldata.borsuk.BasicApiObjects.TimeSeriesParams
+import carldata.borsuk.BasicApiObjectsJsonProtocol._
 import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.helper.JsonHelper._
 import spray.json._
@@ -16,7 +18,7 @@ object ApiObjects {
 
   case class ModelStormsCreatedResponse(id: String)
 
-  case class FitStormsParams(startDate: LocalDateTime, resolution: Duration, rainfall: Array[Double])
+  case class FitStormsParams(rainfall: TimeSeriesParams)
 
   case class StormsObject(id: String, startDate: LocalDateTime, endDate: LocalDateTime)
 
@@ -79,20 +81,18 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   implicit object FitStormsParamsFormat extends RootJsonFormat[FitStormsParams] {
     def write(params: FitStormsParams): JsObject = {
       JsObject(
-        "start-date" -> JsString(params.startDate.toString),
-        "resolution" -> JsString(params.resolution.toString),
-        "rainfall" -> JsArray(params.rainfall.map(JsNumber(_)).toVector)
+        "rainfall" -> params.toJson
       )
     }
 
     def read(value: JsValue): FitStormsParams = value match {
-      case JsObject(request) =>
-        val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
-        val resolution = request.get("resolution").map(stringFromValue).map(Duration.parse).getOrElse(Duration.ofHours(1))
-        val rainfall = request.get("rainfall").map(arrayFromValue).getOrElse(Array.empty[Double])
-
-        FitStormsParams(startDate, resolution, rainfall)
-      case _ => FitStormsParams(LocalDateTime.now(), Duration.ofHours(1), Array.empty)
+      case JsObject(x) =>
+        FitStormsParams {
+          x.get("rainfall")
+            .map(_.convertTo[TimeSeriesParams])
+            .getOrElse(TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()))
+        }
+      case _ => FitStormsParams(TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()))
     }
   }
 
