@@ -16,14 +16,19 @@ class PredictionAPI() {
     * Use fit function to train this model
     */
   def create(params: CreatePredictionParams): StandardRoute = {
-    val prediction = new Prediction(params.modelType)
-    models.put(prediction.id, prediction)
-    val response = ModelCreatedResponse(prediction.id)
+    if (models.contains(params.id)) {
+      complete("Error: Model with this id already exist.")
+    }
+    else {
+      val prediction = new Prediction(params.modelType, params.id)
+      models.put(prediction.id, prediction)
+      val response = ModelCreatedResponse(prediction.id)
 
-    complete(HttpResponse(
-      StatusCodes.OK,
-      entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
-    ))
+      complete(HttpResponse(
+        StatusCodes.OK,
+        entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+      ))
+    }
   }
 
   /** Fit the model to the training data */
