@@ -17,16 +17,22 @@ class StormsApi {
   /**
     * Create new storms model.
     * Use fit function to train this model
+    * Accept only unique id
     */
   def create(params: CreateStormsParams): StandardRoute = {
-    val storm = new Storms(params.modelType)
-    models.put(storm.id, storm)
-    val response = ModelStormsCreatedResponse(storm.id)
+    if (models.contains(params.id)) {
+      complete("Error: Model with this id already exist.")
+    }
+    else {
+      val storm = new Storms(params.modelType, params.id)
+      models.put(params.id, storm)
+      val response = ModelStormsCreatedResponse(params.id)
 
-    complete(HttpResponse(
-      StatusCodes.OK,
-      entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
-    ))
+      complete(HttpResponse(
+        StatusCodes.OK,
+        entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+      ))
+    }
   }
 
   /** Fit the model to the training data */
