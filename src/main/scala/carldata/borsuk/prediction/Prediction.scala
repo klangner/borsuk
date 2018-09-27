@@ -4,8 +4,7 @@ import smile.regression.{RandomForest, randomForest}
 
 
 /** Prediction for the time series data */
-class Prediction(modelType: String, modelId: String) {
-  val id: String = modelId
+class Prediction(modelType: String, id: String) {
   var model: Option[RandomForest] = None
   var buildNumber: Int = 0
   var score: Double = 0.0

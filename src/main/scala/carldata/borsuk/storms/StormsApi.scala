@@ -21,12 +21,12 @@ class StormsApi {
     */
   def create(params: CreateStormsParams): StandardRoute = {
     if (models.contains(params.id)) {
-      complete("Error: Model with this id already exist.")
+      complete(StatusCodes.Conflict -> "Error: Model with this id already exist.")
     }
     else {
       val storm = new Storms(params.modelType, params.id)
-      models.put(storm.id, storm)
-      val response = ModelStormsCreatedResponse(storm.id)
+      models.put(params.id, storm)
+      val response = ModelStormsCreatedResponse(params.id)
 
       complete(HttpResponse(
         StatusCodes.OK,

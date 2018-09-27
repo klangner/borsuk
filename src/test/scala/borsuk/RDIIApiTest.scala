@@ -43,6 +43,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
         createModelRequest
       } ~> route ~> check {
         responseAs[String] shouldEqual "Error: Model with this id already exist."
+        status shouldEqual StatusCodes.Conflict
       }
     }
 

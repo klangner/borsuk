@@ -18,12 +18,12 @@ class AutoIIApi {
     */
   def create(params: CreateParams): StandardRoute = {
     if (models.contains(params.id)) {
-      complete("Error: Model with this id already exist.")
+      complete(StatusCodes.Conflict -> "Error: Model with this id already exist.")
     }
     else {
       val rdii = new RDII(params.modelType, params.id)
-      models.put(rdii.id, rdii)
-      val response = ModelCreatedResponse(rdii.id)
+      models.put(params.id, rdii)
+      val response = ModelCreatedResponse(params.id)
 
       complete(HttpResponse(
         StatusCodes.OK,

@@ -2,7 +2,6 @@ package carldata.borsuk.autoii
 
 import java.time._
 import java.time.temporal.ChronoUnit
-import java.util.UUID
 import java.util.UUID.randomUUID
 
 import carldata.borsuk.autoii.ApiObjects.FitAutoIIParams
@@ -16,8 +15,7 @@ import carldata.series.{Gen, TimeSeries}
 case class RDIIObject(rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
                       , inflows: Seq[(String, TimeSeries[Double])])
 
-class RDII(modelType: String, modelId: String) {
-  val id: String = modelId
+class RDII(modelType: String, id: String) {
   var model: Option[RDIIObject] = None
   var buildNumber: Int = 0
 

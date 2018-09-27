@@ -39,6 +39,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         createModelRequest
       } ~> route ~> check {
         responseAs[String] shouldEqual "Error: Model with this id already exist."
+        status shouldEqual StatusCodes.Conflict
       }
     }
   }

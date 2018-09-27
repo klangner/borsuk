@@ -17,12 +17,12 @@ class PredictionAPI() {
     */
   def create(params: CreatePredictionParams): StandardRoute = {
     if (models.contains(params.id)) {
-      complete("Error: Model with this id already exist.")
+      complete(StatusCodes.Conflict -> "Error: Model with this id already exist.")
     }
     else {
       val prediction = new Prediction(params.modelType, params.id)
-      models.put(prediction.id, prediction)
-      val response = ModelCreatedResponse(prediction.id)
+      models.put(params.id, prediction)
+      val response = ModelCreatedResponse(params.id)
 
       complete(HttpResponse(
         StatusCodes.OK,
