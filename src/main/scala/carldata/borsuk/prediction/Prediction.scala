@@ -1,14 +1,10 @@
 package carldata.borsuk.prediction
 
-import java.util.UUID.randomUUID
-
 import smile.regression.{RandomForest, randomForest}
 
 
 /** Prediction for the time series data */
-class Prediction(modelType: String) {
-
-  val id: String = randomUUID().toString
+class Prediction(modelType: String, id: String) {
   var model: Option[RandomForest] = None
   var buildNumber: Int = 0
   var score: Double = 0.0

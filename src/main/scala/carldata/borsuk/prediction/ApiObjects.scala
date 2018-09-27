@@ -1,6 +1,7 @@
 package carldata.borsuk.prediction
 
 import java.time.LocalDateTime
+import java.util.UUID.randomUUID
 
 import carldata.borsuk.helper.JsonHelper._
 import spray.json._
@@ -11,7 +12,7 @@ import spray.json._
   */
 object ApiObjects {
 
-  case class CreatePredictionParams(modelType: String)
+  case class CreatePredictionParams(modelType: String, id: String)
 
   case class ModelCreatedResponse(id: String)
 
@@ -38,15 +39,17 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   implicit object CreatePredictionParamsFormat extends RootJsonFormat[CreatePredictionParams] {
     def write(params: CreatePredictionParams): JsObject = {
       JsObject(
-        "type" -> JsString(params.modelType)
+        "type" -> JsString(params.modelType),
+        "id" -> JsString(params.id)
       )
     }
 
     def read(value: JsValue): CreatePredictionParams = value match {
       case JsObject(request) =>
         val modelType = request.get("type").map(stringFromValue).getOrElse("daily-pattern-v0")
-        CreatePredictionParams(modelType)
-      case _ => CreatePredictionParams("daily-pattern-v0")
+        val id = request.get("id").map(stringFromValue).getOrElse(randomUUID().toString)
+        CreatePredictionParams(modelType, id)
+      case _ => CreatePredictionParams("daily-pattern-v0", randomUUID().toString)
     }
   }
 
