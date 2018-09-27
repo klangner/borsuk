@@ -9,7 +9,7 @@ import carldata.borsuk.autoii.DryWeatherPattern._
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.TimeSeriesHelper
 import carldata.series.Sessions.Session
-import carldata.series.{Gen, TimeSeries}
+import carldata.series.TimeSeries
 
 
 case class RDIIObject(rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
@@ -22,20 +22,8 @@ class RDII(modelType: String, id: String) {
   /** Fit model */
   def fit(params: FitAutoIIParams): Unit = {
 
-    if (params.flow.nonEmpty && params.flow.length == params.rainfall.length) {
-      val features: Array[Array[Double]] = params.flow.indices.map(_ % 24).map(i => Array(i.toDouble)).toArray
-      val endIndex: LocalDateTime = params.startDate.plusSeconds(params.resolution.getSeconds * params.flow.length)
-      val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.startDate), dtToInstant(endIndex), params.resolution)
-      val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.toVector)
-      val flow: TimeSeries[Double] = TimeSeries(index.toVector, params.flow.toVector)
-
-      model = Some(RDIIBuilder(rainfall, flow, params.startDate, endIndex, params.window.toSeq)
-        .withStormSessionWindows(params.stormSessionWindows)
-        .withStormIntensityWindow(params.stormIntensityWindow)
-        .withDryDayWindow(params.dryDayWindow)
-        .withLimit(15)
-        .build())
-
+    if (params.flow.values.nonEmpty && params.flow.values.length == params.rainfall.values.length) {
+      //TODO
       buildNumber += 1
     }
   }

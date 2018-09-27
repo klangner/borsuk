@@ -5,6 +5,7 @@ import java.time.{Duration, LocalDateTime}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
 import carldata.borsuk.autoii.ApiObjects._
 import carldata.borsuk.autoii.ApiObjectsJsonProtocol._
@@ -49,12 +50,10 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
 
     "not fit if model doesn't exist" in {
       val resolution: Duration = Duration.ofMinutes(10)
-      val stormSessionWindows: Duration = Duration.ofHours(1)
-      val stormIntensityWindow: Duration = Duration.ofHours(1)
-      val dryDayWindow = Duration.ofHours(1)
+      val trainData = 0.to(1000).map(_ => 1.0).toArray
+      val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitAutoIIParams(LocalDateTime.now, resolution, Array(), Array(), Array()
-        , stormSessionWindows, stormIntensityWindow, dryDayWindow)
+      val fitParams = FitAutoIIParams(tsp, tsp)
 
       val request = HttpRequest(
         HttpMethods.POST,
@@ -69,7 +68,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
     "not list RDII if model doesn't exist" in {
       val request = HttpRequest(
         HttpMethods.GET,
-        uri = "/autoii/000/rdii?startDate=2018-01-02&endDate=2018-01-02&stormSessionWindows=60&stormIntensityWindow=120&dryDayWindow=120")
+        uri = "/autoii/000/rdii?startDate=2018-01-02&endDate=2018-01-02&stormSessionWindow=P2D&flowWindow=P2D&dryDayWindow=P2D")
 
       request ~> mainRoute() ~> check {
         status shouldEqual StatusCodes.NotFound
@@ -91,12 +90,9 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val trainData = 0.to(1000).map(_ => 1.0).toArray
       val windowData = 1.to(4).map(x => x * 60).toArray
       val resolution: Duration = Duration.ofMinutes(10)
-      val stormSessionWindows: Duration = Duration.ofHours(1)
-      val stormIntensityWindow: Duration = Duration.ofHours(1)
-      val dryDayWindow = Duration.ofHours(1)
+      val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitAutoIIParams(LocalDateTime.now, resolution, trainData, trainData, windowData
-        , stormSessionWindows, stormIntensityWindow, dryDayWindow)
+      val fitParams = FitAutoIIParams(tsp, tsp)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -121,14 +117,10 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
     "list the model" in {
       val route = mainRoute()
       val trainData = 0.to(1000).map(_ => 1.0).toArray
-      val windowData = 1.to(4).map(x => x * 60).toArray
       val resolution: Duration = Duration.ofMinutes(10)
-      val stormSessionWindows: Duration = Duration.ofHours(1)
-      val stormIntensityWindow: Duration = Duration.ofHours(1)
-      val dryDayWindow = Duration.ofHours(1)
+      val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitAutoIIParams(LocalDateTime.now, resolution, trainData, trainData, windowData
-        , stormSessionWindows, stormIntensityWindow, dryDayWindow)
+      val fitParams = FitAutoIIParams(tsp, tsp)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -140,8 +132,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
         fitRequest ~> route ~> check {
           status shouldEqual StatusCodes.OK
           val request = HttpRequest(HttpMethods.GET, uri = s"/autoii/${mcr.id}/rdii?startDate=2018-01-02" +
-            s"&endDate=2018-01-05&stormSessionWindows=60" +
-            s"&stormIntensityWindow=120&dryDayWindow=160")
+            s"&endDate=2018-01-05&stormSessionWindow=P2D&flowWindow=P2D&dryDayWindow=P2D")
 
           request ~> route ~> check {
             responseAs[ListResponse].rdii.length shouldEqual 0
@@ -153,14 +144,10 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
     "try get model- not existed" in {
       val route = mainRoute()
       val trainData = 0.to(1000).map(_ => 1.0).toArray
-      val windowData = 1.to(4).map(x => x * 60).toArray
       val resolution: Duration = Duration.ofMinutes(10)
-      val stormSessionWindows: Duration = Duration.ofHours(1)
-      val stormIntensityWindow: Duration = Duration.ofHours(1)
-      val dryDayWindow = Duration.ofHours(1)
+      val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitAutoIIParams(LocalDateTime.now, resolution, trainData, trainData, windowData
-        , stormSessionWindows, stormIntensityWindow, dryDayWindow)
+      val fitParams = FitAutoIIParams(tsp, tsp)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -172,7 +159,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
         fitRequest ~> route ~> check {
           status shouldEqual StatusCodes.OK
           val listRequest = HttpRequest(HttpMethods.GET, uri = s"/autoii/${mcr.id}/rdii?startDate=2018-01-02" +
-            s"&endDate=2018-01-05")
+            s"&endDate=2018-01-05&stormSessionWindow=P2D&flowWindow=P2D&dryDayWindow=P2D")
 
           listRequest ~> route ~> check {
             responseAs[ListResponse].rdii.length shouldEqual 0
