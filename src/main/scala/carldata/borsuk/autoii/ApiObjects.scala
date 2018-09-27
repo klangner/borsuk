@@ -3,6 +3,8 @@ package carldata.borsuk.autoii
 import java.time.{Duration, LocalDateTime}
 import java.util.UUID.randomUUID
 
+import carldata.borsuk.BasicApiObjects.TimeSeriesParams
+import carldata.borsuk.BasicApiObjectsJsonProtocol._
 import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.helper.JsonHelper._
 import spray.json._
@@ -16,9 +18,7 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitAutoIIParams(startDate: LocalDateTime, resolution: Duration, flow: Array[Double], rainfall: Array[Double]
-                             , window: Array[Int], stormSessionWindows: Duration, stormIntensityWindow: Duration
-                             , dryDayWindow: Duration)
+  case class FitAutoIIParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams)
 
   case class RDIIObject(id: String, startDate: LocalDateTime, endDate: LocalDateTime)
 
@@ -80,30 +80,23 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     * FitParams formatter
     */
   implicit object FitAutoIIParamsFormat extends RootJsonFormat[FitAutoIIParams] {
+    val emptyTSP = TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array())
+
     def write(params: FitAutoIIParams): JsObject = {
       JsObject(
-        "start-date" -> JsString(params.startDate.toString),
-        "flow" -> JsArray(params.flow.map(JsNumber(_)).toVector),
-        "rainfall" -> JsArray(params.rainfall.map(JsNumber(_)).toVector),
-        "window" -> JsArray(params.window.map(JsNumber(_)).toVector)
+        "flow" -> params.flow.toJson,
+        "rainfall" -> params.rainfall.toJson
       )
     }
 
     def read(value: JsValue): FitAutoIIParams = value match {
-      case JsObject(request) =>
-        val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
-        val resolution = request.get("resolution").map(stringFromValue).map(Duration.parse).getOrElse(Duration.ofHours(1))
-        val flow = request.get("flow").map(arrayFromValue).getOrElse(Array.empty[Double])
-        val rainfall = request.get("rainfall").map(arrayFromValue).getOrElse(Array.empty[Double])
-        val window = request.get("window").map(arrayFromValue).map(_.map(_.toInt)).getOrElse(Array.empty[Int])
-        val stormSessionWindows: Duration = request.get("stormSessionWindows").map(stringFromValue).map(Duration.parse)
-          .getOrElse(Duration.ofHours(1))
-        val stormIntensityWindow: Duration = request.get("stormIntensityWindow").map(stringFromValue).map(Duration.parse)
-          .getOrElse(Duration.ofHours(1))
-        val dryDayWindow = request.get("dryDayWindow").map(stringFromValue).map(Duration.parse).getOrElse(Duration.ofHours(1))
 
-        FitAutoIIParams(startDate, resolution, flow, rainfall, window, stormSessionWindows, stormIntensityWindow, dryDayWindow)
-      case _ => FitAutoIIParams(LocalDateTime.now(), Duration.ofHours(1), Array.empty, Array.empty, Array.empty, Duration.ofHours(1), Duration.ofHours(1), Duration.ofHours(1))
+      case JsObject(x) =>
+        FitAutoIIParams(
+          x.get("flow").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP),
+          x.get("rainfall").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP)
+        )
+      case _ => FitAutoIIParams(emptyTSP, emptyTSP)
     }
   }
 

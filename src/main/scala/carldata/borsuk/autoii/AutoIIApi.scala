@@ -1,6 +1,6 @@
 package carldata.borsuk.autoii
 
-import java.time.LocalDateTime
+import java.time.{Duration, LocalDateTime}
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
@@ -45,7 +45,9 @@ class AutoIIApi {
   }
 
   /** List the models of the training data */
-  def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime): StandardRoute = {
+  def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime
+           , stormSessionWindow: Duration, flowWindow: Duration, dryDayWindow: Duration): StandardRoute = {
+
     models.get(modelId) match {
       case Some(model) =>
 

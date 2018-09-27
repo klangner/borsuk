@@ -81,7 +81,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   implicit object FitStormsParamsFormat extends RootJsonFormat[FitStormsParams] {
     def write(params: FitStormsParams): JsObject = {
       JsObject(
-        "rainfall" -> params.toJson
+        "rainfall" -> params.rainfall.toJson
       )
     }
 
