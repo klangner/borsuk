@@ -20,8 +20,13 @@ class Storms(modelType: String, id: String) {
       val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(endIndex), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.values.toVector)
 
-      model = Sessions.findSessions(rainfall).zipWithIndex.map(swi => (swi._2.toString, swi._1,
-        rainfall.slice(swi._1.startIndex, swi._1.endIndex).values))
+      model = Sessions.findSessions(rainfall)
+        .zipWithIndex
+        .map { x =>
+          (x._2.toString,
+            x._1,
+            rainfall.slice(x._1.startIndex, x._1.endIndex.plusSeconds(params.rainfall.resolution.getSeconds)).values)
+        }
 
       buildNumber += 1
     }
