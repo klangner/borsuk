@@ -16,7 +16,8 @@ class Storms(modelType: String, id: String) {
 
     if (params.rainfall.values.nonEmpty) {
 
-      val endIndex: LocalDateTime = params.rainfall.startDate.plusSeconds(params.rainfall.resolution.getSeconds * params.rainfall.values.length)
+      val resolution = params.rainfall.resolution
+      val endIndex: LocalDateTime = params.rainfall.startDate.plusSeconds(resolution.getSeconds * params.rainfall.values.length)
       val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(endIndex), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.values.toVector)
 
@@ -25,7 +26,7 @@ class Storms(modelType: String, id: String) {
         .map { x =>
           (x._2.toString,
             x._1,
-            rainfall.slice(x._1.startIndex, x._1.endIndex.plusSeconds(params.rainfall.resolution.getSeconds)).values)
+            rainfall.slice(x._1.startIndex, x._1.endIndex.plusSeconds(resolution.getSeconds)).values)
         }
 
       buildNumber += 1
