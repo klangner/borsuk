@@ -10,10 +10,13 @@ import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
 import carldata.borsuk.storms.ApiObjects._
 import carldata.borsuk.storms.ApiObjectsJsonProtocol._
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatest.time.{Milliseconds, Span}
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
-class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport {
+class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
   private def mainRoute(): Route = {
     val routing = new Routing()
     routing.route()
@@ -35,6 +38,17 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       entity = HttpEntity(MediaTypes.`application/json`, fitStormsParams.toJson.compactPrint))
   }
 
+  def checkStatus(id: String, route: Route): Int = {
+    val getRequest = HttpRequest(HttpMethods.GET, uri = s"/storms/$id")
+    getRequest ~> route ~> check {
+      responseAs[ModelStormsStatus].build
+    }
+  }
+
+  private def statusModelRequest(model: String): HttpRequest = {
+    HttpRequest(HttpMethods.GET, uri = s"/storms/$model")
+  }
+
   private def listModelRequest(model: String, sessionWindows: String): HttpRequest = {
     HttpRequest(HttpMethods.GET, uri = s"/storms/$model/storm?sessionWindow=$sessionWindows")
   }
@@ -48,6 +62,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         status shouldEqual StatusCodes.OK
       }
     }
+
     "create new model with id already in use" in {
       val route = mainRoute()
       createModelRequest ~> route ~> check {
@@ -55,6 +70,14 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       } ~> route ~> check {
         responseAs[String] shouldEqual "Error: Model with this id already exist."
         status shouldEqual StatusCodes.Conflict
+      }
+    }
+
+    "response 404 when fit without create" in {
+      val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+        , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
+      fitModelRequest("wrong_id", fitParams) ~> mainRoute() ~> check {
+        status shouldEqual StatusCodes.NotFound
       }
     }
 
@@ -83,7 +106,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         //will create 4 sessions, lets get first and check the values!
         fitModelRequest(modelId, fitParams)
       } ~> route ~> check {
-        listModelRequest(modelId, "PT7M")
+        listModelRequest(modelId, "PT10M")
       } ~> route ~> check {
         val stormsCount = responseAs[ListStormsResponse].storms.length
         stormsCount shouldEqual 3
@@ -105,14 +128,14 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         stormsCount shouldEqual 1
       }
     }
-
-    "should't get list of storms when model not exist" in {
-      val route = mainRoute()
-
-      listModelRequest("none", "PT5M") ~> route ~> check {
-        responseAs[String] shouldEqual "Error: Model with this id doesn't exist."
-        status shouldEqual StatusCodes.NotFound
-      }
-    }
+//
+//    "should't get list of storms when model not exist" in {
+//      val route = mainRoute()
+//
+//      listModelRequest("none", "PT5M") ~> route ~> check {
+//        responseAs[String] shouldEqual "Error: Model with this id doesn't exist."
+//        status shouldEqual StatusCodes.NotFound
+//      }
+//    }
   }
 }
