@@ -129,6 +129,26 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       }
     }
 
+    "list storms two times" in {
+      val route = mainRoute()
+
+      createModelRequest ~> route ~> check {
+        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+          , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
+        //will create 4 sessions, lets get first and check the values!
+        fitModelRequest(modelId, fitParams)
+      } ~> route ~> check {
+        listModelRequest(modelId, "PT10M")
+      } ~> route ~> check {
+        val stormsCount = responseAs[ListStormsResponse].storms.length
+        stormsCount shouldEqual 3
+        listModelRequest(modelId, "PT20M")
+      } ~> route ~> check {
+        val stormsCount = responseAs[ListStormsResponse].storms.length
+        stormsCount shouldEqual 1
+      }
+    }
+
     "should't get list of storms when model not exist" in {
       val route = mainRoute()
 
