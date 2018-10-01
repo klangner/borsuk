@@ -5,7 +5,7 @@ import java.time.{Instant, LocalDateTime}
 import carldata.borsuk.helper.DateTimeHelper.dtToInstant
 import carldata.borsuk.storms.ApiObjects.FitStormsParams
 import carldata.series.Sessions.Session
-import carldata.series.{Gen, TimeSeries}
+import carldata.series.{Gen, Sessions, TimeSeries}
 
 class Storms(modelType: String, id: String) {
   var model: Seq[(String, Session, Seq[Double])] = Seq()
@@ -16,10 +16,18 @@ class Storms(modelType: String, id: String) {
 
     if (params.rainfall.values.nonEmpty) {
 
-      val endIndex: LocalDateTime = params.rainfall.startDate.plusSeconds(params.rainfall.resolution.getSeconds * params.rainfall.values.length)
+      val resolution = params.rainfall.resolution
+      val endIndex: LocalDateTime = params.rainfall.startDate.plusSeconds(resolution.getSeconds * params.rainfall.values.length)
       val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(endIndex), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.values.toVector)
-      model = Seq() //TODO: fit model ( tip, use Sessions.findSessions(ts: TimeSeries[V])
+
+      model = Sessions.findSessions(rainfall)
+        .zipWithIndex
+        .map { x =>
+          (x._2.toString,
+            x._1,
+            rainfall.slice(x._1.startIndex, x._1.endIndex.plusSeconds(resolution.getSeconds)).values)
+        }
 
       buildNumber += 1
     }
