@@ -10,12 +10,13 @@ import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
 import carldata.borsuk.storms.ApiObjects._
 import carldata.borsuk.storms.ApiObjectsJsonProtocol._
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatest.time.{Milliseconds, Span}
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
-import scala.annotation.tailrec
-
-class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport {
+class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
   private def mainRoute(): Route = {
     val routing = new Routing()
     routing.route()
@@ -76,14 +77,10 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
           , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
         fitModelRequest(res.id, fitParams) ~> route ~> check {
 
-          @tailrec
-          def cmpStatus(): Unit = {
-            if (checkStatus(res.id, route) == statusBeforeFit) {
-              cmpStatus()
-            }
+          eventually(timeout = Timeout(Span(5000, Milliseconds))) {
+            checkStatus(res.id, route) != statusBeforeFit
           }
 
-          cmpStatus()
           status shouldEqual StatusCodes.OK
           checkStatus(res.id, route) shouldEqual 1
         }
