@@ -79,7 +79,6 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
           @tailrec
           def cmpStatus(): Unit = {
             if (checkStatus(res.id, route) == statusBeforeFit) {
-              Thread.sleep(5000)
               cmpStatus()
             }
           }
