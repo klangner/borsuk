@@ -128,14 +128,13 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         stormsCount shouldEqual 1
       }
     }
-//
-//    "should't get list of storms when model not exist" in {
-//      val route = mainRoute()
-//
-//      listModelRequest("none", "PT5M") ~> route ~> check {
-//        responseAs[String] shouldEqual "Error: Model with this id doesn't exist."
-//        status shouldEqual StatusCodes.NotFound
-//      }
-//    }
+
+    "should't get list of storms when model not exist" in {
+      val route = mainRoute()
+
+      listModelRequest("none", "PT5M") ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
   }
 }

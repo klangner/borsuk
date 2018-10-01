@@ -40,27 +40,19 @@ class Storms(modelType: String, id: String) {
     * List all storms
     */
   def list(sessionWindow: Duration): Seq[(String, Session)] = {
-    var tmp: Seq[(String, Duration, Seq[String])] = Seq()
     if (!stormsList.exists(_._2 == sessionWindow)) {
       val modelList: List[(String, Session, Duration, Seq[String])] = model.toList.map(x => (randomUUID().toString, x._2, sessionWindow, Seq(x._1)))
-      tmp = (
-        if (model.isEmpty) List()
-        else
-          modelList.tail.foldLeft[List[(String, Session, Duration, Seq[String])]](List(modelList.head))((zs, x) => {
-            if (sessionWindow.compareTo(Duration.between(zs.head._2.endIndex, x._2.startIndex)) >= 0)
-              (randomUUID().toString, Session(zs.head._2.startIndex, x._2.endIndex), sessionWindow, zs.head._4 ++ x._4) :: zs.tail //merge sessions
-            else
-              x :: zs
-          }).reverse.map(x => (x._1, x._3, x._4)))
-      if (stormsList.length > 0) {
-        stormsList ++ tmp
-      } else {
-        stormsList = tmp
-      }
+      stormsList = if (model.isEmpty) Seq()
+      else
+        stormsList ++ modelList.tail.foldLeft[List[(String, Session, Duration, Seq[String])]](List(modelList.head))((zs, x) => {
+          if (sessionWindow.compareTo(Duration.between(zs.head._2.endIndex, x._2.startIndex)) >= 0)
+            (randomUUID().toString, Session(zs.head._2.startIndex, x._2.endIndex), sessionWindow, zs.head._4 ++ x._4) :: zs.tail //merge sessions
+          else
+            x :: zs
+        }).reverse.map(x => (x._1, x._3, x._4))
     }
 
-    val ret = stormsList.filter(_._2 == sessionWindow)
-    ret.map(x => (x._1, Session(model.filter(_._1 == x._3.head).map(m => m._2.startIndex).head, model.filter(_._1 == x._3.last).map(m => m._2.endIndex).head)))
+    stormsList.filter(_._2 == sessionWindow).map(x => (x._1, Session(model.filter(_._1 == x._3.head).map(m => m._2.startIndex).head, model.filter(_._1 == x._3.last).map(m => m._2.endIndex).head)))
   }
 
   /**
