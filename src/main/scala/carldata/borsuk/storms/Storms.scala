@@ -47,7 +47,7 @@ class Storms(modelType: String, id: String) {
   def list(sessionWindow: Duration): Seq[(String, Session)] = {
     (
       if (!stormsList.exists(_.sessionWindow == sessionWindow)) {
-        val modelList: List[(String, Session, Duration, Seq[String])] = model.toList.map(x => (randomUUID().toString, x._2._1, sessionWindow, Seq(x._1)))
+        val modelList: List[(String, Session, Duration, Seq[String])] = model.toList.sortBy(_._2._1.startIndex).map(x => (randomUUID().toString, x._2._1, sessionWindow, Seq(x._1)))
         if (model.isEmpty) Seq()
         else
           stormsList ++ modelList.tail.foldLeft[List[(String, Session, Duration, Seq[String])]](List(modelList.head))((zs, x) => {
