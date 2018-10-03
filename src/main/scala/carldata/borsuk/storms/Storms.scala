@@ -12,10 +12,9 @@ import scala.collection.mutable
 
 class Storms(modelType: String, id: String) {
 
-  case class StormParams(id: String, sessionWindow: Duration, values: Seq[String])
+  case class StormParams(session: Session, sessionWindow: Duration, values: Vector[Double])
 
-  var model: mutable.HashMap[String, (Session, Seq[Double])] = mutable.HashMap.empty[String, (Session, Seq[Double])]
-  var stormsList: Seq[StormParams] = Seq()
+  var model: mutable.HashMap[String, StormParams] = mutable.HashMap.empty[String, StormParams]
   var buildNumber: Int = 0
 
   /** Fit model */
@@ -28,39 +27,46 @@ class Storms(modelType: String, id: String) {
       val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(endIndex), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.values.toVector)
 
-      model = mutable.HashMap(Sessions.findSessions(rainfall)
+      val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall)
         .zipWithIndex
         .map(x =>
           x._2.toString ->
-            (x._1,
-              rainfall.slice(x._1.startIndex, x._1.endIndex.plusSeconds(resolution.getSeconds)).values)
-        ): _*)
+            StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex, x._1.endIndex.plusSeconds(resolution.getSeconds)).values)
+        ).toList
 
+      val listOfSessionWindows: Seq[Duration] =
+        baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
+          .map(x => Duration.between(x._1, x._2))
+          .distinct.sorted
+
+      def f(prev: List[(String, StormParams)], res: List[(String, StormParams)], sessionWindows: Seq[Duration]): List[(String, StormParams)] = {
+        if (sessionWindows.isEmpty) res
+        else {
+          val sessionWindow = sessionWindows.head
+          val next: List[(String, StormParams)] = prev.tail.foldLeft[List[(String, StormParams)]](List(prev.head))((zs, x) => {
+            if (sessionWindow.compareTo(Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)) >= 0) {
+              (randomUUID().toString, StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex), sessionWindow, zs.head._2.values ++ x._2.values)) :: zs.tail
+            } //merge sessions
+            else
+              x :: zs
+          }).reverse
+          f(next, res ++ next, sessionWindows.tail)
+        }
+      }
+
+      model = mutable.HashMap(f(baseSessions, baseSessions, listOfSessionWindows): _*)
       buildNumber += 1
     }
   }
-
 
   /**
     * List all storms
     */
   def list(sessionWindow: Duration): Seq[(String, Session)] = {
-    (
-      if (!stormsList.exists(_.sessionWindow == sessionWindow)) {
-        val modelList: List[(String, Session, Duration, Seq[String])] = model.toList.sortBy(_._2._1.startIndex).map(x => (randomUUID().toString, x._2._1, sessionWindow, Seq(x._1)))
-        if (model.isEmpty) Seq()
-        else
-          stormsList ++ modelList.tail.foldLeft[List[(String, Session, Duration, Seq[String])]](List(modelList.head))((zs, x) => {
-            if (sessionWindow.compareTo(Duration.between(zs.head._2.endIndex, x._2.startIndex)) >= 0)
-              (randomUUID().toString, Session(zs.head._2.startIndex, x._2.endIndex), sessionWindow, zs.head._4 ++ x._4) :: zs.tail //merge sessions
-            else
-              x :: zs
-          }).reverse.map(x => StormParams(x._1, x._3, x._4))
-      }
-      else {
-        stormsList.filter(_.sessionWindow == sessionWindow)
-      })
-      .map(x => (x.id, Session(model(x.values.head)._1.startIndex, model(x.values.last)._1.endIndex)))
+    model.filter(x => x._2.sessionWindow.compareTo(sessionWindow) <= 0)
+      .toSeq
+      .sortBy(_._2.sessionWindow)
+      .map(x => (x._1, x._2.session))
   }
 
   /**
@@ -69,7 +75,7 @@ class Storms(modelType: String, id: String) {
     */
   def get(storm_id: String): Option[(Instant, Instant, Seq[Double])] = {
     model.filter(_._1 == storm_id)
-      .map(x => (x._2._1.startIndex, x._2._1.endIndex, x._2._2))
+      .map(x => (x._2.session.startIndex, x._2.session.endIndex, x._2.values))
       .headOption
   }
 }
