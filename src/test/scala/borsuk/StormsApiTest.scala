@@ -11,8 +11,6 @@ import carldata.borsuk.Routing
 import carldata.borsuk.storms.ApiObjects._
 import carldata.borsuk.storms.ApiObjectsJsonProtocol._
 import org.scalatest.concurrent.Eventually
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.scalatest.time.{Milliseconds, Span}
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
@@ -51,6 +49,10 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
 
   private def listModelRequest(model: String, sessionWindows: String): HttpRequest = {
     HttpRequest(HttpMethods.GET, uri = s"/storms/$model/storm?sessionWindow=$sessionWindows")
+  }
+
+  private def getModelRequest(model: String, stormId: String): HttpRequest = {
+    HttpRequest(HttpMethods.GET, uri = s"/storms/$model/storm/$stormId")
   }
 
   "The storms" should {
@@ -153,6 +155,49 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       val route = mainRoute()
 
       listModelRequest("none", "PT5M") ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "get storm" in {
+      val route = mainRoute()
+
+      createModelRequest ~> route ~> check {
+        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+          , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
+        //will create 4 sessions, lets get first and check the values!
+        fitModelRequest(modelId, fitParams)
+      } ~> route ~> check {
+        listModelRequest(modelId, "PT7M")
+      } ~> route ~> check {
+        val stormId = responseAs[ListStormsResponse].storms.head.id
+        getModelRequest(modelId, stormId)
+      } ~> route ~> check {
+        responseAs[GetStormsResponse].values shouldEqual Array(1.0, 1.0)
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "should't get storm when model not exist" in {
+      val route = mainRoute()
+
+      getModelRequest("none", "none") ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "give nothing when storm not exist" in {
+      val route = mainRoute()
+
+      createModelRequest ~> route ~> check {
+        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+          , Array()))
+        fitModelRequest(modelId, fitParams)
+      } ~> route ~> check {
+        listModelRequest(modelId, "PT7M")
+      } ~> route ~> check {
+        getModelRequest(modelId, "none")
+      } ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }

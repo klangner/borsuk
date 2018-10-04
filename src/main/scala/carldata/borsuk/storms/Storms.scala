@@ -86,10 +86,7 @@ class Storms(modelType: String, id: String) {
       .map(x => (x._1, x._2.session))
   }
 
-  /**
-    * For provided storm id
-    * return maxIntensity
-    */
+  /** Get the storm */
   def get(storm_id: String): Option[(Instant, Instant, Seq[Double])] = {
     model.filter(_._1 == storm_id)
       .map(x => (x._2.session.startIndex, x._2.session.endIndex, x._2.values))
