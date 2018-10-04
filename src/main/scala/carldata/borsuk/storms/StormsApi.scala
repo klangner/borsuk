@@ -73,15 +73,21 @@ class StormsApi {
   def get(modelId: String, stormId: String): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        val response: GetStormsResponse = model.get(stormId)
-          .map(x => GetStormsResponse(instantToLDT(x._1), instantToLDT(x._2), x._3))
-          .getOrElse(GetStormsResponse(LocalDateTime.now(), LocalDateTime.now(), Seq()))
-
-        complete(HttpResponse(
-          StatusCodes.OK,
-          entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
-        ))
-
+        model.get(stormId.replaceAll("\"", ""))
+          .map(x => GetStormsResponse(instantToLDT(x._1), instantToLDT(x._2), x._3)) match {
+          case Some(response) =>
+            complete(HttpResponse(
+              StatusCodes.OK,
+              entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+            ))
+          case None =>
+            complete(HttpResponse(
+              StatusCodes.NotFound,
+              entity = HttpEntity(
+                MediaTypes.`application/json`
+                , GetStormsResponse(LocalDateTime.now(), LocalDateTime.now(), Seq()).toJson.compactPrint)
+            ))
+        }
       case None =>
         complete(StatusCodes.NotFound)
     }
