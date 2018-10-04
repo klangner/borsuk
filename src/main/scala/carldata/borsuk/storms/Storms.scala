@@ -8,14 +8,41 @@ import carldata.borsuk.storms.ApiObjects.FitStormsParams
 import carldata.series.Sessions.Session
 import carldata.series.{Gen, Sessions, TimeSeries}
 
-import scala.collection.mutable
+import scala.annotation.tailrec
+import scala.collection.immutable
 
 class Storms(modelType: String, id: String) {
 
   case class StormParams(session: Session, sessionWindow: Duration, values: Vector[Double], childIds: Seq[String])
 
-  var model: mutable.HashMap[String, StormParams] = mutable.HashMap.empty[String, StormParams]
+  var model: immutable.HashMap[String, StormParams] = immutable.HashMap.empty[String, StormParams]
   var buildNumber: Int = 0
+
+  @tailrec
+  private def mergeSessions(prev: List[(String, StormParams)], res: List[(String, StormParams)]
+                            , sessionWindows: Seq[Duration], resolution: Duration): List[(String, StormParams)] = {
+    if (sessionWindows.isEmpty) res
+    else {
+      val sessionWindow = sessionWindows.head
+      val next: List[(String, StormParams)] = prev.tail.foldLeft[List[(String, StormParams)]](List(prev.head))((zs, x) => {
+        if (sessionWindow.compareTo(Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)) >= 0) {
+          val gapDuration = Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)
+
+          val gapValues = for (_ <- 1 until (gapDuration.toMillis / resolution.toMillis).toInt) yield 0.0
+
+          (randomUUID().toString
+            , StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex)
+            , sessionWindow
+            , zs.head._2.values ++ gapValues ++ x._2.values
+            , zs.head._2.childIds ++ Seq(zs.head._1, x._1))
+          ) :: zs.tail
+        } //merge sessions
+        else
+          x :: zs
+      }).reverse
+      mergeSessions(next, res ++ next, sessionWindows.tail, resolution)
+    }
+  }
 
   /** Fit model */
   def fit(params: FitStormsParams): Unit = {
@@ -32,7 +59,7 @@ class Storms(modelType: String, id: String) {
         .map(x =>
           x._2.toString ->
             StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex
-                          , x._1.endIndex.plusSeconds(resolution.getSeconds)).values, Seq())
+              , x._1.endIndex.plusSeconds(resolution.getSeconds)).values, Seq())
         ).toList
 
       val listOfSessionWindows: Seq[Duration] =
@@ -40,24 +67,7 @@ class Storms(modelType: String, id: String) {
           .map(x => Duration.between(x._1, x._2))
           .distinct.sorted
 
-      def mergeSessions(prev: List[(String, StormParams)], res: List[(String, StormParams)]
-                        , sessionWindows: Seq[Duration]): List[(String, StormParams)] = {
-        if (sessionWindows.isEmpty) res
-        else {
-          val sessionWindow = sessionWindows.head
-          val next: List[(String, StormParams)] = prev.tail.foldLeft[List[(String, StormParams)]](List(prev.head))((zs, x) => {
-            if (sessionWindow.compareTo(Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)) >= 0) {
-              (randomUUID().toString, StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex), sessionWindow, zs.head._2.values ++ x._2.values, zs.head._2.childIds ++ Seq(zs.head._1, x._1))
-              ) :: zs.tail
-            } //merge sessions
-            else
-              x :: zs
-          }).reverse
-          mergeSessions(next, res ++ next, sessionWindows.tail)
-        }
-      }
-
-      model = mutable.HashMap(mergeSessions(baseSessions, baseSessions, listOfSessionWindows): _*)
+      model = immutable.HashMap(mergeSessions(baseSessions, baseSessions, listOfSessionWindows, resolution): _*)
       buildNumber += 1
     }
   }
