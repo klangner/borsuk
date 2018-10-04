@@ -22,6 +22,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
     routing.route()
   }
 
+  private val modelId = "secret-id"
   private val createModelRequest: HttpRequest = {
     val params = CreateStormsParams("storms-v0", "secret-id")
     HttpRequest(
@@ -48,6 +49,10 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
     HttpRequest(HttpMethods.GET, uri = s"/storms/$model")
   }
 
+  private def listModelRequest(model: String, sessionWindows: String): HttpRequest = {
+    HttpRequest(HttpMethods.GET, uri = s"/storms/$model/storm?sessionWindow=$sessionWindows")
+  }
+
   "The storms" should {
 
     "create new model" in {
@@ -57,6 +62,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         status shouldEqual StatusCodes.OK
       }
     }
+
     "create new model with id already in use" in {
       val route = mainRoute()
       createModelRequest ~> route ~> check {
@@ -66,30 +72,87 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         status shouldEqual StatusCodes.Conflict
       }
     }
-    "return new status after fit" in {
-      val route = mainRoute()
-      createModelRequest ~> route ~> check {
-        val res = responseAs[ModelStormsCreatedResponse]
 
-        val statusBeforeFit = checkStatus(res.id, route)
-
-        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
-          , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
-        fitModelRequest(res.id, fitParams) ~> route ~> check {
-
-          eventually(timeout = Timeout(Span(5000, Milliseconds))) {
-            checkStatus(res.id, route) != statusBeforeFit
-          }
-
-          status shouldEqual StatusCodes.OK
-          checkStatus(res.id, route) shouldEqual 1
-        }
-      }
-    }
     "response 404 when fit without create" in {
       val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
         , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
       fitModelRequest("wrong_id", fitParams) ~> mainRoute() ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "list all storms" in {
+      val route = mainRoute()
+
+      createModelRequest ~> route ~> check {
+        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+          , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
+        //will create 4 sessions, lets get first and check the values!
+        fitModelRequest(modelId, fitParams)
+      } ~> route ~> check {
+        listModelRequest(modelId, "PT5M")
+      } ~> route ~> check {
+        val stormsCount = responseAs[ListStormsResponse].storms.length
+        stormsCount shouldEqual 4
+      }
+    }
+
+    "list joined storms" in {
+      val route = mainRoute()
+
+      createModelRequest ~> route ~> check {
+        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+          , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
+        //will create 4 sessions, lets get first and check the values!
+        fitModelRequest(modelId, fitParams)
+      } ~> route ~> check {
+        listModelRequest(modelId, "PT10M")
+      } ~> route ~> check {
+        val stormsCount = responseAs[ListStormsResponse].storms.length
+        stormsCount shouldEqual 3
+      }
+    }
+
+    "list joined to one storm" in {
+      val route = mainRoute()
+
+      createModelRequest ~> route ~> check {
+        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+          , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
+        //will create 4 sessions, lets get first and check the values!
+        fitModelRequest(modelId, fitParams)
+      } ~> route ~> check {
+        listModelRequest(modelId, "PT20M")
+      } ~> route ~> check {
+        val stormsCount = responseAs[ListStormsResponse].storms.length
+        stormsCount shouldEqual 1
+      }
+    }
+
+    "list storms two times" in {
+      val route = mainRoute()
+
+      createModelRequest ~> route ~> check {
+        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+          , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
+        //will create 4 sessions, lets get first and check the values!
+        fitModelRequest(modelId, fitParams)
+      } ~> route ~> check {
+        listModelRequest(modelId, "PT10M")
+      } ~> route ~> check {
+        val stormsCount = responseAs[ListStormsResponse].storms.length
+        stormsCount shouldEqual 3
+        listModelRequest(modelId, "PT20M")
+      } ~> route ~> check {
+        val stormsCount = responseAs[ListStormsResponse].storms.length
+        stormsCount shouldEqual 1
+      }
+    }
+
+    "should't get list of storms when model not exist" in {
+      val route = mainRoute()
+
+      listModelRequest("none", "PT5M") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }

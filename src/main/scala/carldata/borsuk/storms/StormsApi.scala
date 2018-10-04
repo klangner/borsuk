@@ -54,7 +54,7 @@ class StormsApi {
 
         val response = ListStormsResponse {
           model
-            .list()
+            .list(sessionWindow)
             .map(x => StormsObject(x._1, instantToLDT(x._2.startIndex), instantToLDT(x._2.endIndex)))
             .toArray
         }
