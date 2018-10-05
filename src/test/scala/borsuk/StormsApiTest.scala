@@ -14,6 +14,8 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
+import scala.concurrent.duration._
+
 class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
   private def mainRoute(): Route = {
     val routing = new Routing()
@@ -95,7 +97,10 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         listModelRequest(modelId, "PT5M")
       } ~> route ~> check {
         val stormsCount = responseAs[ListStormsResponse].storms.length
-        stormsCount shouldEqual 4
+        //stormsCount shouldEqual 4
+        eventually(timeout(1 nanoseconds), interval(0 nanoseconds)) {
+          stormsCount shouldEqual 4
+        }
       }
     }
 
