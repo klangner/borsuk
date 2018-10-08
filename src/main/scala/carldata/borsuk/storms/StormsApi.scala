@@ -5,10 +5,14 @@ import java.time.{Duration, LocalDateTime}
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
+
+import scala.concurrent.ExecutionContext.Implicits.global
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.storms.ApiObjects._
 import carldata.borsuk.storms.ApiObjectsJsonProtocol._
 import spray.json._
+
+import scala.concurrent.Future
 
 
 class StormsApi {
@@ -39,7 +43,9 @@ class StormsApi {
   def fit(modelId: String, params: FitStormsParams): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        model.fit(params)
+        Future {
+          model.fit(params)
+        }
         complete(StatusCodes.OK)
 
       case None =>
