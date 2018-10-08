@@ -97,8 +97,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         listModelRequest(modelId, "PT5M")
       } ~> route ~> check {
         val stormsCount = responseAs[ListStormsResponse].storms.length
-        //stormsCount shouldEqual 4
-        eventually(timeout(1 nanoseconds), interval(0 nanoseconds)) {
+        eventually(timeout(1 minutes)) {
           stormsCount shouldEqual 4
         }
       }
@@ -206,5 +205,8 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         status shouldEqual StatusCodes.NotFound
       }
     }
+
+
+
   }
 }
