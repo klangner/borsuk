@@ -8,13 +8,16 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
+import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.storms.ApiObjects._
 import carldata.borsuk.storms.ApiObjectsJsonProtocol._
+import carldata.series.Csv
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
 import scala.concurrent.duration._
+import scala.io.Source
 
 class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
   private def mainRoute(): Route = {
@@ -94,11 +97,11 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         //will create 4 sessions, lets get first and check the values!
         fitModelRequest(modelId, fitParams)
       } ~> route ~> check {
-        listModelRequest(modelId, "PT5M")
-      } ~> route ~> check {
-        val stormsCount = responseAs[ListStormsResponse].storms.length
-        eventually(timeout(1 minutes)) {
-          stormsCount shouldEqual 4
+        eventually(timeout(20 seconds)) {
+          listModelRequest(modelId, "PT5M") ~> route ~> check {
+            val stormsCount = responseAs[ListStormsResponse].storms.length
+            stormsCount shouldEqual 4
+          }
         }
       }
     }
@@ -172,13 +175,15 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         //will create 4 sessions, lets get first and check the values!
         fitModelRequest(modelId, fitParams)
       } ~> route ~> check {
-        listModelRequest(modelId, "PT7M")
-      } ~> route ~> check {
-        val stormId = responseAs[ListStormsResponse].storms.head.id
-        getModelRequest(modelId, stormId)
-      } ~> route ~> check {
-        responseAs[GetStormsResponse].values shouldEqual Array(1.0, 1.0)
-        status shouldEqual StatusCodes.OK
+        eventually(timeout(20 seconds)) {
+          listModelRequest(modelId, "PT7M") ~> route ~> check {
+            val stormId = responseAs[ListStormsResponse].storms.head.id
+            getModelRequest(modelId, stormId)
+          } ~> route ~> check {
+            responseAs[GetStormsResponse].values shouldEqual Array(1.0, 1.0)
+            status shouldEqual StatusCodes.OK
+          }
+        }
       }
     }
 
@@ -206,7 +211,27 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       }
     }
 
+    "fit for copley-pump(46225 samples) should fit in less than 20 seconds" in {
+      val route = mainRoute()
+      val copleyPumpTs = Csv.fromString(Source.fromResource("copley-pump.csv").getLines().mkString("\n"))
+      val startDate = DateTimeHelper.instantToLDT(copleyPumpTs(1).index.head)
+      val rainfall = copleyPumpTs(1).values.toArray[Double]
 
+      val fitParams = FitStormsParams(TimeSeriesParams(startDate, Duration.ofMinutes(5), rainfall))
+      createModelRequest ~> route ~> check {
+        val res = responseAs[ModelStormsCreatedResponse]
+        val statusBeforeFit = checkStatus(res.id, route)
+
+        fitModelRequest(res.id, fitParams) ~> route ~> check {
+          eventually(timeout(20 seconds)) {
+            val statusAfterFit = checkStatus(res.id, route)
+            statusBeforeFit should not equal statusAfterFit
+            status shouldEqual StatusCodes.OK
+            checkStatus(res.id, route) shouldEqual 1
+          }
+        }
+      }
+    }
 
   }
 }
