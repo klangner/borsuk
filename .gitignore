@@ -10,3 +10,4 @@ logs/
 target/
 docker_build.sh
 borsuk.yaml
+config.txt
