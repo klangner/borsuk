@@ -174,7 +174,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def read(value: JsValue): GetStormsResponse = {
       val fields = value.asJsObject.fields
       val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
-      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
+      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("end-date").toString)
       fields("values") match {
         case JsArray(arr) =>
           val vs = arr.map { a =>
