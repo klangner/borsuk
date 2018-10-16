@@ -239,5 +239,26 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       }
     }
 
+    "fit for real data (rainfall) " in {
+      val route = mainRoute()
+      val data = Csv.fromString(Source.fromResource("data.csv").getLines().mkString("\n"))
+      val startDate = DateTimeHelper.instantToLDT(data(0).index.head)
+      val rainfall = data(0).values.toArray[Double]
+
+      createModelRequest ~> route ~> check {
+        val fitParams = FitStormsParams(TimeSeriesParams(startDate, Duration.ofMinutes(5), rainfall))
+        fitModelRequest(modelId, fitParams)
+      } ~> route ~> check {
+        eventually(timeout(60 seconds)) {
+          checkStatus(modelId, route) shouldEqual 1
+        }
+        getModelRequest(modelId, "4")
+      } ~> route ~> check {
+        responseAs[GetStormsResponse].startDate shouldEqual LocalDateTime.parse("2014-10-28T06:15:00")
+        responseAs[GetStormsResponse].endDate shouldEqual LocalDateTime.parse("2014-10-28T06:20:00")
+        responseAs[GetStormsResponse].values shouldEqual Array(0.20000000298023224, 0.20000000298023224)
+        status shouldEqual StatusCodes.OK
+      }
+    }
   }
 }
