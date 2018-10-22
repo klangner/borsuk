@@ -1,4 +1,4 @@
-package carldata.borsuk.riids
+package carldata.borsuk.rdiis
 
 import java.time.{Duration, LocalDateTime}
 import java.util.UUID.randomUUID

@@ -1,11 +1,11 @@
-package carldata.borsuk.riids
+package carldata.borsuk.rdiis
 
 import java.time._
 import java.time.temporal.ChronoUnit
 import java.util.UUID.randomUUID
 
-import carldata.borsuk.riids.ApiObjects.FitRDIIParams
-import carldata.borsuk.riids.DryWeatherPattern._
+import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
+import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.TimeSeriesHelper
 import carldata.series.Sessions.Session
