@@ -7,8 +7,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
-import carldata.borsuk.riids.ApiObjects._
-import carldata.borsuk.riids.ApiObjectsJsonProtocol._
+import carldata.borsuk.rdiis.ApiObjects._
+import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
