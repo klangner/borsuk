@@ -6,9 +6,9 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import carldata.borsuk.riis.ApiObjects.{CreateParams, FitRDIIParams}
-import carldata.borsuk.riis.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitRDIIParamsFormat}
-import carldata.borsuk.riis.RdiiApi
+import carldata.borsuk.riids.ApiObjects.{CreateParams, FitRDIIParams}
+import carldata.borsuk.riids.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitRDIIParamsFormat}
+import carldata.borsuk.riids.RdiiApi
 import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams}
 import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
