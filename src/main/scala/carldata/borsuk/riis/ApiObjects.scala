@@ -1,4 +1,4 @@
-package carldata.borsuk.autoii
+package carldata.borsuk.riis
 
 import java.time.{Duration, LocalDateTime}
 import java.util.UUID.randomUUID
@@ -18,7 +18,7 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitAutoIIParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams)
+  case class FitRDIIParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams)
 
   case class RDIIObject(id: String, startDate: LocalDateTime, endDate: LocalDateTime)
 
@@ -79,24 +79,24 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   /**
     * FitParams formatter
     */
-  implicit object FitAutoIIParamsFormat extends RootJsonFormat[FitAutoIIParams] {
+  implicit object FitRDIIParamsFormat extends RootJsonFormat[FitRDIIParams] {
     val emptyTSP = TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array())
 
-    def write(params: FitAutoIIParams): JsObject = {
+    def write(params: FitRDIIParams): JsObject = {
       JsObject(
         "flow" -> params.flow.toJson,
         "rainfall" -> params.rainfall.toJson
       )
     }
 
-    def read(value: JsValue): FitAutoIIParams = value match {
+    def read(value: JsValue): FitRDIIParams = value match {
 
       case JsObject(x) =>
-        FitAutoIIParams(
+        FitRDIIParams(
           x.get("flow").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP),
           x.get("rainfall").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP)
         )
-      case _ => FitAutoIIParams(emptyTSP, emptyTSP)
+      case _ => FitRDIIParams(emptyTSP, emptyTSP)
     }
   }
 
@@ -156,11 +156,10 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
     def read(value: JsValue): ListResponse = {
       value.asJsObject().fields("rdii") match {
-        case JsArray(arr) => {
+        case JsArray(arr) =>
           ListResponse(arr.map { a =>
             a.convertTo[ApiObjects.RDIIObject]
           }.toArray)
-        }
         case _ => ListResponse(Array())
       }
     }

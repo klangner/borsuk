@@ -1,9 +1,9 @@
-package carldata.borsuk.autoii
+package carldata.borsuk.riis
 
 import java.time._
 import java.time.temporal.ChronoUnit
 
-import carldata.borsuk.autoii.DryWeatherPattern._
+import carldata.borsuk.riis.DryWeatherPattern._
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.series.Sessions.Session
 import carldata.series.TimeSeries

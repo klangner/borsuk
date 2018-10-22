@@ -7,8 +7,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
-import carldata.borsuk.autoii.ApiObjects._
-import carldata.borsuk.autoii.ApiObjectsJsonProtocol._
+import carldata.borsuk.riis.ApiObjects._
+import carldata.borsuk.riis.ApiObjectsJsonProtocol._
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
@@ -53,7 +53,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val trainData = 0.to(1000).map(_ => 1.0).toArray
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitAutoIIParams(tsp, tsp)
+      val fitParams = FitRDIIParams(tsp, tsp)
 
       val request = HttpRequest(
         HttpMethods.POST,
@@ -92,7 +92,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val resolution: Duration = Duration.ofMinutes(10)
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitAutoIIParams(tsp, tsp)
+      val fitParams = FitRDIIParams(tsp, tsp)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -120,7 +120,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val resolution: Duration = Duration.ofMinutes(10)
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitAutoIIParams(tsp, tsp)
+      val fitParams = FitRDIIParams(tsp, tsp)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -147,7 +147,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val resolution: Duration = Duration.ofMinutes(10)
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitAutoIIParams(tsp, tsp)
+      val fitParams = FitRDIIParams(tsp, tsp)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
