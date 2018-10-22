@@ -1,11 +1,11 @@
-package carldata.borsuk.autoii
+package carldata.borsuk.rdiis
 
 import java.time._
 import java.time.temporal.ChronoUnit
 import java.util.UUID.randomUUID
 
-import carldata.borsuk.autoii.ApiObjects.FitAutoIIParams
-import carldata.borsuk.autoii.DryWeatherPattern._
+import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
+import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.TimeSeriesHelper
 import carldata.series.Sessions.Session
@@ -20,7 +20,7 @@ class RDII(modelType: String, id: String) {
   var buildNumber: Int = 0
 
   /** Fit model */
-  def fit(params: FitAutoIIParams): Unit = {
+  def fit(params: FitRDIIParams): Unit = {
 
     if (params.flow.values.nonEmpty && params.flow.values.length == params.rainfall.values.length) {
       //TODO
@@ -29,9 +29,9 @@ class RDII(modelType: String, id: String) {
   }
 
   /**
-    * List all rdiis
+    * List all rdiis with sessionWindow
     */
-  def list(): Seq[(String, LocalDateTime, LocalDateTime)] = {
+  def list(sessionWindow: Duration): Seq[(String, LocalDateTime, LocalDateTime)] = {
     model.map { x =>
       x.inflows
         .flatMap {

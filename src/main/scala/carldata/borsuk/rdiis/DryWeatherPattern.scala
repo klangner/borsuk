@@ -1,4 +1,4 @@
-package carldata.borsuk.autoii
+package carldata.borsuk.rdiis
 
 import java.time._
 import java.time.temporal.ChronoUnit

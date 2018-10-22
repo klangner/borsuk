@@ -6,9 +6,9 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import carldata.borsuk.autoii.ApiObjects.{CreateParams, FitAutoIIParams}
-import carldata.borsuk.autoii.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitAutoIIParamsFormat}
-import carldata.borsuk.autoii.AutoIIApi
+import carldata.borsuk.rdiis.ApiObjects.{CreateParams, FitRDIIParams}
+import carldata.borsuk.rdiis.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitRDIIParamsFormat}
+import carldata.borsuk.rdiis.RdiiApi
 import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams}
 import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
@@ -24,7 +24,7 @@ import scala.language.postfixOps
 
 class Routing() {
   val predictionApi = new PredictionAPI()
-  val autoIIApi = new AutoIIApi()
+  val RDIIApi = new RdiiApi()
   val stormsApi = new StormsApi()
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
@@ -56,30 +56,27 @@ class Routing() {
       get {
         predictionApi.status(id)
       }
-    } ~ path("autoii") {
+    } ~ path("rdiis") {
       post {
-        entity(as[CreateParams])(params => autoIIApi.create(params))
+        entity(as[CreateParams])(params => RDIIApi.create(params))
       }
-    } ~ path("autoii" / Segment / "fit") { id =>
+    } ~ path("rdiis" / Segment / "fit") { id =>
       post {
-        entity(as[FitAutoIIParams])(data => autoIIApi.fit(id, data))
+        entity(as[FitRDIIParams])(data => RDIIApi.fit(id, data))
       }
-    } ~ (path("autoii" / Segment / "rdii") & parameters("startDate".as[String], "endDate".as[String]
-      , "stormSessionWindow".as[String], "flowWindow".as[String], "dryDayWindow".as[String])) {
-      (id, startDate, endDate, stormSessionWindow, flowWindow, dryDayWindow) =>
+    } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String])) {
+      (id, sessionWindow) =>
         get {
-          autoIIApi.list(id, DateTimeHelper.dateParse(startDate), DateTimeHelper.dateParse(endDate)
-            , Duration.parse(stormSessionWindow), Duration.parse(flowWindow), Duration.parse(dryDayWindow)
-          )
+          RDIIApi.list(id, Duration.parse(sessionWindow))
         }
-    } ~ path("autoii" / Segment / "rdii" / Segment) {
+    } ~ path("rdiis" / Segment / "rdii" / Segment) {
       (modelId, rdiiId) =>
         get {
-          autoIIApi.get(modelId, rdiiId)
+          RDIIApi.get(modelId, rdiiId)
         }
-    } ~ path("autoii" / Segment) { id =>
+    } ~ path("rdiis" / Segment) { id =>
       get {
-        autoIIApi.status(id)
+        RDIIApi.status(id)
       }
     } ~ path("storms") {
       post {

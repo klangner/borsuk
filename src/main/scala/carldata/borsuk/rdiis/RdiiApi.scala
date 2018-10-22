@@ -1,15 +1,15 @@
-package carldata.borsuk.autoii
+package carldata.borsuk.rdiis
 
 import java.time.{Duration, LocalDateTime}
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.autoii.ApiObjects._
-import carldata.borsuk.autoii.ApiObjectsJsonProtocol._
+import carldata.borsuk.rdiis.ApiObjects._
+import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
 import spray.json._
 
-class AutoIIApi {
+class RdiiApi {
   val models = collection.mutable.Map.empty[String, RDII]
 
   /**
@@ -33,7 +33,7 @@ class AutoIIApi {
   }
 
   /** Fit the model to the training data */
-  def fit(modelId: String, params: FitAutoIIParams): StandardRoute = {
+  def fit(modelId: String, params: FitRDIIParams): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
         model.fit(params)
@@ -45,15 +45,14 @@ class AutoIIApi {
   }
 
   /** List the models of the training data */
-  def list(modelId: String, startDate: LocalDateTime, endDate: LocalDateTime
-           , stormSessionWindow: Duration, flowWindow: Duration, dryDayWindow: Duration): StandardRoute = {
+  def list(modelId: String, sessionWindow: Duration): StandardRoute = {
 
     models.get(modelId) match {
       case Some(model) =>
 
         val response = ListResponse {
           model
-            .list()
+            .list(sessionWindow)
             .map(x => ApiObjects.RDIIObject(x._1, x._2, x._3))
             .toArray
         }
