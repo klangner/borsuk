@@ -74,7 +74,7 @@ class Storms(modelType: String, id: String) {
       val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(endIndex), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.values.toVector)
 
-      val mergedSession: List[(String, Storms.StormParams)] = Storms.GetAllStorms(resolution, rainfall)
+      val mergedSession: List[(String, Storms.StormParams)] = Storms.getAllStorms(resolution, rainfall)
       model = immutable.HashMap(mergedSession: _*)
       buildNumber += 1
     }
