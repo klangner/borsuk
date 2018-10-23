@@ -11,12 +11,14 @@ import carldata.borsuk.helper.TimeSeriesHelper
 import carldata.series.Sessions.Session
 import carldata.series.TimeSeries
 
+import scala.collection.immutable
 
-case class RDIIObject(rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
-                      , inflows: Seq[(String, TimeSeries[Double])])
+
+case class RDIIObject(sessionWindow: Duration, rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
+                      , inflow: (String, TimeSeries[Double]), childIds: Seq[String])
 
 class RDII(modelType: String, id: String) {
-  var model: Option[RDIIObject] = None
+  var model: immutable.HashMap[String, RDIIObject] = immutable.HashMap.empty[String, RDIIObject]
   var buildNumber: Int = 0
 
   /** Fit model */
@@ -32,15 +34,16 @@ class RDII(modelType: String, id: String) {
     * List all rdiis with sessionWindow
     */
   def list(sessionWindow: Duration): Seq[(String, LocalDateTime, LocalDateTime)] = {
-    model.map { x =>
-      x.inflows
-        .flatMap {
-          t =>
-            if (t._2.nonEmpty) Some(t._1, instantToLDT(t._2.index.head), instantToLDT(t._2.index.last))
-            else None
-        }
-    }
-      .getOrElse(Seq())
+
+    val lessOrEqualModel = model.filter(x => x._2.sessionWindow.compareTo(sessionWindow) <= 0)
+      .filter(x => x._2.inflow._2.nonEmpty)
+      .toSeq
+      .sortBy(_._1)
+
+    val childIds = lessOrEqualModel.flatMap(_._2.childIds).distinct
+
+    lessOrEqualModel.filter(x => !childIds.contains(x._1))
+      .map(t => (t._1, instantToLDT(t._2.inflow._2.index.head), instantToLDT(t._2.inflow._2.index.last)))
   }
 
   /**
@@ -49,29 +52,24 @@ class RDII(modelType: String, id: String) {
     * rainfall, flow, dwp and rdii
     */
   def get(rdii_id: String): Option[(LocalDateTime, LocalDateTime
-    , Array[Double], Array[Double], Array[Double], Array[Double])] = {
-
-    model.flatMap { x =>
-      val inflows = x.inflows.find(_._1 == rdii_id)
-      if (inflows.nonEmpty) {
-        Some(instantToLDT(x.rainfall.index.head), instantToLDT(x.rainfall.index.last)
-          , x.rainfall.values.toArray
-          , x.flow.values.toArray
-          , x.dwp.values.toArray
-          , x.inflows.find(_._1 == rdii_id).head._2.values.toArray)
-      }
+    , Array[Double], Array[Double], Array[Double], Array[Double])] = model.filter(_._1 == rdii_id)
+    .map { x =>
+      if (x._2.inflow._2.nonEmpty) Some(instantToLDT(x._2.rainfall.index.head)
+        , instantToLDT(x._2.rainfall.index.last)
+        , x._2.rainfall.values.toArray
+        , x._2.flow.values.toArray
+        , x._2.dwp.values.toArray
+        , x._2.inflow._2.values.toArray)
       else None
-    }
-  }
+    }.head
 }
-
 
 /**
   * Rainfall dependant inflow and infiltration
   */
 
 case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], startDate: LocalDateTime
-                       , endDate: LocalDateTime, flowWindows: Seq[Int]) {
+                       , endDate: LocalDateTime) {
 
   private var limit = 1000
   private var stormSessionWindows: Duration = Duration.ofHours(12)
@@ -126,8 +124,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-      val inflows: Seq[(String, TimeSeries[Double])] = flowWindows.map(x => Inflow.fromSession(Session(sd, ed), flow, allDWPDays, Duration.ofMinutes(x)))
-        .map(x => x.slice(sd, ed)).map((randomUUID.toString, _))
+      val inflow: (String, TimeSeries[Double]) = (randomUUID.toString, Inflow.fromSession(Session(sd, ed), flow, allDWPDays))
 
       val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(sd, ed)
       //Adjust indexes in all series, dwp && inflows already are OK
@@ -138,9 +135,9 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       val flowSection: TimeSeries[Double] = flow.slice(sd, ed).filter(x => dwp.index.contains(x._1))
 
-      RDIIObject(rainfallSection, flowSection, dwp, inflows)
+      RDIIObject(stormSessionWindows, rainfallSection, flowSection, dwp, inflow, Seq())
     }
-    else RDIIObject(TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
+    else RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, ("", TimeSeries.empty), Seq())
   }
 
   def adjust(raw: TimeSeries[Double], template: TimeSeries[Double]): TimeSeries[Double] = {
