@@ -21,9 +21,16 @@ object DryWeatherPattern {
     * Select date of DWP
     */
   def findDryDay(day: LocalDate, dryDays: Seq[LocalDate]): Option[LocalDate] = {
-    dryDays.filter(x => x.isBefore(day))
+    val dryDay = dryDays.filter(x => x.isBefore(day))
       .filter(x => isDateHoliday(x) == isDateHoliday(day))
       .lastOption
+
+    if(dryDay.isEmpty){
+      dryDays.filter(x => x.isAfter(day))
+        .find(x => isDateHoliday(x) == isDateHoliday(day))
+    } else {
+      dryDay
+    }
   }
 
   def get(dwpDay: LocalDate, flow: TimeSeries[Double]): TimeSeries[Double] = {
