@@ -21,12 +21,6 @@ object DryWeatherPattern {
     * Select date of DWP
     */
   def findDryDay(day: LocalDate, dryDays: Seq[LocalDate]): Option[LocalDate] = {
-    dryDays.filter(x => x.isBefore(day))
-      .filter(x => isDateHoliday(x) == isDateHoliday(day))
-      .lastOption
-  }
-
-  def findDryDay2(day: LocalDate, dryDays: Seq[LocalDate]): Option[LocalDate] = {
     val dryDay = dryDays.filter(x => x.isBefore(day))
       .filter(x => isDateHoliday(x) == isDateHoliday(day))
       .lastOption
