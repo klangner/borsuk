@@ -21,7 +21,7 @@ class DryWeatherPatternTest extends WordSpec with Matchers {
         LocalDate.of(2017, 12, 30), //Saturday
         LocalDate.of(2017, 12, 31), //Sunday
       )
-      val dayWithDryDayPattern = DryWeatherPattern.findDryDay2(day, allDwpDays)
+      val dayWithDryDayPattern = DryWeatherPattern.findDryDay(day, allDwpDays)
       dayWithDryDayPattern.get shouldBe LocalDate.of(2017, 12, 29)
     }
 
@@ -38,7 +38,7 @@ class DryWeatherPatternTest extends WordSpec with Matchers {
         LocalDate.of(2018, 1, 14), //Sunday
       )
 
-      val dayWithDryDayPattern = DryWeatherPattern.findDryDay2(day,allDwpDays)
+      val dayWithDryDayPattern = DryWeatherPattern.findDryDay(day,allDwpDays)
       dayWithDryDayPattern.get shouldBe LocalDate.of(2018,1,8)
     }
 
