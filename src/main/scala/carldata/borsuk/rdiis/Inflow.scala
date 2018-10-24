@@ -13,7 +13,7 @@ object Inflow {
   /**
     * Find inflows in session
     */
-  def fromSession(session: Session, flow: TimeSeries[Double], dryDays: Seq[LocalDate], flowWindow: Duration): TimeSeries[Double] = {
+  def fromSession(session: Session, flow: TimeSeries[Double], dryDays: Seq[LocalDate]): TimeSeries[Double] = {
     def moveBorder(sessionBorder: Instant): Instant = dayToInstant(instantToDay(sessionBorder))
 
     val slicedFlow = flow.slice(moveBorder(session.startIndex).minus(2, ChronoUnit.DAYS), moveBorder(session.endIndex.plus(1, ChronoUnit.DAYS)))
@@ -30,7 +30,6 @@ object Inflow {
       else x._2 - patternValue
     }
       .filter(x => !x._2.isNaN)
-      .rollingWindow(flowWindow.minusSeconds(1), x => x.sum / x.length)
       .mapValues(Math.max(_, 0.0))
   }
 
