@@ -32,7 +32,7 @@ class InflowTest extends WordSpec with Matchers {
 
       val inflow = Inflow.fromSession(Session(dtToInstant(sd.plusDays(7)), dtToInstant(ed)), flow, allDWPDays)
 
-      inflow.length shouldEqual 8
+      inflow.length shouldEqual 9
       inflow.values.head shouldEqual 0.0
       inflow.values.last shouldEqual 0.0
     }
