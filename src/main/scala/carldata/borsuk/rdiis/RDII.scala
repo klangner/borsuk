@@ -4,6 +4,7 @@ import java.time._
 import java.time.temporal.ChronoUnit
 import java.util.UUID.randomUUID
 
+import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
 import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.borsuk.helper.DateTimeHelper._
@@ -12,7 +13,10 @@ import carldata.series.Sessions.Session
 import carldata.series.TimeSeries
 
 import scala.collection.immutable
-
+import carldata.borsuk.helper.DateTimeHelper
+import carldata.borsuk.helper.JsonHelper._
+import carldata.borsuk.BasicApiObjectsJsonProtocol._
+import spray.json._
 
 case class RDIIObject(sessionWindow: Duration, rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
                       , inflow: (String, TimeSeries[Double]), childIds: Seq[String])
@@ -155,3 +159,32 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
   }
 
 }
+
+
+/**
+  * RDII Object JSON serialization
+  */
+object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
+
+  implicit object RDIIObjectFormat extends  RootJsonFormat[RDIIObject] {
+     def read(json: JsValue): RDIIObject = json match {
+
+       case JsObject(x) =>
+         RDIIObject(Duration.ZERO,TimeSeries.empty,TimeSeries.empty, TimeSeries.empty,("",TimeSeries.empty),Seq())
+       case _ => RDIIObject(Duration.ZERO,TimeSeries.empty,TimeSeries.empty, TimeSeries.empty,("",TimeSeries.empty),Seq())
+     }
+
+    override def write(obj: RDIIObject): JsObject = {
+      JsObject(
+        "session-window" -> JsString(obj.sessionWindow.toString),
+        "rainfall" -> TimeSeriesParams(instantToLDT(obj.rainfall.index.head),obj.rainfall.resolution, obj.rainfall.values.toArray).toJson,
+        "flow" -> TimeSeriesParams(instantToLDT(obj.flow.index.head),obj.flow.resolution, obj.flow.values.toArray).toJson,
+        "dwp" -> TimeSeriesParams(instantToLDT(obj.dwp.index.head),obj.dwp.resolution, obj.dwp.values.toArray).toJson,
+        "inflow" -> TimeSeriesParams(instantToLDT(obj.inflow._2.index.head),obj.inflow._2.resolution, obj.inflow._2.values.toArray).toJson,
+        "child-ids" ->  JsArray(obj.childIds.map(_.toJson).toVector)
+      )
+    }
+  }
+
+}
+

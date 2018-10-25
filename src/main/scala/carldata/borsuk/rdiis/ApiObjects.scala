@@ -166,7 +166,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   }
 
   /**
-    * Model List formatter
+    * Get response formatter
     */
   implicit object GetResponseFormat extends RootJsonFormat[GetResponse] {
     def write(response: GetResponse): JsObject = {
@@ -174,15 +174,15 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
         "start-date" -> JsString(response.startDate.toString),
         "end-date" -> JsString(response.endDate.toString),
         "flow" -> JsArray(response.flow.map(_.toJson).toVector),
-        "rainfall" -> JsArray(response.flow.map(_.toJson).toVector),
-        "dwp" -> JsArray(response.flow.map(_.toJson).toVector),
-        "rdii" -> JsArray(response.flow.map(_.toJson).toVector))
+        "rainfall" -> JsArray(response.rainfall.map(_.toJson).toVector),
+        "dwp" -> JsArray(response.dwp.map(_.toJson).toVector),
+        "rdii" -> JsArray(response.rdii.map(_.toJson).toVector))
     }
 
     def read(value: JsValue): GetResponse = {
       val fields = value.asJsObject.fields
       val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
-      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
+      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("end-date").toString)
       val flow = fields("flow").convertTo[Array[Double]]
       val rainfall = fields("rainfall").convertTo[Array[Double]]
       val dwp = fields("dwp").convertTo[Array[Double]]
