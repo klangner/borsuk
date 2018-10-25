@@ -1,6 +1,6 @@
 package carldata.borsuk.rdiis
 
-import java.time.{Duration, LocalDateTime}
+import java.time.Duration
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
@@ -70,13 +70,17 @@ class RdiiApi {
   def get(modelId: String, rdiiId: String): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        val response: GetResponse = model.get(rdiiId).map(x => GetResponse(x._1, x._2, x._3, x._4, x._5, x._6))
-          .getOrElse(GetResponse(LocalDateTime.now(), LocalDateTime.now(), Array(), Array(), Array(), Array()))
+        model.get(rdiiId) match {
+          case Some(rdii) =>
+            val response: GetResponse = GetResponse(rdii._1, rdii._2, rdii._3, rdii._4, rdii._5, rdii._6)
 
-        complete(HttpResponse(
-          StatusCodes.OK,
-          entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
-        ))
+            complete(HttpResponse(
+              StatusCodes.OK,
+              entity = HttpEntity(MediaTypes.`application/json`, response.toJson.compactPrint)
+            ))
+          case None =>
+            complete(StatusCodes.NotFound)
+        }
 
       case None =>
         complete(StatusCodes.NotFound)
