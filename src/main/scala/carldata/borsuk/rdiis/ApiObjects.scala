@@ -18,7 +18,7 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitRDIIParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams)
+  case class FitRDIIParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams, dryDayWindow: Duration)
 
   case class RDIIObject(id: String, startDate: LocalDateTime, endDate: LocalDateTime)
 
@@ -85,7 +85,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def write(params: FitRDIIParams): JsObject = {
       JsObject(
         "flow" -> params.flow.toJson,
-        "rainfall" -> params.rainfall.toJson
+        "rainfall" -> params.rainfall.toJson,
+        "dryDayWindow" -> params.dryDayWindow.toString.toJson
       )
     }
 
@@ -94,9 +95,10 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       case JsObject(x) =>
         FitRDIIParams(
           x.get("flow").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP),
-          x.get("rainfall").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP)
+          x.get("rainfall").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP),
+          Duration.parse(x.get("dryDayWindow").get.asInstanceOf[JsString].value)
         )
-      case _ => FitRDIIParams(emptyTSP, emptyTSP)
+      case _ => FitRDIIParams(emptyTSP, emptyTSP, Duration.ZERO)
     }
   }
 
@@ -137,10 +139,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("endDate").toString)
       RDIIObject(id, startDate, endDate)
     }
-
-
   }
-
 
   /**
     * Model List formatter
@@ -166,7 +165,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   }
 
   /**
-    * Get response formatter
+    * Model Get formatter
     */
   implicit object GetResponseFormat extends RootJsonFormat[GetResponse] {
     def write(response: GetResponse): JsObject = {
@@ -190,5 +189,4 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       GetResponse(startDate, endDate, flow, rainfall, dwp, rdii)
     }
   }
-
 }
