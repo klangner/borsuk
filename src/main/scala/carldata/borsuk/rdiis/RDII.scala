@@ -171,23 +171,56 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
   */
 object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
 
-  implicit object RDIIObjectFormat extends  RootJsonFormat[RDIIObject] {
-     def read(json: JsValue): RDIIObject = json match {
+  implicit object RDIIObjectFormat extends RootJsonFormat[RDIIObject] {
+    def read(json: JsValue): RDIIObject = json match {
 
-       case JsObject(x) =>
-         RDIIObject(Duration.ZERO,TimeSeries.empty,TimeSeries.empty, TimeSeries.empty, TimeSeries.empty,Seq())
-       case _ => RDIIObject(Duration.ZERO,TimeSeries.empty,TimeSeries.empty, TimeSeries.empty, TimeSeries.empty,Seq())
-     }
+      case JsObject(x) =>
 
-    override def write(obj: RDIIObject): JsObject = {
+        val rainfallParams: TimeSeriesParams = x.get("rainfall")
+          .map(_.convertTo[TimeSeriesParams])
+          .getOrElse(TimeSeriesParams(LocalDateTime.now, Duration.ofSeconds(0), Array()))
+
+        val flowParams: TimeSeriesParams = x.get("flow")
+          .map(_.convertTo[TimeSeriesParams])
+          .getOrElse(TimeSeriesParams(LocalDateTime.now, Duration.ofSeconds(0), Array()))
+
+        val dwpParams: TimeSeriesParams = x.get("dwp")
+          .map(_.convertTo[TimeSeriesParams])
+          .getOrElse(TimeSeriesParams(LocalDateTime.now, Duration.ofSeconds(0), Array()))
+
+        val inflow: TimeSeriesParams = x.get("inflow")
+          .map(_.convertTo[TimeSeriesParams])
+          .getOrElse(TimeSeriesParams(LocalDateTime.now, Duration.ofSeconds(0), Array()))
+
+        RDIIObject(Duration.parse(x.get("session-window").toString),
+          convertTimeSeriesParamsToTimeSeries(rainfallParams),
+          convertTimeSeriesParamsToTimeSeries(flowParams),
+          convertTimeSeriesParamsToTimeSeries(dwpParams),
+          convertTimeSeriesParamsToTimeSeries(inflow),
+          x("child-ids").convertTo[Array[String]]
+        )
+      case _ => RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
+    }
+
+    def write(obj: RDIIObject): JsObject = {
       JsObject(
         "session-window" -> JsString(obj.sessionWindow.toString),
-        "rainfall" -> TimeSeriesParams(instantToLDT(obj.rainfall.index.head),obj.rainfall.resolution, obj.rainfall.values.toArray).toJson,
-        "flow" -> TimeSeriesParams(instantToLDT(obj.flow.index.head),obj.flow.resolution, obj.flow.values.toArray).toJson,
-        "dwp" -> TimeSeriesParams(instantToLDT(obj.dwp.index.head),obj.dwp.resolution, obj.dwp.values.toArray).toJson,
-        "inflow" -> TimeSeriesParams(instantToLDT(obj.inflow.index.head),obj.inflow.resolution, obj.inflow.values.toArray).toJson,
-        "child-ids" ->  JsArray(obj.childIds.map(_.toJson).toVector)
+        "rainfall" -> TimeSeriesParams(instantToLDT(obj.rainfall.index.head), obj.rainfall.resolution, obj.rainfall.values.toArray).toJson,
+        "flow" -> TimeSeriesParams(instantToLDT(obj.flow.index.head), obj.flow.resolution, obj.flow.values.toArray).toJson,
+        "dwp" -> TimeSeriesParams(instantToLDT(obj.dwp.index.head), obj.dwp.resolution, obj.dwp.values.toArray).toJson,
+        "inflow" -> TimeSeriesParams(instantToLDT(obj.inflow.index.head), obj.inflow.resolution, obj.inflow.values.toArray).toJson,
+        "child-ids" -> JsArray(obj.childIds.map(_.toJson).toVector)
       )
+    }
+  }
+
+  def convertTimeSeriesParamsToTimeSeries(tsp: TimeSeriesParams): TimeSeries[Double] ={
+    if (tsp.values.isEmpty) {
+      TimeSeries.empty
+    } else {
+      val index = (0 until tsp.values.length).map(x => dtToInstant(tsp.startDate)
+        .plusSeconds(x * tsp.resolution.getSeconds)).toVector
+      TimeSeries(index, tsp.values.toVector)
     }
   }
 
