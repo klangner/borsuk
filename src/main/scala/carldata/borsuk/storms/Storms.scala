@@ -15,13 +15,13 @@ object Storms {
   case class StormParams(session: Session, sessionWindow: Duration, values: Vector[Double], childIds: Seq[String])
 
   /** Get all storms (with merged storms) from rainfall */
-  def getAllStorms(resolution: Duration, rainfall: TimeSeries[Double]): List[(String, StormParams)] = {
+  def getAllStorms(rainfall: TimeSeries[Double]): List[(String, StormParams)] = {
     val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall)
       .zipWithIndex
       .map(x =>
         x._2.toString ->
           StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex
-            , x._1.endIndex.plusSeconds(resolution.getSeconds)).values, Seq())
+            , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
       ).toList
 
     val listOfSessionWindows: Seq[Duration] =
@@ -29,7 +29,7 @@ object Storms {
         .map(x => Duration.between(x._1, x._2))
         .distinct.sorted
 
-    val mergedSession = mergeSessions(baseSessions, baseSessions, listOfSessionWindows, resolution)
+    val mergedSession = mergeSessions(baseSessions, baseSessions, listOfSessionWindows, rainfall.resolution)
     mergedSession
   }
 
@@ -74,7 +74,7 @@ class Storms(modelType: String, id: String) {
       val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(endIndex), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.values.toVector)
 
-      val mergedSession: List[(String, Storms.StormParams)] = Storms.getAllStorms(resolution, rainfall)
+      val mergedSession: List[(String, Storms.StormParams)] = Storms.getAllStorms(rainfall)
       model = immutable.HashMap(mergedSession: _*)
       buildNumber += 1
     }
