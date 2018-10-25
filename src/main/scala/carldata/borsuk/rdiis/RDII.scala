@@ -2,7 +2,6 @@ package carldata.borsuk.rdiis
 
 import java.time._
 import java.time.temporal.ChronoUnit
-import java.util.UUID.randomUUID
 
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.TimeSeriesHelper
@@ -16,7 +15,7 @@ import scala.collection.immutable
 
 
 case class RDIIObject(sessionWindow: Duration, rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
-                      , inflow: (String, TimeSeries[Double]), childIds: Seq[String])
+                      , inflow: TimeSeries[Double], childIds: Seq[String])
 
 class RDII(modelType: String, id: String) {
   var model: immutable.HashMap[String, RDIIObject] = immutable.HashMap.empty[String, RDIIObject]
@@ -56,14 +55,14 @@ class RDII(modelType: String, id: String) {
   def list(sessionWindow: Duration): Seq[(String, LocalDateTime, LocalDateTime)] = {
 
     val lessOrEqualModel = model.filter(x => x._2.sessionWindow.compareTo(sessionWindow) <= 0)
-      .filter(x => x._2.inflow._2.nonEmpty)
+      .filter(x => x._2.inflow.nonEmpty)
       .toSeq
       .sortBy(_._1)
 
     val childIds = lessOrEqualModel.flatMap(_._2.childIds).distinct
 
     lessOrEqualModel.filter(x => !childIds.contains(x._1))
-      .map(t => (t._1, instantToLDT(t._2.inflow._2.index.head), instantToLDT(t._2.inflow._2.index.last)))
+      .map(t => (t._1, instantToLDT(t._2.inflow.index.head), instantToLDT(t._2.inflow.index.last)))
   }
 
   /**
@@ -76,12 +75,12 @@ class RDII(modelType: String, id: String) {
     if (model.contains(rdii_id))
       model.filter(_._1 == rdii_id)
         .map { x =>
-          if (x._2.inflow._2.nonEmpty) Some(instantToLDT(x._2.rainfall.index.head)
+          if (x._2.inflow.nonEmpty) Some(instantToLDT(x._2.rainfall.index.head)
             , instantToLDT(x._2.rainfall.index.last)
             , x._2.rainfall.values.toArray
             , x._2.flow.values.toArray
             , x._2.dwp.values.toArray
-            , x._2.inflow._2.values.toArray)
+            , x._2.inflow.values.toArray)
           else None
         }.head
     else None
@@ -130,7 +129,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-      val inflow: (String, TimeSeries[Double]) = (randomUUID.toString, Inflow.fromSession(Session(sd, ed), flow, allDWPDays))
+      val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays)
 
       val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(sd, ed)
       //Adjust indexes in all series, dwp && inflows already are OK
@@ -143,7 +142,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       RDIIObject(stormSessionWindows, rainfallSection, flowSection, dwp, inflow, Seq())
     }
-    else RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, ("", TimeSeries.empty), Seq())
+    else RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
   }
 
   def adjust(raw: TimeSeries[Double], template: TimeSeries[Double]): TimeSeries[Double] = {
