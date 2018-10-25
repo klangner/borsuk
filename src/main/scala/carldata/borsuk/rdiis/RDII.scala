@@ -4,8 +4,6 @@ import java.time._
 import java.time.temporal.ChronoUnit
 
 import carldata.borsuk.BasicApiObjects.TimeSeriesParams
-import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
-import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.TimeSeriesHelper
 import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
@@ -177,8 +175,8 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
      def read(json: JsValue): RDIIObject = json match {
 
        case JsObject(x) =>
-         RDIIObject(Duration.ZERO,TimeSeries.empty,TimeSeries.empty, TimeSeries.empty,("",TimeSeries.empty),Seq())
-       case _ => RDIIObject(Duration.ZERO,TimeSeries.empty,TimeSeries.empty, TimeSeries.empty,("",TimeSeries.empty),Seq())
+         RDIIObject(Duration.ZERO,TimeSeries.empty,TimeSeries.empty, TimeSeries.empty, TimeSeries.empty,Seq())
+       case _ => RDIIObject(Duration.ZERO,TimeSeries.empty,TimeSeries.empty, TimeSeries.empty, TimeSeries.empty,Seq())
      }
 
     override def write(obj: RDIIObject): JsObject = {
@@ -187,7 +185,7 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
         "rainfall" -> TimeSeriesParams(instantToLDT(obj.rainfall.index.head),obj.rainfall.resolution, obj.rainfall.values.toArray).toJson,
         "flow" -> TimeSeriesParams(instantToLDT(obj.flow.index.head),obj.flow.resolution, obj.flow.values.toArray).toJson,
         "dwp" -> TimeSeriesParams(instantToLDT(obj.dwp.index.head),obj.dwp.resolution, obj.dwp.values.toArray).toJson,
-        "inflow" -> TimeSeriesParams(instantToLDT(obj.inflow._2.index.head),obj.inflow._2.resolution, obj.inflow._2.values.toArray).toJson,
+        "inflow" -> TimeSeriesParams(instantToLDT(obj.inflow.index.head),obj.inflow.resolution, obj.inflow.values.toArray).toJson,
         "child-ids" ->  JsArray(obj.childIds.map(_.toJson).toVector)
       )
     }
