@@ -27,13 +27,13 @@ class RDII(modelType: String, id: String) {
   /** Fit model */
   def fit(params: FitRDIIParams): Unit = {
 
-    if (params.flow.values.nonEmpty && params.flow.values.length == params.rainfall.values.length) {
+    if (params.flow.values.nonEmpty && params.rainfall.values.nonEmpty) {
       val edFlow: LocalDateTime = params.flow.startDate.plusSeconds(params.flow.resolution.getSeconds * params.flow.values.length)
       val indexFlow: Seq[Instant] = Gen.mkIndex(dtToInstant(params.flow.startDate), dtToInstant(edFlow), params.flow.resolution)
       val flow: TimeSeries[Double] = TimeSeries(indexFlow.toVector, params.flow.values.toVector)
-      val edRainfall: LocalDateTime = params.flow.startDate.plusSeconds(params.flow.resolution.getSeconds * params.flow.values.length)
-      val indexRainfall: Seq[Instant] = Gen.mkIndex(dtToInstant(params.flow.startDate), dtToInstant(edRainfall), params.flow.resolution)
-      val rainfall: TimeSeries[Double] = TimeSeries(indexRainfall.toVector, params.flow.values.toVector)
+      val edRainfall: LocalDateTime = params.rainfall.startDate.plusSeconds(params.rainfall.resolution.getSeconds * params.rainfall.values.length)
+      val indexRainfall: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(edRainfall), params.rainfall.resolution)
+      val rainfall: TimeSeries[Double] = TimeSeries(indexRainfall.toVector, params.rainfall.values.toVector)
 
       val ts = rainfall.slice(rainfall.index.head, dtToInstant(edRainfall)).join(flow.slice(rainfall.index.head, dtToInstant(edRainfall)))
       val rainfall2 = TimeSeries(ts.index, ts.values.map(_._1))
@@ -240,7 +240,7 @@ object RDIIObjectHashMapJsonProtocol extends DefaultJsonProtocol {
   implicit object RDIIObjectHashMapFormat extends RootJsonFormat[immutable.HashMap[String, RDIIObject]] {
     def read(json: JsValue): HashMap[String, RDIIObject] = {
       val map = json.asInstanceOf[JsArray].elements
-        .map(jsVal => ( stringFromValue(jsVal.asJsObject.fields("key")),
+        .map(jsVal => (stringFromValue(jsVal.asJsObject.fields("key")),
           jsVal.asJsObject.fields("value").convertTo[RDIIObject])).toMap
 
       val hash = immutable.HashMap.empty
