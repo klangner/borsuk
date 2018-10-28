@@ -249,7 +249,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         val fitParams = FitStormsParams(TimeSeriesParams(startDate, Duration.ofMinutes(5), rainfall))
         fitModelRequest(modelId, fitParams)
       } ~> route ~> check {
-        eventually(timeout(60 seconds)) {
+        eventually(timeout(120 seconds)) {
           checkStatus(modelId, route) shouldEqual 1
         }
         getModelRequest(modelId, "4")

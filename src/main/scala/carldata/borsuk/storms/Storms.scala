@@ -12,6 +12,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 
 object Storms {
+
   case class StormParams(session: Session, sessionWindow: Duration, values: Vector[Double], childIds: Seq[String])
 
   /** Get all storms (with merged storms) from rainfall */
@@ -24,13 +25,16 @@ object Storms {
             , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
       ).toList
 
-    val listOfSessionWindows: Seq[Duration] =
-      baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
-        .map(x => Duration.between(x._1, x._2))
-        .distinct.sorted
+    if (baseSessions != Nil) {
+      val listOfSessionWindows: Seq[Duration] =
+        baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
+          .map(x => Duration.between(x._1, x._2))
+          .distinct.sorted
 
-    val mergedSession = mergeSessions(baseSessions, baseSessions, listOfSessionWindows, rainfall.resolution)
-    mergedSession
+      val mergedSession = mergeSessions(baseSessions, baseSessions, listOfSessionWindows, rainfall.resolution)
+      mergedSession
+    }
+    else List()
   }
 
   @tailrec
