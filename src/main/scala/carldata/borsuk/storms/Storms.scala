@@ -3,10 +3,12 @@ package carldata.borsuk.storms
 import java.time.{Duration, Instant, LocalDateTime}
 import java.util.UUID.randomUUID
 
-import carldata.borsuk.helper.DateTimeHelper.dtToInstant
+import carldata.borsuk.helper.DateTimeHelper._
+import carldata.borsuk.helper.JsonHelper._
 import carldata.borsuk.storms.ApiObjects.FitStormsParams
 import carldata.series.Sessions.Session
 import carldata.series.{Gen, Sessions, TimeSeries}
+import spray.json.DefaultJsonProtocol
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -62,6 +64,48 @@ object Storms {
       mergeSessions(next, res ++ next, sessionWindows.tail, resolution)
     }
   }
+}
+
+/**
+  * Storm params json protocol
+  */
+
+object StormParamsJsonProtocol extends DefaultJsonProtocol {
+
+  import spray.json._
+
+  implicit object StormParamsFormat extends RootJsonFormat[Storms.StormParams] {
+    def read(json: JsValue): Storms.StormParams = json match {
+
+      case JsObject(x) =>
+
+        val sessionJson: JsObject = x.get("session").get.asJsObject
+
+        Storms.StormParams(
+          Session(dtToInstant(timestampFromValue(sessionJson.fields("start-date"))),
+            dtToInstant(timestampFromValue(sessionJson.fields("end-date")))),
+          Duration.parse(stringFromValue(x.get("duration").get)),
+          arrayFromValue(x.get("values").get).toVector,
+          x.get("child-ids").get.convertTo[Array[String]].toSeq
+        )
+      case _ =>
+        Storms.StormParams(Session(dtToInstant(LocalDateTime.now), dtToInstant(LocalDateTime.now)),
+          Duration.ZERO, Vector(), Seq())
+    }
+
+    def write(obj: Storms.StormParams): JsValue = {
+      JsObject(
+        "session" -> JsObject(
+          "start-date" -> JsString(instantToLDT(obj.session.startIndex).toString),
+          "end-date" -> JsString(instantToLDT(obj.session.endIndex).toString)
+        ),
+        "duration" -> JsString(obj.sessionWindow.toString),
+        "values" -> JsArray(obj.values.map(JsNumber(_))),
+        "child-ids" -> JsArray(obj.childIds.map(_.toJson).toVector)
+      )
+    }
+  }
+
 }
 
 class Storms(modelType: String, id: String) {
