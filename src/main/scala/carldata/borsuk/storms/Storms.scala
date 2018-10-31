@@ -12,6 +12,7 @@ import spray.json.DefaultJsonProtocol
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.collection.immutable.HashMap
 
 object Storms {
 
@@ -105,6 +106,35 @@ object StormParamsJsonProtocol extends DefaultJsonProtocol {
       )
     }
   }
+
+}
+
+/**
+  * Storm params hash map json protocol
+  */
+object StormParamsHashMapJsonProtocol extends DefaultJsonProtocol {
+
+  import StormParamsJsonProtocol._
+  import spray.json._
+  import Storms.StormParams
+
+  implicit object StormParamsHashMapFormat extends RootJsonFormat[immutable.HashMap[String, StormParams]] {
+    def read(json: JsValue): HashMap[String, StormParams] = {
+      val map = json.asInstanceOf[JsArray].elements.map(jsVal =>
+        (stringFromValue(jsVal.asJsObject.fields("key")),
+          jsVal.asJsObject.fields("value").convertTo[StormParams])).toMap
+      val hash = immutable.HashMap.empty
+      hash.++(map)
+    }
+
+    def write(obj: HashMap[String, StormParams]): JsValue = {
+      JsArray(obj.map(x => JsObject(
+        "key" -> JsString(x._1),
+        "value" -> x._2.toJson
+      )).toVector)
+    }
+  }
+
 
 }
 
