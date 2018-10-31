@@ -80,14 +80,14 @@ object StormParamsJsonProtocol extends DefaultJsonProtocol {
 
       case JsObject(x) =>
 
-        val sessionJson: JsObject = x.get("session").get.asJsObject
+        val sessionJson: JsObject = x("session").asJsObject
 
         Storms.StormParams(
           Session(dtToInstant(timestampFromValue(sessionJson.fields("start-date"))),
             dtToInstant(timestampFromValue(sessionJson.fields("end-date")))),
-          Duration.parse(stringFromValue(x.get("duration").get)),
-          arrayFromValue(x.get("values").get).toVector,
-          x.get("child-ids").get.convertTo[Array[String]].toSeq
+          Duration.parse(stringFromValue(x("duration"))),
+          arrayFromValue(x("values")).toVector,
+          x("child-ids").convertTo[Array[String]].toSeq
         )
       case _ =>
         Storms.StormParams(Session(dtToInstant(LocalDateTime.now), dtToInstant(LocalDateTime.now)),
