@@ -10,8 +10,9 @@ import carldata.borsuk.helper.TimeSeriesHelper
 import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
 import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.borsuk.storms.Storms
+import carldata.borsuk.storms.Storms.StormParams
 import carldata.series.Sessions.Session
-import carldata.series.{Gen, TimeSeries}
+import carldata.series.{Gen, Sessions, TimeSeries}
 import spray.json._
 
 import scala.collection.immutable
@@ -34,18 +35,44 @@ class RDII(modelType: String, id: String) {
       val edRainfall: LocalDateTime = params.rainfall.startDate.plusSeconds(params.rainfall.resolution.getSeconds * params.rainfall.values.length)
       val indexRainfall: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(edRainfall), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(indexRainfall.toVector, params.rainfall.values.toVector)
+      val minSessionWindow = if (params.minSessionWindow == Duration.ZERO) rainfall.resolution else params.minSessionWindow
 
       val ts = rainfall.slice(rainfall.index.head, dtToInstant(edRainfall)).join(flow.slice(rainfall.index.head, dtToInstant(edRainfall)))
       val rainfall2 = TimeSeries(ts.index, ts.values.map(_._1))
 
       val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2, params.dryDayWindow)
 
-      val rdiis: List[(String, RDIIObject)] = Storms.getAllStorms(rainfall).map(
-        x => (x._1, RDIIBuilder(rainfall, flow, instantToLDT(x._2.session.startIndex), instantToLDT(x._2.session.endIndex), allDWPDays)
-          .withDryDayWindow(params.dryDayWindow)
-          .withStormSessionWindows(x._2.sessionWindow)
-          .build())
-      )
+      val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall, minSessionWindow)
+        .zipWithIndex
+        .map(x =>
+          x._2.toString ->
+            StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex
+              , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
+        ).toList
+
+      val storms = if (baseSessions != Nil) {
+        val listOfSessionWindows: Seq[Duration] =
+          baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
+            .map(x => Duration.between(x._1, x._2))
+            .distinct.sorted
+
+        val maxSessionWindow = if (params.maxSessionWindow == Duration.ZERO) listOfSessionWindows.last else params.maxSessionWindow
+        Storms.mergeSessions(baseSessions, baseSessions, listOfSessionWindows, rainfall.resolution)
+          .filter(s => s._2.sessionWindow.compareTo(maxSessionWindow) <= 0)
+      }
+      else List()
+
+      //println(LocalDateTime.now + " - " + storms.length.toString)
+      //var i = 1
+      val rdiis: List[(String, RDIIObject)] = storms.map {
+        x =>
+          //println(LocalDateTime.now + " - build model no: " + i + " storm value count: " + x._2.values.length)
+          //i += 1
+          (x._1, RDIIBuilder(rainfall2, flow, instantToLDT(x._2.session.startIndex), instantToLDT(x._2.session.endIndex), allDWPDays)
+            .withDryDayWindow(params.dryDayWindow)
+            .withStormSessionWindows(x._2.sessionWindow)
+            .build())
+      }
 
       model = immutable.HashMap(rdiis: _*)
       buildNumber += 1
@@ -115,9 +142,6 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
     // This algorithm works only if the series are aligned
     if (rainfall.nonEmpty) {
-      val ts = rainfall.slice(rainfall.index.head, ed).join(flow.slice(rainfall.index.head, ed))
-      val rainfall2 = TimeSeries(ts.index, ts.values.map(_._1))
-
       // Slice data to session
       val sessionDays: Seq[LocalDate] = flow.slice(sd.minus(1, ChronoUnit.DAYS), ed)
         .groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0))
@@ -136,7 +160,9 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(sd, ed)
       //Adjust indexes in all series, dwp && inflows already are OK
-      val rainfallSection: TimeSeries[Double] = adjust(rainfall2.groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum), dwp)
+      val rainfallSection: TimeSeries[Double] = adjust(
+        rainfall.slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), ed)
+          .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum), dwp)
         .filter(x => dwp.index.contains(x._1))
         .slice(sd, ed)
         .addMissing(dwp.resolution, (_, _, _) => 0.0)

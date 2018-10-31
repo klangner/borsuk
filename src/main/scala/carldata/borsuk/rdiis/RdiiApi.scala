@@ -8,6 +8,9 @@ import akka.http.scaladsl.server.StandardRoute
 import carldata.borsuk.rdiis.ApiObjects._
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
 import spray.json._
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import scala.concurrent.Future
 
 class RdiiApi {
   val models = collection.mutable.Map.empty[String, RDII]
@@ -36,7 +39,9 @@ class RdiiApi {
   def fit(modelId: String, params: FitRDIIParams): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        model.fit(params)
+        Future {
+          model.fit(params)
+        }
         complete(StatusCodes.OK)
 
       case None =>

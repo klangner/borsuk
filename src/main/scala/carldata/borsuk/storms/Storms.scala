@@ -41,7 +41,7 @@ object Storms {
   }
 
   @tailrec
-  private def mergeSessions(prev: List[(String, StormParams)], res: List[(String, StormParams)]
+  def mergeSessions(prev: List[(String, StormParams)], res: List[(String, StormParams)]
                             , sessionWindows: Seq[Duration], resolution: Duration): List[(String, StormParams)] = {
     if (sessionWindows.isEmpty) res
     else {

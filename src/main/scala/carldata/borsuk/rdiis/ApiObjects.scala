@@ -18,7 +18,7 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitRDIIParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams, dryDayWindow: Duration)
+  case class FitRDIIParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams, dryDayWindow: Duration, minSessionWindow: Duration, maxSessionWindow: Duration)
 
   case class RDIIObject(id: String, startDate: LocalDateTime, endDate: LocalDateTime)
 
@@ -86,7 +86,9 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       JsObject(
         "flow" -> params.flow.toJson,
         "rainfall" -> params.rainfall.toJson,
-        "dryDayWindow" -> params.dryDayWindow.toString.toJson
+        "dryDayWindow" -> params.dryDayWindow.toString.toJson,
+        "minSessionWindow" -> params.minSessionWindow.toString.toJson,
+        "maxSessionWindow" -> params.maxSessionWindow.toString.toJson
       )
     }
 
@@ -96,9 +98,13 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
         FitRDIIParams(
           x.get("flow").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP),
           x.get("rainfall").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP),
-          Duration.parse(x.get("dryDayWindow").get.asInstanceOf[JsString].value)
+          Duration.parse(x("dryDayWindow").asInstanceOf[JsString].value),
+          if (x.contains("minSessionWindow")) Duration.parse(x("minSessionWindow").asInstanceOf[JsString].value)
+          else Duration.ZERO,
+          if (x.contains("maxSessionWindow")) Duration.parse(x("maxSessionWindow").asInstanceOf[JsString].value)
+          else Duration.ZERO
         )
-      case _ => FitRDIIParams(emptyTSP, emptyTSP, Duration.ZERO)
+      case _ => FitRDIIParams(emptyTSP, emptyTSP, Duration.ZERO, Duration.ZERO, Duration.ZERO)
     }
   }
 
@@ -189,4 +195,5 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       GetResponse(startDate, endDate, flow, rainfall, dwp, rdii)
     }
   }
+
 }
