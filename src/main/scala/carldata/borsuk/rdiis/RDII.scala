@@ -143,7 +143,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
     // This algorithm works only if the series are aligned
     if (rainfall.nonEmpty) {
       // Slice data to session
-      val sessionDays: Seq[LocalDate] = flow.slice(sd.minus(1, ChronoUnit.DAYS), ed)
+      val sessionDays: Seq[LocalDate] = flow.slice(sd.minus(2, ChronoUnit.DAYS), ed)
         .groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0))
         .index
         .map(instantToDay)
@@ -159,18 +159,18 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays)
 
-      val shiftedSd: Instant = if (inflow.nonEmpty) inflow.index.head else sd
+      val (shiftedSd, shiftedEd) = if (inflow.nonEmpty) (inflow.index.head, inflow.index.last) else (sd, ed)
 
-      val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(shiftedSd, ed)
+      val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(shiftedSd, shiftedEd)
       //Adjust indexes in all series, dwp && inflows already are OK
       val rainfallSection: TimeSeries[Double] = adjust(
         rainfall.slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), ed)
           .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum), dwp)
         .filter(x => dwp.index.contains(x._1))
-        .slice(shiftedSd, ed)
+        .slice(shiftedSd, shiftedEd)
         .addMissing(dwp.resolution, (_, _, _) => 0.0)
 
-      val flowSection: TimeSeries[Double] = flow.slice(shiftedSd, ed).filter(x => dwp.index.contains(x._1))
+      val flowSection: TimeSeries[Double] = flow.slice(shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
 
       RDIIObject(stormSessionWindows, rainfallSection, flowSection, dwp, inflow, Seq())
 
