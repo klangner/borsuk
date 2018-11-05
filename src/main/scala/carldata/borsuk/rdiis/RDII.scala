@@ -156,20 +156,24 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
+
       val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays)
 
-      val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(sd, ed)
+      val shiftedSd: Instant = if (inflow.nonEmpty) inflow.index.head else sd
+
+      val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(shiftedSd, ed)
       //Adjust indexes in all series, dwp && inflows already are OK
       val rainfallSection: TimeSeries[Double] = adjust(
         rainfall.slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), ed)
           .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum), dwp)
         .filter(x => dwp.index.contains(x._1))
-        .slice(sd, ed)
+        .slice(shiftedSd, ed)
         .addMissing(dwp.resolution, (_, _, _) => 0.0)
 
-      val flowSection: TimeSeries[Double] = flow.slice(sd, ed).filter(x => dwp.index.contains(x._1))
+      val flowSection: TimeSeries[Double] = flow.slice(shiftedSd, ed).filter(x => dwp.index.contains(x._1))
 
       RDIIObject(stormSessionWindows, rainfallSection, flowSection, dwp, inflow, Seq())
+
     }
     else RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
   }
@@ -246,7 +250,7 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
     if (tsp.values.isEmpty) {
       TimeSeries.empty
     } else {
-      val index = (0 until tsp.values.length).map(
+      val index = tsp.values.indices.map(
         x => dtToInstant(tsp.startDate.plus(tsp.resolution.multipliedBy(x)))
       ).toVector
       TimeSeries(index, tsp.values.toVector)
