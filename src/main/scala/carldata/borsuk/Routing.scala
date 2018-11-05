@@ -18,6 +18,7 @@ import carldata.borsuk.storms.ApiObjectsJsonProtocol.{CreateStormsParamsFormat, 
 import carldata.borsuk.storms.StormsApi
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
+import carldata.borsuk.envelopes.EnvelopeApi
 
 import scala.collection.immutable.Seq
 import scala.language.postfixOps
@@ -26,6 +27,7 @@ class Routing() {
   val predictionApi = new PredictionAPI()
   val RDIIApi = new RdiiApi()
   val stormsApi = new StormsApi()
+  val envelopeApi = new EnvelopeApi()
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
@@ -99,6 +101,32 @@ class Routing() {
     } ~ path("storms" / Segment) { id =>
       get {
         stormsApi.status(id)
+      }
+    } ~ path("envelopes") {
+      post {
+        entity(as[String])(data => envelopeApi.create())
+      }
+    } ~ path("envelopes" / Segment) { id => {
+      get {
+        envelopeApi.status()
+      }
+    }
+    } ~ path("envelopes" / Segment / "fit") { id => {
+      post {
+        entity(as[String])(data => envelopeApi.fit())
+      }
+    }
+    } ~ (path("envelopes" / Segment / "envelope") & parameters("sessionWindow".as[String])) {
+      (id, sessionWindow) => {
+        get {
+          envelopeApi.list()
+        }
+      }
+    } ~ path("envelopes" / Segment / "envelope" / Segment) {
+      (id, rddiId) => {
+        get {
+          envelopeApi.get()
+        }
       }
     }
   }
