@@ -3,8 +3,10 @@ package carldata.borsuk.envelopes
 import java.time.Duration
 
 import ApiObjects._
+import ApiObjectsJsonProtocol._
 import akka.http.scaladsl.server.StandardRoute
 import akka.http.scaladsl.server.Directives.complete
+import spray.json._
 
 
 class EnvelopeApi {
@@ -14,7 +16,7 @@ class EnvelopeApi {
   }
 
   def fit(id: String, params: FitEnvelopeParams): StandardRoute = {
-    complete("fit ok - id " + id)
+    complete("fit ok - id " + id + params.toJson.prettyPrint)
   }
 
   def list(id: String, sessionWindow: Duration): StandardRoute = {
