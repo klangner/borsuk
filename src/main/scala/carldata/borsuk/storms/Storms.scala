@@ -1,7 +1,6 @@
 package carldata.borsuk.storms
 
 import java.time.{Duration, Instant, LocalDateTime}
-import java.util.UUID.randomUUID
 
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.JsonHelper._
@@ -42,7 +41,7 @@ object Storms {
 
   @tailrec
   def mergeSessions(prev: List[(String, StormParams)], res: List[(String, StormParams)]
-                            , sessionWindows: Seq[Duration], resolution: Duration): List[(String, StormParams)] = {
+                    , sessionWindows: Seq[Duration], resolution: Duration): List[(String, StormParams)] = {
     if (sessionWindows.isEmpty) res
     else {
       val sessionWindow = sessionWindows.head
@@ -52,7 +51,7 @@ object Storms {
 
           val gapValues = for (_ <- 1 until (gapDuration.toMillis / resolution.toMillis).toInt) yield 0.0
 
-          (randomUUID().toString
+          (zs.head._1 + "-" + x._1
             , StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex)
             , sessionWindow
             , zs.head._2.values ++ gapValues ++ x._2.values
@@ -115,8 +114,8 @@ object StormParamsJsonProtocol extends DefaultJsonProtocol {
 object StormParamsHashMapJsonProtocol extends DefaultJsonProtocol {
 
   import StormParamsJsonProtocol._
-  import spray.json._
   import Storms.StormParams
+  import spray.json._
 
   implicit object StormParamsHashMapFormat extends RootJsonFormat[immutable.HashMap[String, StormParams]] {
     def read(json: JsValue): HashMap[String, StormParams] = {
