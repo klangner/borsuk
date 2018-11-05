@@ -9,7 +9,7 @@ import carldata.borsuk.helper.JsonHelper._
 import carldata.borsuk.storms.ApiObjects.FitStormsParams
 import carldata.series.Sessions.Session
 import carldata.series.{Gen, Sessions, TimeSeries}
-import spray.json.DefaultJsonProtocol
+import spray.json._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -74,8 +74,6 @@ object Storms {
 
 object StormParamsJsonProtocol extends DefaultJsonProtocol {
 
-  import spray.json._
-
   implicit object StormParamsFormat extends RootJsonFormat[Storms.StormParams] {
     def read(json: JsValue): Storms.StormParams = json match {
 
@@ -117,7 +115,6 @@ object StormParamsHashMapJsonProtocol extends DefaultJsonProtocol {
 
   import StormParamsJsonProtocol._
   import Storms.StormParams
-  import spray.json._
 
   implicit object StormParamsHashMapFormat extends RootJsonFormat[immutable.HashMap[String, StormParams]] {
     def read(json: JsValue): HashMap[String, StormParams] = {
@@ -136,12 +133,11 @@ object StormParamsHashMapJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-
 }
 
 class Storms(modelType: String, id: String) {
 
-  import  carldata.borsuk.storms.StormParamsHashMapJsonProtocol._
+  import carldata.borsuk.storms.StormParamsHashMapJsonProtocol._
 
   var model: immutable.HashMap[String, Storms.StormParams] = immutable.HashMap.empty[String, Storms.StormParams]
   var buildNumber: Int = 0
@@ -164,7 +160,7 @@ class Storms(modelType: String, id: String) {
   }
 
   def save() {
-    new FileWriter("/borsuk_data/Storms/" + this.modelType + "/" + this.id).write(this.model.toJson.toString)
+    new FileWriter("/borsuk_data/Storms/" + this.modelType + "/" + this.id).write(this.model.toJson(StormParamsHashMapFormat).toString)
   }
 
   /**

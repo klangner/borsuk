@@ -24,7 +24,7 @@ case class RDIIObject(sessionWindow: Duration, rainfall: TimeSeries[Double], flo
 
 class RDII(modelType: String, id: String) {
 
-  import carldata.borsuk.rdiis.RDIIObjectHashMapJsonProtocol._
+  import RDIIObjectHashMapJsonProtocol._
 
   var model: immutable.HashMap[String, RDIIObject] = immutable.HashMap.empty[String, RDIIObject]
   var buildNumber: Int = 0
@@ -85,7 +85,7 @@ class RDII(modelType: String, id: String) {
   }
 
   def save() {
-    new FileWriter("/borsuk_data/rdiis/" + this.modelType + "/" + this.id).write(this.model.toJson.toString)
+    new FileWriter("/borsuk_data/rdiis/" + this.modelType + "/" + this.id).write(this.model.toJson(RDIIObjectHashMapFormat).toString)
   }
 
   /**
