@@ -1,5 +1,6 @@
 package carldata.borsuk.rdiis
 
+import java.io.FileWriter
 import java.time._
 import java.time.temporal.ChronoUnit
 
@@ -22,6 +23,9 @@ case class RDIIObject(sessionWindow: Duration, rainfall: TimeSeries[Double], flo
                       , inflow: TimeSeries[Double], childIds: Seq[String])
 
 class RDII(modelType: String, id: String) {
+
+  import carldata.borsuk.rdiis.RDIIObjectHashMapJsonProtocol._
+
   var model: immutable.HashMap[String, RDIIObject] = immutable.HashMap.empty[String, RDIIObject]
   var buildNumber: Int = 0
 
@@ -75,8 +79,13 @@ class RDII(modelType: String, id: String) {
       }
 
       model = immutable.HashMap(rdiis: _*)
+      save()
       buildNumber += 1
     }
+  }
+
+  def save() {
+    new FileWriter("/borsuk_data/rdiis/" + this.modelType + "/" + this.id).write(this.model.toJson.toString)
   }
 
   /**
@@ -156,7 +165,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-      val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays)
+      val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays).slice(sd, ed)
 
       val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(sd, ed)
       //Adjust indexes in all series, dwp && inflows already are OK
@@ -197,7 +206,6 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
 
   import carldata.borsuk.BasicApiObjects._
-  import spray.json._
 
   implicit object RDIIObjectFormat extends RootJsonFormat[RDIIObject] {
     def read(json: JsValue): RDIIObject = json match {
@@ -261,7 +269,6 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
 object RDIIObjectHashMapJsonProtocol extends DefaultJsonProtocol {
 
   import RDIIObjectJsonProtocol._
-  import spray.json._
 
   implicit object RDIIObjectHashMapFormat extends RootJsonFormat[immutable.HashMap[String, RDIIObject]] {
     def read(json: JsValue): HashMap[String, RDIIObject] = {

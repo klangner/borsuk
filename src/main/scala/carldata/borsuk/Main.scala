@@ -35,7 +35,9 @@ object Main {
 
     // HTTP listener will run in main thread
     Log.info("Server started on port 8080.")
-    Await.result(Http().bindAndHandle(new Routing().route(), "0.0.0.0", 8080), Duration.Inf)
+    val routing = new Routing()
+    routing.load()
+    Await.result(Http().bindAndHandle(routing.route(), "0.0.0.0", 8080), Duration.Inf)
   }
 
 }

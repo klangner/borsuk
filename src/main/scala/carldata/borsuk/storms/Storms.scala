@@ -1,5 +1,6 @@
 package carldata.borsuk.storms
 
+import java.io.FileWriter
 import java.time.{Duration, Instant, LocalDateTime}
 import java.util.UUID.randomUUID
 
@@ -42,7 +43,7 @@ object Storms {
 
   @tailrec
   def mergeSessions(prev: List[(String, StormParams)], res: List[(String, StormParams)]
-                            , sessionWindows: Seq[Duration], resolution: Duration): List[(String, StormParams)] = {
+                    , sessionWindows: Seq[Duration], resolution: Duration): List[(String, StormParams)] = {
     if (sessionWindows.isEmpty) res
     else {
       val sessionWindow = sessionWindows.head
@@ -115,8 +116,8 @@ object StormParamsJsonProtocol extends DefaultJsonProtocol {
 object StormParamsHashMapJsonProtocol extends DefaultJsonProtocol {
 
   import StormParamsJsonProtocol._
-  import spray.json._
   import Storms.StormParams
+  import spray.json._
 
   implicit object StormParamsHashMapFormat extends RootJsonFormat[immutable.HashMap[String, StormParams]] {
     def read(json: JsValue): HashMap[String, StormParams] = {
@@ -139,6 +140,9 @@ object StormParamsHashMapJsonProtocol extends DefaultJsonProtocol {
 }
 
 class Storms(modelType: String, id: String) {
+
+  import  carldata.borsuk.storms.StormParamsHashMapJsonProtocol._
+
   var model: immutable.HashMap[String, Storms.StormParams] = immutable.HashMap.empty[String, Storms.StormParams]
   var buildNumber: Int = 0
 
@@ -154,8 +158,13 @@ class Storms(modelType: String, id: String) {
 
       val mergedSession: List[(String, Storms.StormParams)] = Storms.getAllStorms(rainfall)
       model = immutable.HashMap(mergedSession: _*)
+      save()
       buildNumber += 1
     }
+  }
+
+  def save() {
+    new FileWriter("/borsuk_data/Storms/" + this.modelType + "/" + this.id).write(this.model.toJson.toString)
   }
 
   /**

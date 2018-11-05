@@ -34,6 +34,10 @@ class Routing() {
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
 
+  /** Loading models from Persistent Volume Claim*/
+  def load(): Unit ={
+    //TO DO
+  }
 
   /** Routing */
   def route(): Route = cors(settings) {
