@@ -19,6 +19,8 @@ import carldata.borsuk.storms.StormsApi
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import carldata.borsuk.envelopes.EnvelopeApi
+import carldata.borsuk.envelopes.ApiObjects.{CreateEnvelopeParams, FitEnvelopeParams}
+import carldata.borsuk.envelopes.ApiObjectsJsonProtocol._
 
 import scala.collection.immutable.Seq
 import scala.language.postfixOps
@@ -104,28 +106,28 @@ class Routing() {
       }
     } ~ path("envelopes") {
       post {
-        entity(as[String])(data => envelopeApi.create())
+        entity(as[CreateEnvelopeParams])(data => envelopeApi.create(data))
       }
     } ~ path("envelopes" / Segment) { id => {
       get {
-        envelopeApi.status()
+        envelopeApi.status(id)
       }
     }
     } ~ path("envelopes" / Segment / "fit") { id => {
       post {
-        entity(as[String])(data => envelopeApi.fit())
+        entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
       }
     }
     } ~ (path("envelopes" / Segment / "envelope") & parameters("sessionWindow".as[String])) {
       (id, sessionWindow) => {
         get {
-          envelopeApi.list()
+          envelopeApi.list(id,Duration.parse(sessionWindow))
         }
       }
     } ~ path("envelopes" / Segment / "envelope" / Segment) {
-      (id, rddiId) => {
+      (id, envelopeId) => {
         get {
-          envelopeApi.get()
+          envelopeApi.get(id, envelopeId)
         }
       }
     }

@@ -12,7 +12,7 @@ import spray.json._
 
 object ApiObjects {
 
-  case class CreateParams(modelType: String, id: String)
+  case class CreateEnvelopeParams(modelType: String, id: String)
 
   case class ModelCreatedResponse(id: String)
 
@@ -38,20 +38,20 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   /**
     * CreateEnvelopeParams formatter
     */
-  implicit object CreateEnvelopeParamsFormat extends RootJsonFormat[CreateParams] {
-    def write(params: CreateParams): JsObject = {
+  implicit object CreateEnvelopeParamsFormat extends RootJsonFormat[CreateEnvelopeParams] {
+    def write(params: CreateEnvelopeParams): JsObject = {
       JsObject(
         "type" -> JsString(params.modelType),
         "id" -> JsString(params.id)
       )
     }
 
-    def read(value: JsValue): CreateParams = value match {
+    def read(value: JsValue): CreateEnvelopeParams = value match {
       case JsObject(request) =>
         val modelType = request.get("type").map(stringFromValue).getOrElse("daily-pattern-v0")
         val id = request.get("id").map(stringFromValue).getOrElse(randomUUID().toString)
-        CreateParams(modelType, id)
-      case _ => CreateParams("daily-pattern-v0", randomUUID().toString)
+        CreateEnvelopeParams(modelType, id)
+      case _ => CreateEnvelopeParams("daily-pattern-v0", randomUUID().toString)
     }
   }
 

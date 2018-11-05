@@ -1,28 +1,32 @@
 package carldata.borsuk.envelopes
 
+import java.time.Duration
+
+import ApiObjects._
 import akka.http.scaladsl.server.StandardRoute
 import akka.http.scaladsl.server.Directives.complete
 
+
 class EnvelopeApi {
 
-  def create(): StandardRoute = {
-    complete("create ok")
+  def create(params: CreateEnvelopeParams): StandardRoute = {
+    complete("create ok" + params.id + " " + params.modelType)
   }
 
-  def fit(): StandardRoute = {
-    complete("fit ok")
+  def fit(id: String, params: FitEnvelopeParams): StandardRoute = {
+    complete("fit ok - id " + id)
   }
 
-  def list(): StandardRoute = {
+  def list(id: String, sessionWindow: Duration): StandardRoute = {
     complete("list ok")
   }
 
-  def get(): StandardRoute = {
-    complete("get ok")
+  def get(id:String, envelopeId: String): StandardRoute = {
+    complete("get ok, id - " + id + " envelopeId - " + envelopeId)
   }
 
-  def status() : StandardRoute = {
-    complete("status ok")
+  def status(id: String): StandardRoute = {
+    complete("status ok, id - " + id)
   }
 
 }
