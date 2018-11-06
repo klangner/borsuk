@@ -159,16 +159,16 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays)
 
-      val (shiftedSd, shiftedEd) = if (inflow.nonEmpty) (inflow.index.head, inflow.index.last) else (sd, ed)
+      val (shiftedSd, shiftedEd) = if (inflow.nonEmpty) (inflow.index.head, inflow.index.last.plus(inflow.resolution)) else (sd, ed)
 
       val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(shiftedSd, shiftedEd)
       //Adjust indexes in all series, dwp && inflows already are OK
       val rainfallSection: TimeSeries[Double] = adjust(
-        rainfall.slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), ed)
+        rainfall.slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), shiftedEd)
           .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum), dwp)
         .filter(x => dwp.index.contains(x._1))
-        .slice(shiftedSd, shiftedEd)
         .addMissing(dwp.resolution, (_, _, _) => 0.0)
+        .slice(shiftedSd, shiftedEd)
 
       val flowSection: TimeSeries[Double] = flow.slice(shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
 
@@ -182,7 +182,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
     val rs = if (raw.nonEmpty && template.nonEmpty) {
       val leftCorrected = if (raw.head.get._1.isAfter(template.head.get._1)) (template.head.get._1, 0.0) else raw.head.get
       val rightCorrected = if (raw.last.get._1.isBefore(template.last.get._1)) (template.last.get._1, 0.0) else raw.last.get
-      (leftCorrected +: raw.dataPoints :+ rightCorrected).unzip
+      (leftCorrected +: raw.dataPoints :+ rightCorrected).distinct.unzip
     }
     else if (template.nonEmpty) {
       (Vector(template.head.get._1, template.last.get._1), Vector(0.0, 0.0))
