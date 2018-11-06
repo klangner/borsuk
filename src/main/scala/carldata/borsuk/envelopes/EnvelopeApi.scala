@@ -25,7 +25,7 @@ class EnvelopeApi {
 
   def list(id: String, sessionWindow: Duration): StandardRoute = {
     complete(HttpResponse(StatusCodes.OK,
-      entity = ListResponse(Array(EnvelopeObject("fakeId", sessionWindow))).toJson.compactPrint))
+      entity = ListResponse(Array(ApiObjects.EnvelopeObject("fakeId", sessionWindow))).toJson.compactPrint))
   }
 
   def get(id: String, envelopeId: String): StandardRoute = {
