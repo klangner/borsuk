@@ -18,9 +18,9 @@ import carldata.borsuk.storms.ApiObjectsJsonProtocol.{CreateStormsParamsFormat, 
 import carldata.borsuk.storms.StormsApi
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
-import carldata.borsuk.envelopes.EnvelopeApi
-import carldata.borsuk.envelopes.ApiObjects.{CreateEnvelopeParams, FitEnvelopeParams}
-import carldata.borsuk.envelopes.ApiObjectsJsonProtocol._
+import carldata.borsuk.envelope.EnvelopeApi
+import carldata.borsuk.envelope.ApiObjects.{CreateEnvelopeParams, FitEnvelopeParams}
+import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
 
 import scala.collection.immutable.Seq
 import scala.language.postfixOps

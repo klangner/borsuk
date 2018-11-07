@@ -7,8 +7,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import carldata.borsuk.BasicApiObjects._
 import carldata.borsuk.Routing
-import carldata.borsuk.envelopes.ApiObjects._
-import carldata.borsuk.envelopes.ApiObjectsJsonProtocol._
+import carldata.borsuk.envelope.ApiObjects._
+import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._

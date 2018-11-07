@@ -1,4 +1,4 @@
-package carldata.borsuk.envelopes
+package carldata.borsuk.envelope
 
 import ApiObjects.FitEnvelopeParams
 import java.time.Duration

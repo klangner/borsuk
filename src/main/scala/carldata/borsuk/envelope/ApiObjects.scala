@@ -1,6 +1,6 @@
-package carldata.borsuk.envelopes
+package carldata.borsuk.envelope
 
-import java.time.{Duration, LocalDateTime}
+import java.time.{Duration, Instant, LocalDateTime}
 import java.util.UUID.randomUUID
 
 import carldata.borsuk.BasicApiObjects.TimeSeriesParams
@@ -48,10 +48,10 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
     def read(value: JsValue): CreateEnvelopeParams = value match {
       case JsObject(request) =>
-        val modelType = request.get("type").map(stringFromValue).getOrElse("daily-pattern-v0")
+        val modelType = request.get("type").map(stringFromValue).getOrElse("envelope-v0")
         val id = request.get("id").map(stringFromValue).getOrElse(randomUUID().toString)
         CreateEnvelopeParams(modelType, id)
-      case _ => CreateEnvelopeParams("daily-pattern-v0", randomUUID().toString)
+      case _ => CreateEnvelopeParams("envelope-v0", randomUUID().toString)
     }
   }
 
@@ -77,7 +77,6 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     * FitParams formatter
     */
   implicit object FitEnvelopeParamsFormat extends RootJsonFormat[FitEnvelopeParams] {
-    val emptyTSP = TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array())
 
     def write(params: FitEnvelopeParams): JsObject = {
       JsObject(
@@ -91,21 +90,24 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       )
     }
 
-    def read(value: JsValue): FitEnvelopeParams = value match {
+    def read(value: JsValue): FitEnvelopeParams = {
+      val emptyTSP = TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array())
+      value match {
 
-      case JsObject(x) =>
-        FitEnvelopeParams(
-          x.get("flow").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP),
-          x.get("rainfall").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP),
-          Duration.parse(x("dryDayWindow").asInstanceOf[JsString].value),
-          Duration.parse(x("stormIntensityWindow").asInstanceOf[JsString].value),
-          Duration.parse(x("flowIntensityWindow").asInstanceOf[JsString].value),
-          if (x.contains("minSessionWindow")) Duration.parse(x("minSessionWindow").asInstanceOf[JsString].value)
-          else Duration.ZERO,
-          if (x.contains("maxSessionWindow")) Duration.parse(x("maxSessionWindow").asInstanceOf[JsString].value)
-          else Duration.ZERO
-        )
-      case _ => FitEnvelopeParams(emptyTSP, emptyTSP, Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
+        case JsObject(x) =>
+          FitEnvelopeParams(
+            x.get("flow").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP)
+            , x.get("rainfall").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP)
+            , durationFromValue(x("dryDayWindow"))
+            , durationFromValue(x("stormIntensityWindow"))
+            , durationFromValue(x("flowIntensityWindow"))
+            , if (x.contains("minSessionWindow")) durationFromValue(x("minSessionWindow"))
+            else Duration.ZERO
+            , if (x.contains("maxSessionWindow")) durationFromValue(x("maxSessionWindow"))
+            else Duration.ZERO
+          )
+        case _ => FitEnvelopeParams(emptyTSP, emptyTSP, Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
+      }
     }
   }
 
@@ -121,11 +123,14 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     }
 
     def read(json: JsValue): ApiObjects.EnvelopeObject = {
-      val fields = json.asJsObject.fields
-      val id: String = stringFromValue(fields("id"))
-      val sessionWindow = Duration.parse(fields("sessionWindow").asInstanceOf[JsString].value)
 
-      ApiObjects.EnvelopeObject(id, sessionWindow)
+      json match {
+        case JsObject(x) =>
+          val id: String = stringFromValue(x.getOrElse("id", JsString("")))
+          val sessionWindow = durationFromValue(x.getOrElse("sessionWindow", JsString("")))
+          ApiObjects.EnvelopeObject(id, sessionWindow)
+        case _ => ApiObjects.EnvelopeObject("", Duration.ZERO)
+      }
     }
   }
 
@@ -142,11 +147,12 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     }
 
     def read(value: JsValue): ListResponse = {
-      value.asJsObject().fields("envelope") match {
-        case JsArray(arr) =>
-          ListResponse(arr.map { a =>
-            a.convertTo[ApiObjects.EnvelopeObject]
-          }.toArray)
+      value match {
+        case JsObject(x) => x.getOrElse("envelope", JsArray()) match {
+          case JsArray(arr) =>
+            ListResponse(arr.map(a => a.convertTo[ApiObjects.EnvelopeObject]).toArray)
+          case _ => ListResponse(Array())
+        }
         case _ => ListResponse(Array())
       }
     }
@@ -177,17 +183,28 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     }
 
     def read(value: JsValue): GetResponse = {
-      val fields = value.asJsObject.fields
 
-      val rainfall = fields("storms").convertTo[Array[Double]].toSeq
-      val flow = fields("flow").convertTo[Array[Double]].toSeq
-      val slope = fields("slope").convertTo[Double]
-      val intercept = fields("intercept").convertTo[Double]
-      val rsquare = fields("rsquare").convertTo[Double]
-      val dates = fields("dates").asInstanceOf[JsArray].elements
-        .map(obj => Sessions.Session(dtToInstant(timestampFromValue(obj.asJsObject.fields("from"))),
-          dtToInstant(timestampFromValue(obj.asJsObject.fields("to"))))).toSeq
-      GetResponse(rainfall, flow, slope, intercept, rsquare, dates)
+      value match {
+        case JsObject(x) =>
+          val rainfall = x.getOrElse("storms", JsArray()).convertTo[Array[Double]].toSeq
+          val flow = x.getOrElse("flow", JsArray()).convertTo[Array[Double]].toSeq
+          val slope = x.getOrElse("slope", JsNumber(0.0)).convertTo[Double]
+          val intercept = x.getOrElse("intercept", JsNumber(0.0)).convertTo[Double]
+          val rsquare = x.getOrElse("rsquare", JsNumber(0.0)).convertTo[Double]
+          val dates = x.getOrElse("dates", JsArray()) match {
+            case JsArray(arr) => arr.map {
+              _ match {
+                case JsObject(y) => Sessions.Session(
+                  dtToInstant(timestampFromValue(y.getOrElse("from", JsString(""))))
+                  , dtToInstant(timestampFromValue(y.getOrElse("to", JsString("")))))
+                case _ => Sessions.Session(Instant.MIN, Instant.MIN)
+              }
+            }
+            case _ => Seq()
+          }
+          GetResponse(rainfall, flow, slope, intercept, rsquare, dates)
+        case _ => GetResponse(Seq(), Seq(), 0.0, 0.0, 0.0, Seq())
+      }
     }
   }
 
