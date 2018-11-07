@@ -115,14 +115,14 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   implicit object EnvelopeObjectFormat extends RootJsonFormat[ApiObjects.EnvelopeObject] {
     def write(envelope: ApiObjects.EnvelopeObject): JsObject = {
       JsObject(
-        "id" -> envelope.id.toJson,
+        "id" -> JsString(envelope.id),
         "sessionWindow" -> envelope.sessionWindow.toString.toJson
       )
     }
 
     def read(json: JsValue): ApiObjects.EnvelopeObject = {
       val fields = json.asJsObject.fields
-      val id: String = fields("id").toString
+      val id: String = stringFromValue(fields("id"))
       val sessionWindow = Duration.parse(fields("sessionWindow").asInstanceOf[JsString].value)
 
       ApiObjects.EnvelopeObject(id, sessionWindow)

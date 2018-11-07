@@ -126,6 +126,40 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
     }
 
     "list the existing model" in {
+      val route = mainRoute()
+      createEnvelopeModelRequest("test-model-type", "test-id") ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[ModelCreatedResponse].id shouldBe "test-id"
+
+        val fitEnvelopeParams = FitEnvelopeParams(
+          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
+          rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
+          dryDayWindow = Duration.ofMinutes(5),
+          stormIntensityWindow = Duration.ofMinutes(5),
+          flowIntensityWindow = Duration.ofMinutes(5),
+          minSessionWindow = Duration.ofMinutes(5),
+          maxSessionWindow = Duration.ofMinutes(5)
+        )
+
+        fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
+          status shouldBe StatusCodes.OK
+
+          eventually(timeout(10 seconds), interval(2 seconds)) {
+            checkEnvelopeModelStatus("test-id") ~> route ~> check {
+              status shouldBe StatusCodes.OK
+              responseAs[ModelStatus].build shouldBe 1
+            }
+          }
+
+          listEnvelopeRequest("test-id", "PT15M") ~> route ~> check {
+            status shouldBe StatusCodes.OK
+            responseAs[ListResponse].envelope.length shouldEqual 1
+            responseAs[ListResponse].envelope(0).id shouldBe "1"
+            responseAs[ListResponse].envelope(0).sessionWindow shouldBe Duration.ofMinutes(5)
+          }
+
+        }
+      }
     }
 
     "get the model" in {
