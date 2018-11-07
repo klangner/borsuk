@@ -54,7 +54,7 @@ class EnvelopeApi {
     models.get(id) match {
       case Some(envelopeModel) => envelopeModel.model.get(envelopeId) match {
         case Some(singleEnvelope) =>
-          complete(HttpResponse(StatusCodes.OK, entity = GetResponse(
+          complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,GetResponse(
             Seq(1.0, 2.0, 3.0),
             Seq(1.0, 2.0, 3.0),
             0.5,
@@ -65,7 +65,7 @@ class EnvelopeApi {
               Session(dtToInstant(dateParse("2018-01-03T00:00:00")), dtToInstant(dateParse("2018-01-03T10:00:00"))),
               Session(dtToInstant(dateParse("2018-01-05T00:00:00")), dtToInstant(dateParse("2018-01-05T10:00:00")))
             )
-          ).toJson.compactPrint))
+          ).toJson.compactPrint)))
         case None => complete(StatusCodes.NotFound)
       }
       case None => complete(StatusCodes.NotFound)
@@ -75,7 +75,7 @@ class EnvelopeApi {
   def status(id: String): StandardRoute = {
     models.get(id) match {
       case Some(envelopeModel) => complete(HttpResponse(StatusCodes.OK,
-        entity = ModelStatus(envelopeModel.buildNumber).toJson.compactPrint))
+        entity = HttpEntity(ContentTypes.`application/json`, ModelStatus(envelopeModel.buildNumber).toJson.compactPrint)))
       case None => complete(StatusCodes.NotFound)
     }
   }
