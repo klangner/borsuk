@@ -15,4 +15,8 @@ class Envelope(modelType: String) {
     buildNumber += 1
   }
 
+  def list() = {
+    model
+  }
+
 }

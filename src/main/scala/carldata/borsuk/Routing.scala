@@ -118,10 +118,10 @@ class Routing() {
         entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
       }
     }
-    } ~ (path("envelopes" / Segment / "envelope") & parameters("sessionWindow".as[String])) {
-      (id, sessionWindow) => {
+    } ~ path("envelopes" / Segment / "envelope") {
+      (id) => {
         get {
-          envelopeApi.list(id,Duration.parse(sessionWindow))
+          envelopeApi.list(id)
         }
       }
     } ~ path("envelopes" / Segment / "envelope" / Segment) {

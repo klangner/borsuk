@@ -41,10 +41,10 @@ class EnvelopeApi {
     }
   }
 
-  def list(id: String, sessionWindow: Duration): StandardRoute = {
+  def list(id: String): StandardRoute = {
     models.get(id) match {
       case Some(envelopeModel) => complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,
-        ListResponse(envelope = envelopeModel.model.map(x => ApiObjects.EnvelopeObject(x._1, x._2.sessionWindow)).toArray)
+        ListResponse(envelope = envelopeModel.list.map(x => ApiObjects.EnvelopeObject(x._1, x._2.sessionWindow)).toArray)
           .toJson.compactPrint)))
       case None => complete(StatusCodes.NotFound)
     }
