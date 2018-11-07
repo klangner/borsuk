@@ -43,6 +43,10 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
     HttpRequest(HttpMethods.GET, uri = s"/envelopes/${id}")
   }
 
+  private def getEnvelopeModel(id: String, singleEnvelopeId: String) = {
+    HttpRequest(HttpMethods.GET, uri = s"/envelopes/${id}/envelope/${singleEnvelopeId}")
+  }
+
   "The Envelope" should {
 
     "create new model" in {
@@ -163,7 +167,49 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
     }
 
     "get the model" in {
-      0 shouldBe 1
+      val route = mainRoute()
+      createEnvelopeModelRequest("test-model-type", "test-id") ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[ModelCreatedResponse].id shouldBe "test-id"
+
+        val fitEnvelopeParams = FitEnvelopeParams(
+          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
+          rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
+          dryDayWindow = Duration.ofMinutes(5),
+          stormIntensityWindow = Duration.ofMinutes(5),
+          flowIntensityWindow = Duration.ofMinutes(5),
+          minSessionWindow = Duration.ofMinutes(5),
+          maxSessionWindow = Duration.ofMinutes(5)
+        )
+
+        fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
+          status shouldBe StatusCodes.OK
+
+          eventually(timeout(10 seconds), interval(2 seconds)) {
+            checkEnvelopeModelStatus("test-id") ~> route ~> check {
+              status shouldBe StatusCodes.OK
+              responseAs[ModelStatus].build shouldBe 1
+            }
+          }
+
+          listEnvelopeRequest("test-id", "PT15M") ~> route ~> check {
+            status shouldBe StatusCodes.OK
+            responseAs[ListResponse].envelope.length should be > 0
+            val firstEnvelopeId = responseAs[ListResponse].envelope(0).id
+
+            getEnvelopeModel("test-id", firstEnvelopeId) ~> route ~> check {
+              status shouldBe StatusCodes.OK
+              responseAs[GetResponse].flow shouldEqual Seq(1.0,2.0,3.0)
+              responseAs[GetResponse].rainfall shouldEqual Seq(1.0,2.0,3.0)
+              responseAs[GetResponse].slope shouldEqual 0.5
+              responseAs[GetResponse].intercept shouldEqual 1.0
+              responseAs[GetResponse].rSquare shouldEqual 0.1
+            }
+
+          }
+
+        }
+      }
     }
 
     "not get the model when it does not exits" in {

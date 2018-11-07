@@ -179,14 +179,14 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def read(value: JsValue): GetResponse = {
       val fields = value.asJsObject.fields
 
-      val rainfall = fields("rainfall").convertTo[Array[Double]]
-      val flow = fields("flow").convertTo[Array[Double]]
+      val rainfall = fields("storms").convertTo[Array[Double]].toSeq
+      val flow = fields("flow").convertTo[Array[Double]].toSeq
       val slope = fields("slope").convertTo[Double]
       val intercept = fields("intercept").convertTo[Double]
       val rsquare = fields("rsquare").convertTo[Double]
       val dates = fields("dates").asInstanceOf[JsArray].elements
         .map(obj => Sessions.Session(dtToInstant(timestampFromValue(obj.asJsObject.fields("from"))),
-          dtToInstant(timestampFromValue(obj.asJsObject.fields("to")))))
+          dtToInstant(timestampFromValue(obj.asJsObject.fields("to"))))).toSeq
       GetResponse(rainfall, flow, slope, intercept, rsquare, dates)
     }
   }

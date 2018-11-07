@@ -55,12 +55,12 @@ class EnvelopeApi {
       case Some(envelopeModel) => envelopeModel.model.get(envelopeId) match {
         case Some(singleEnvelope) =>
           complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,GetResponse(
-            Seq(1.0, 2.0, 3.0),
-            Seq(1.0, 2.0, 3.0),
-            0.5,
-            1.0,
-            0.1,
-            Seq(
+            rainfall = Seq(1.0, 2.0, 3.0),
+            flow = Seq(1.0, 2.0, 3.0),
+            slope = 0.5,
+            intercept = 1.0,
+            rSquare =  0.1,
+            dates = Seq(
               Session(dtToInstant(dateParse("2018-01-01T00:00:00")), dtToInstant(dateParse("2018-01-01T10:00:00"))),
               Session(dtToInstant(dateParse("2018-01-03T00:00:00")), dtToInstant(dateParse("2018-01-03T10:00:00"))),
               Session(dtToInstant(dateParse("2018-01-05T00:00:00")), dtToInstant(dateParse("2018-01-05T10:00:00")))
