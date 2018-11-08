@@ -57,8 +57,7 @@ class RDII(modelType: String, id: String) {
             .distinct.sorted
 
         val maxSessionWindow = if (params.maxSessionWindow == Duration.ZERO) listOfSessionWindows.last else params.maxSessionWindow
-        Storms.mergeSessions(baseSessions, baseSessions, listOfSessionWindows, rainfall.resolution)
-          .filter(s => s._2.sessionWindow.compareTo(maxSessionWindow) <= 0)
+        Storms.mergeSessions(baseSessions, baseSessions, listOfSessionWindows.filter(d => d.compareTo(maxSessionWindow) <= 0), rainfall.resolution)
       }
       else List()
 

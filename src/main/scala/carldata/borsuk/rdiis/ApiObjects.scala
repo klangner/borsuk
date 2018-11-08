@@ -24,8 +24,8 @@ object ApiObjects {
 
   case class ListResponse(rdii: Array[RDIIObject])
 
-  case class GetResponse(startDate: LocalDateTime, endDate: LocalDateTime, flow: Array[Double]
-                         , rainfall: Array[Double], dwp: Array[Double], rdii: Array[Double])
+  case class GetResponse(startDate: LocalDateTime, endDate: LocalDateTime, rainfall: Array[Double]
+                         , flow: Array[Double], dwp: Array[Double], rdii: Array[Double])
 
   case class ModelStatus(build: Int)
 
@@ -178,8 +178,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       JsObject(
         "start-date" -> JsString(response.startDate.toString),
         "end-date" -> JsString(response.endDate.toString),
-        "flow" -> JsArray(response.flow.map(_.toJson).toVector),
         "rainfall" -> JsArray(response.rainfall.map(_.toJson).toVector),
+        "flow" -> JsArray(response.flow.map(_.toJson).toVector),
         "dwp" -> JsArray(response.dwp.map(_.toJson).toVector),
         "rdii" -> JsArray(response.rdii.map(_.toJson).toVector))
     }
@@ -188,11 +188,11 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       val fields = value.asJsObject.fields
       val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
       val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("end-date").toString)
-      val flow = fields("flow").convertTo[Array[Double]]
       val rainfall = fields("rainfall").convertTo[Array[Double]]
+      val flow = fields("flow").convertTo[Array[Double]]
       val dwp = fields("dwp").convertTo[Array[Double]]
       val rdii = fields("rdii").convertTo[Array[Double]]
-      GetResponse(startDate, endDate, flow, rainfall, dwp, rdii)
+      GetResponse(startDate, endDate, rainfall, flow, dwp, rdii)
     }
   }
 
