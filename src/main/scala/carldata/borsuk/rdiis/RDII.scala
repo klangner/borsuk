@@ -40,7 +40,7 @@ class RDII(modelType: String, id: String) {
       val ts = rainfall.slice(rainfall.index.head, dtToInstant(edRainfall)).join(flow.slice(rainfall.index.head, dtToInstant(edRainfall)))
       val rainfall2 = TimeSeries(ts.index, ts.values.map(_._1))
 
-      val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2, params.dryDayWindow)
+      val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2.filter(x=> x._2 >= 0), params.dryDayWindow)
 
       val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall, minSessionWindow)
         .zipWithIndex
