@@ -29,7 +29,7 @@ class Routing() {
   val predictionApi = new PredictionAPI()
   val RDIIApi = new RdiiApi()
   val stormsApi = new StormsApi()
-  val envelopeApi = new EnvelopeApi()
+  val envelopeApi = new EnvelopeApi(RDIIApi)
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,

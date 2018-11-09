@@ -9,11 +9,14 @@ import carldata.borsuk.BasicApiObjects._
 import carldata.borsuk.Routing
 import carldata.borsuk.envelope.ApiObjects._
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
+import carldata.borsuk.envelope.EnvelopeBuilder
+import carldata.series.Csv
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
 import scala.concurrent.duration._
+import scala.io.Source
 
 class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
 
@@ -251,5 +254,21 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         }
       }
     }
+
+    "find max in" +
+      "tensity of storm and inflow" in {
+      val csv = Source.fromResource("copley-pump.csv").getLines().mkString("\n")
+      val data = Csv.fromString(csv)
+      val flow = data.head
+      val rainfall = data(1)
+
+      val expected: Seq[(Double, Double)] = Seq((42.75, 8.09291), (30.25, 5.38916), (28.5, 4.22666)
+        , (28.0, 11.13841), (24.5, 3.93916))
+      val envelope = EnvelopeBuilder(rainfall, flow, Duration.ofMinutes(45), Duration.ofHours(5)).build()
+      println(envelope._1.dataPoints.take(10))
+      envelope._1.dataPoints.zip(expected).map(x => (x._2._1 - x._1._1 < 0.0001) && (x._2._2 - x._1._2 < 0.0001) shouldBe true)
+
+    }
+
   }
 }
