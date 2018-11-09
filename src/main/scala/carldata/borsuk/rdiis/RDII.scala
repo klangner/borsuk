@@ -31,16 +31,16 @@ class RDII(modelType: String, id: String) {
     if (params.flow.values.nonEmpty && params.rainfall.values.nonEmpty) {
       val edFlow: LocalDateTime = params.flow.startDate.plusSeconds(params.flow.resolution.getSeconds * params.flow.values.length)
       val indexFlow: Seq[Instant] = Gen.mkIndex(dtToInstant(params.flow.startDate), dtToInstant(edFlow), params.flow.resolution)
-      val flow: TimeSeries[Double] = TimeSeries(indexFlow.toVector, params.flow.values.toVector)
+      val flow: TimeSeries[Double] = TimeSeries(indexFlow.toVector, params.flow.values.toVector).filter(_._2 >= 0)
       val edRainfall: LocalDateTime = params.rainfall.startDate.plusSeconds(params.rainfall.resolution.getSeconds * params.rainfall.values.length)
       val indexRainfall: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(edRainfall), params.rainfall.resolution)
-      val rainfall: TimeSeries[Double] = TimeSeries(indexRainfall.toVector, params.rainfall.values.toVector)
+      val rainfall: TimeSeries[Double] = TimeSeries(indexRainfall.toVector, params.rainfall.values.toVector).filter(_._2 >= 0)
       val minSessionWindow = if (params.minSessionWindow == Duration.ZERO) rainfall.resolution else params.minSessionWindow
 
       val ts = rainfall.slice(rainfall.index.head, dtToInstant(edRainfall)).join(flow.slice(rainfall.index.head, dtToInstant(edRainfall)))
       val rainfall2 = TimeSeries(ts.index, ts.values.map(_._1))
 
-      val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2.filter(x=> x._2 >= 0), params.dryDayWindow)
+      val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2, params.dryDayWindow)
 
       val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall, minSessionWindow)
         .zipWithIndex
