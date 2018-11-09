@@ -1,3 +1,3 @@
 #!/bin/sh
-java -jar /root/borsuk.jar --data-url=$DATA_URL
+java -Dlogback.configurationFile=/root/gelf.xml  -jar /root/borsuk.jar --data-url=$DATA_URL
 
