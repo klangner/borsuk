@@ -64,6 +64,17 @@ object Storms {
       mergeSessions(next, res ++ next, sessionWindows.tail, resolution)
     }
   }
+
+  /**
+    * Calculate maximum intensity for a single rain event.
+    */
+  def maxIntensity(session: Session, rainfall: TimeSeries[Double], windowSize: Duration): Double = {
+    val xs = rainfall.slice(session.startIndex, session.endIndex.plusSeconds(1))
+      .rollingWindow(windowSize.minusMillis(1), _.sum)
+
+    if (xs.nonEmpty) xs.dataPoints.maxBy(_._2)._2
+    else 0.0
+  }
 }
 
 /**
