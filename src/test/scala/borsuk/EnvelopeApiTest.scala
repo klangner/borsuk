@@ -34,8 +34,8 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
     )
   }
 
-  private def listEnvelopeRequest(id: String, sessionWindow: String) = {
-    HttpRequest(HttpMethods.GET, uri = s"/envelopes/${id}/envelope?sessionWindow=${sessionWindow}")
+  private def listEnvelopeRequest(id: String) = {
+    HttpRequest(HttpMethods.GET, uri = s"/envelopes/${id}/envelope")
   }
 
   private def checkEnvelopeModelStatus(id: String) = {
@@ -88,7 +88,7 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
 
     "not list Envelope if model does not exist" in {
       val route = mainRoute()
-      listEnvelopeRequest("test-id", "PT15M") ~> route ~> check {
+      listEnvelopeRequest("test-id") ~> route ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -154,7 +154,7 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
             }
           }
 
-          listEnvelopeRequest("test-id", "PT15M") ~> route ~> check {
+          listEnvelopeRequest("test-id") ~> route ~> check {
             status shouldBe StatusCodes.OK
             responseAs[ListResponse].envelope.length shouldEqual 1
             //responseAs[ListResponse].envelope(0).id shouldBe "1"

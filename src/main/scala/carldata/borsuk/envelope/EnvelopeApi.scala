@@ -1,21 +1,18 @@
 package carldata.borsuk.envelope
 
-import java.time.Duration
-
-import ApiObjects._
-import ApiObjectsJsonProtocol._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.StandardRoute
 import akka.http.scaladsl.server.Directives.complete
-import carldata.series.Sessions.Session
+import akka.http.scaladsl.server.StandardRoute
+import carldata.borsuk.envelope.ApiObjects._
+import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.rdiis.{RDII, RdiiApi}
-
-import scala.collection.mutable.Map
+import carldata.series.Sessions.Session
 import spray.json._
 
-import scala.concurrent.Future
+import scala.collection.mutable.Map
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 
 class EnvelopeApi(rdiiApi :RdiiApi) {
@@ -54,10 +51,10 @@ class EnvelopeApi(rdiiApi :RdiiApi) {
     }
   }
 
-  def list(id: String, sessionWindow: Duration): StandardRoute = {
+  def list(id: String): StandardRoute = {
     models.get(id) match {
-      case Some(envelopeModel) => complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,
-        ListResponse(envelope = envelopeModel.model.map(x => ApiObjects.EnvelopeObject(x._1, x._2.sessionWindow)).toArray)
+      case Some(envelopeModel: Envelope) => complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,
+        ListResponse(envelopeModel.list.map(x => ApiObjects.EnvelopeObject(x._1, x._2.sessionWindow)).toArray)
           .toJson.compactPrint)))
       case None => complete(StatusCodes.NotFound)
     }

@@ -53,6 +53,10 @@ class Envelope(modelType: String) {
     this
   }
 
+  def list(): HashMap[String, EnvelopeResult] = {
+    model
+  }
+
   def fit(params: FitEnvelopeParams, rdii: RDII): Unit = {
     if (params.flow.values.nonEmpty && params.rainfall.values.nonEmpty) {
 
@@ -98,6 +102,7 @@ class Envelope(modelType: String) {
       model = immutable.HashMap(envelopes: _*)
       buildNumber += 1
     }
+
 
   }
 
