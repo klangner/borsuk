@@ -206,3 +206,36 @@ object EnvelopeResultJsonProtocol extends DefaultJsonProtocol {
   }
 
 }
+
+object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
+
+  import EnvelopeResultJsonProtocol._
+
+  implicit object EnvelopeResultHashMapFormat extends RootJsonFormat[immutable.HashMap[String, EnvelopeResult]] {
+
+    def read(json: JsValue): HashMap[String, EnvelopeResult] = {
+      json match {
+        case JsArray(elements) => {
+          val pairs = elements.map(x => x match {
+            case JsObject(fields) => (
+              stringFromValue(fields("key")),
+              fields("value").convertTo[EnvelopeResult])
+            case _ => ("", new EnvelopeResult(Seq(), Seq(), Duration.ZERO))
+          }).toMap
+
+          val hash = immutable.HashMap.empty
+          hash.++(pairs)
+        }
+        case _ => immutable.HashMap.empty[String, EnvelopeResult]
+      }
+    }
+
+    def write(obj: HashMap[String, EnvelopeResult]): JsValue = {
+      JsArray(obj.map(x => JsObject(
+        "key" -> JsString(x._1),
+        "value" -> x._2.toJson
+      )).toVector)
+    }
+  }
+
+}
