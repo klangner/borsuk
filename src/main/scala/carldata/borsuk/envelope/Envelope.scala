@@ -1,10 +1,12 @@
 package carldata.borsuk.envelope
 
-import java.time.{Duration, LocalDate}
+import java.time.{Duration, LocalDate, Instant}
 import java.util.UUID.randomUUID
 
 import carldata.borsuk.envelope.ApiObjects.FitEnvelopeParams
+import carldata.borsuk.helper.DateTimeHelper.{instantToLDT, dtToInstant}
 import carldata.borsuk.helper.{DateTimeHelper, TimeSeriesHelper}
+import carldata.borsuk.helper.JsonHelper.{timestampFromValue, stringFromValue, doubleFromValue}
 import carldata.borsuk.rdiis._
 import carldata.borsuk.storms.Storms
 import carldata.series.{Sessions, TimeSeries}
@@ -12,6 +14,7 @@ import smile.regression.OLS
 
 import scala.collection.immutable
 import scala.collection.immutable.HashMap
+import spray.json._
 
 class EnvelopeResult(points: Seq[((Sessions.Session, Double), Double)], regression: Seq[Double], window: Duration) {
   val sessionWindow: Duration = this.window
@@ -135,6 +138,71 @@ class Envelope(modelType: String) {
           , allDWPDays
         ).build())
     })
+  }
+
+}
+
+object EnvelopeResultJsonProtocol extends DefaultJsonProtocol {
+
+  implicit object EnvelopeResultFormat extends RootJsonFormat[EnvelopeResult] {
+    def read(json: JsValue): EnvelopeResult = {
+      json match {
+        case JsObject(fields) =>
+
+          val window = Duration.parse(stringFromValue(fields("sessionWindow")))
+
+          val rainfall: Seq[Double] = fields("rainfall") match {
+            case JsArray(elements) => elements.map(doubleFromValue(_))
+            case _ => Seq()
+          }
+
+          val flows: Seq[Double] = fields("flows") match {
+            case JsArray(elements) => elements.map(doubleFromValue(_))
+            case _ => Seq()
+          }
+
+          val slope: Double = doubleFromValue(fields("slope"))
+          val intercept: Double = doubleFromValue(fields("intercept"))
+          val rSquare: Double = doubleFromValue(fields("rSquare"))
+
+          val dates: Seq[Sessions.Session] = fields("dates") match {
+            case JsArray(elements) => elements.map(el => el match {
+              case JsObject(fields) => Sessions.Session(
+                dtToInstant(timestampFromValue(fields("start-date"))),
+                dtToInstant(timestampFromValue(fields("end-date")))
+              )
+              case _ => Sessions.Session(Instant.MIN, Instant.MIN)
+            })
+            case _ => Seq()
+          }
+
+          val points: Seq[((Sessions.Session, Double), Double)] = dates.zip(rainfall).zip(flows)
+          val regression = Seq(slope, intercept, rSquare)
+
+          new EnvelopeResult(points, regression, window)
+
+        case _ => new EnvelopeResult(Seq(), Seq(), Duration.ZERO)
+      }
+    }
+
+    def write(obj: EnvelopeResult): JsValue = {
+      JsObject(
+        "sessionWindow" -> JsString(obj.sessionWindow.toString),
+        "rainfall" -> JsArray(obj.rainfall.map(JsNumber(_)).toVector),
+        "flows" -> JsArray(obj.flows.map(JsNumber(_)).toVector),
+        "dataPoints" -> JsArray(obj.dataPoints.map(x => JsObject(
+          "val1" -> JsNumber(x._1),
+          "val2" -> JsNumber(x._2)
+        )).toVector),
+        "slope" -> JsNumber(obj.slope),
+        "intercept" -> JsNumber(obj.intercept),
+        "rSquare" -> JsNumber(obj.rSquare),
+        "dates" -> JsArray(obj.dates.map(x => JsObject(
+          "start-date" -> JsString(instantToLDT(x.startIndex).toString),
+          "end-date" -> JsString(instantToLDT(x.endIndex).toString)
+        )).toVector)
+      )
+    }
   }
 
 }
