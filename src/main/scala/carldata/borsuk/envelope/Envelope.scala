@@ -216,12 +216,12 @@ object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
     def read(json: JsValue): HashMap[String, EnvelopeResult] = {
       json match {
         case JsArray(elements) => {
-          val pairs = elements.map(x => x match {
+          val pairs = elements.map {
             case JsObject(fields) => (
               stringFromValue(fields("key")),
               fields("value").convertTo[EnvelopeResult])
             case _ => ("", new EnvelopeResult(Seq(), Seq(), Duration.ZERO))
-          }).toMap
+          }.toMap
 
           val hash = immutable.HashMap.empty
           hash.++(pairs)
