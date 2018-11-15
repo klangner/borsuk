@@ -204,7 +204,6 @@ object EnvelopeResultJsonProtocol extends DefaultJsonProtocol {
       )
     }
   }
-
 }
 
 object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
@@ -237,5 +236,4 @@ object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
       )).toVector)
     }
   }
-
 }
