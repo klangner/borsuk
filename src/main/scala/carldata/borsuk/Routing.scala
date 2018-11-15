@@ -1,24 +1,29 @@
 package carldata.borsuk
 
+import java.nio.file.{Files, Paths}
 import java.time.Duration
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import carldata.borsuk.rdiis.ApiObjects.{CreateParams, FitRDIIParams}
-import carldata.borsuk.rdiis.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitRDIIParamsFormat}
-import carldata.borsuk.rdiis.RdiiApi
-import carldata.borsuk.helper.DateTimeHelper
 import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams}
 import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
 import carldata.borsuk.prediction.PredictionAPI
+import carldata.borsuk.rdiis.ApiObjects.{CreateParams, FitRDIIParams}
+import carldata.borsuk.rdiis.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitRDIIParamsFormat}
+import carldata.borsuk.rdiis.RDIIObjectHashMapJsonProtocol._
+import carldata.borsuk.rdiis.{RDII, RDIIObject, RdiiApi}
 import carldata.borsuk.storms.ApiObjects.{CreateStormsParams, FitStormsParams}
 import carldata.borsuk.storms.ApiObjectsJsonProtocol.{CreateStormsParamsFormat, FitStormsParamsFormat}
-import carldata.borsuk.storms.StormsApi
+import carldata.borsuk.storms.StormParamsHashMapJsonProtocol._
+import carldata.borsuk.storms.Storms.StormParams
+import carldata.borsuk.storms.{Storms, StormsApi}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
+import spray.json._
 
+import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.language.postfixOps
 
@@ -34,9 +39,45 @@ class Routing() {
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
 
-  /** Loading models from Persistent Volume Claim*/
-  def load(): Unit ={
-    //TO DO
+
+  /** Loading models from Persistent Volume Claim */
+  def load(): Unit = {
+
+    //Storms
+    val stormsPath = Paths.get("/borsuk_data/storms/")
+    if (Files.exists(stormsPath)) {
+      val stormVersions = Files.walk(stormsPath)
+      for (stormVersion <- stormVersions.toArray) {
+        for (stormModel <- Files.walk(Paths.get(stormVersion.toString)).toArray) {
+          val stormModelPath = Paths.get(stormModel.toString)
+          val content = new String(Files.readAllBytes(stormModelPath))
+          val stormModelType = stormModelPath.getParent.getFileName.toString
+          val stormModelId = stormModelPath.getFileName.toString
+          val storm = new Storms(stormModelType, stormModelId)
+          storm.model = content.parseJson.convertTo[immutable.HashMap[String, StormParams]]
+          storm.buildNumber += 1
+          stormsApi.models.put(stormModelId, storm)
+        }
+      }
+    }
+
+    //RDII
+    val rdiisPath = Paths.get("/borsuk_data/rdiis/")
+    if (Files.exists(rdiisPath)) {
+      val rdiiVersions = Files.walk(rdiisPath)
+      for (rdiiVersion <- rdiiVersions.toArray) {
+        for (rdiiModel <- Files.walk(Paths.get(rdiiVersion.toString)).toArray) {
+          val rdiiModelPath = Paths.get(rdiiModel.toString)
+          val content = new String(Files.readAllBytes(rdiiModelPath))
+          val rdiiModelType = rdiiModelPath.getParent.getFileName.toString
+          val rdiiModelId = rdiiModelPath.getFileName.toString
+          val rdii = new RDII(rdiiModelType, rdiiModelId)
+          rdii.model = content.parseJson.convertTo[immutable.HashMap[String, RDIIObject]]
+          rdii.buildNumber += 1
+          RDIIApi.models.put(rdiiModelId, rdii)
+        }
+      }
+    }
   }
 
   /** Routing */

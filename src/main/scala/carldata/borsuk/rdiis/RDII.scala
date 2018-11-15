@@ -1,6 +1,6 @@
 package carldata.borsuk.rdiis
 
-import java.io.FileWriter
+import java.nio.file.{Files, Paths}
 import java.time._
 import java.time.temporal.ChronoUnit
 
@@ -85,7 +85,14 @@ class RDII(modelType: String, id: String) {
   }
 
   def save() {
-    new FileWriter("/borsuk_data/rdiis/" + this.modelType + "/" + this.id).write(this.model.toJson(RDIIObjectHashMapFormat).toString)
+    val path = Paths.get("/borsuk_data/rdiis/", this.modelType)
+    val filePath = Paths.get(path.toString, this.id)
+    if (Files.exists(path)) {
+      Files.write(filePath, this.model.toJson(RDIIObjectHashMapFormat).toString.getBytes)
+    } else {
+      Files.createDirectories(path)
+      Files.write(filePath, this.model.toJson(RDIIObjectHashMapFormat).toString.getBytes)
+    }
   }
 
   /**
@@ -239,13 +246,27 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
     }
 
     def write(obj: RDIIObject): JsObject = {
+
+      val tspRainfall = if (obj.rainfall.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()) else
+        TimeSeriesParams(instantToLDT(obj.rainfall.index.head), obj.rainfall.resolution, obj.rainfall.values.toArray)
+
+      val tspFlow = if (obj.flow.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()) else
+        TimeSeriesParams(instantToLDT(obj.flow.index.head), obj.flow.resolution, obj.flow.values.toArray)
+
+      val tspDwp = if (obj.dwp.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()) else
+        TimeSeriesParams(instantToLDT(obj.dwp.index.head), obj.dwp.resolution, obj.dwp.values.toArray)
+
+      val tspInflow = if (obj.inflow.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()) else
+        TimeSeriesParams(instantToLDT(obj.inflow.index.head), obj.inflow.resolution, obj.inflow.values.toArray)
+      val childs = if (obj.childIds == Nil) Vector() else  obj.childIds.map(_.toJson).toVector
+
       JsObject(
         "session-window" -> JsString(obj.sessionWindow.toString),
-        "rainfall" -> TimeSeriesParams(instantToLDT(obj.rainfall.index.head), obj.rainfall.resolution, obj.rainfall.values.toArray).toJson,
-        "flow" -> TimeSeriesParams(instantToLDT(obj.flow.index.head), obj.flow.resolution, obj.flow.values.toArray).toJson,
-        "dwp" -> TimeSeriesParams(instantToLDT(obj.dwp.index.head), obj.dwp.resolution, obj.dwp.values.toArray).toJson,
-        "inflow" -> TimeSeriesParams(instantToLDT(obj.inflow.index.head), obj.inflow.resolution, obj.inflow.values.toArray).toJson,
-        "child-ids" -> JsArray(obj.childIds.map(_.toJson).toVector)
+        "rainfall" -> tspRainfall.toJson,
+        "flow" -> tspFlow.toJson,
+        "dwp" -> tspDwp.toJson,
+        "inflow" -> tspInflow.toJson,
+        "child-ids" -> JsArray(childs)
       )
     }
   }

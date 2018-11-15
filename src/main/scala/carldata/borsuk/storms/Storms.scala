@@ -1,6 +1,6 @@
 package carldata.borsuk.storms
 
-import java.io.FileWriter
+import java.nio.file.{Files, Paths}
 import java.time.{Duration, Instant, LocalDateTime}
 import java.util.UUID.randomUUID
 
@@ -160,7 +160,16 @@ class Storms(modelType: String, id: String) {
   }
 
   def save() {
-    new FileWriter("/borsuk_data/Storms/" + this.modelType + "/" + this.id).write(this.model.toJson(StormParamsHashMapFormat).toString)
+    val path = Paths.get("/borsuk_data/storms/", this.modelType)
+    val filePath = Paths.get(path.toString, this.id)
+    if (Files.exists(path)) {
+      Files.write(filePath, this.model.toJson(StormParamsHashMapFormat).toString.getBytes)
+      //Files.write(filePath, "123".getBytes)
+    } else {
+      Files.createDirectories(path)
+      Files.write(filePath, this.model.toJson(StormParamsHashMapFormat).toString.getBytes)
+      //Files.write(filePath, "123".getBytes)
+    }
   }
 
   /**
