@@ -27,6 +27,7 @@ import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import spray.json._
 
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
@@ -45,62 +46,54 @@ class Routing() {
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
 
-
   /** Loading models from Persistent Volume Claim */
   def load(): Unit = {
 
     //Storms
     val stormsPath = Paths.get("/borsuk_data/storms/")
     if (Files.exists(stormsPath)) {
-      val stormVersions = Files.walk(stormsPath)
-      for (stormVersion <- stormVersions.toArray) {
-        for (stormModel <- Files.walk(Paths.get(stormVersion.toString)).toArray) {
-          val stormModelPath = Paths.get(stormModel.toString)
-          val content = new String(Files.readAllBytes(stormModelPath))
-          val stormModelType = stormModelPath.getParent.getFileName.toString
-          val stormModelId = stormModelPath.getFileName.toString
-          val storm = new Storms(stormModelType, stormModelId)
-          storm.model = content.parseJson.convertTo[immutable.HashMap[String, StormParams]]
-          storm.buildNumber += 1
-          stormsApi.models.put(stormModelId, storm)
-        }
+      val files = Files.walk(stormsPath).iterator().asScala.filter(Files.isRegularFile(_))
+      for (stormModel <- files.toArray) {
+        val stormModelPath = Paths.get(stormModel.toString)
+        val content = new String(Files.readAllBytes(stormModelPath))
+        val stormModelType = stormModelPath.getParent.getFileName.toString
+        val stormModelId = stormModelPath.getFileName.toString
+        val storm = new Storms(stormModelType, stormModelId)
+        storm.model = content.parseJson.convertTo[immutable.HashMap[String, StormParams]]
+        storm.buildNumber += 1
+        stormsApi.models.put(stormModelId, storm)
       }
     }
 
     //RDII
     val rdiisPath = Paths.get("/borsuk_data/rdiis/")
     if (Files.exists(rdiisPath)) {
-      val rdiiVersions = Files.walk(rdiisPath)
-      for (rdiiVersion <- rdiiVersions.toArray) {
-        for (rdiiModel <- Files.walk(Paths.get(rdiiVersion.toString)).toArray) {
-          val rdiiModelPath = Paths.get(rdiiModel.toString)
-          val content = new String(Files.readAllBytes(rdiiModelPath))
-          val rdiiModelType = rdiiModelPath.getParent.getFileName.toString
-          val rdiiModelId = rdiiModelPath.getFileName.toString
-          val rdii = new RDII(rdiiModelType, rdiiModelId)
-          rdii.model = content.parseJson.convertTo[immutable.HashMap[String, RDIIObject]]
-          rdii.buildNumber += 1
-          RDIIApi.models.put(rdiiModelId, rdii)
-        }
+      val files = Files.walk(rdiisPath).iterator().asScala.filter(Files.isRegularFile(_))
+      for (rdiiModel <- files.toArray) {
+        val rdiiModelPath = Paths.get(rdiiModel.toString)
+        val content = new String(Files.readAllBytes(rdiiModelPath))
+        val rdiiModelType = rdiiModelPath.getParent.getFileName.toString
+        val rdiiModelId = rdiiModelPath.getFileName.toString
+        val rdii = new RDII(rdiiModelType, rdiiModelId)
+        rdii.model = content.parseJson.convertTo[immutable.HashMap[String, RDIIObject]]
+        rdii.buildNumber += 1
+        RDIIApi.models.put(rdiiModelId, rdii)
       }
     }
 
     //Envelope
     val envelopesPath = Paths.get("/borsuk_data/envelopes/")
     if (Files.exists(envelopesPath)) {
-      val envelopeVersions = Files.walk(envelopesPath)
-      for (envelopeVersion <- envelopeVersions.toArray) {
-        for (envelopeModel <- Files.walk(Paths.get(envelopeVersion.toString)).toArray) {
-          val envelopeModelPath = Paths.get(envelopeModel.toString)
-          val content = new String(Files.readAllBytes(envelopeModelPath))
-          val envelopeModelType = envelopeModelPath.getParent.getFileName.toString
-          val envelopeModelId = envelopeModelPath.getFileName.toString
-          //val envelope = new Envelope(envelopeModelType, envelopeModelId)
-          val envelope = new Envelope(envelopeModelType)
-          envelope.model = content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
-          envelope.buildNumber += 1
-          envelopeApi.models.put(envelopeModelId, envelope)
-        }
+      val files = Files.walk(stormsPath).iterator().asScala.filter(Files.isRegularFile(_))
+      for (envelopeModel <- files.toArray) {
+        val envelopeModelPath = Paths.get(envelopeModel.toString)
+        val content = new String(Files.readAllBytes(envelopeModelPath))
+        val envelopeModelType = envelopeModelPath.getParent.getFileName.toString
+        val envelopeModelId = envelopeModelPath.getFileName.toString
+        val envelope = new Envelope(envelopeModelType, envelopeModelId)
+        envelope.model = content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
+        envelope.buildNumber += 1
+        envelopeApi.models.put(envelopeModelId, envelope)
       }
     }
   }

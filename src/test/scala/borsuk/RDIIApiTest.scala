@@ -17,8 +17,9 @@ import scala.concurrent.duration._
 
 class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
 
-  private def mainRoute() = {
+  private def mainRoute()(implicit load: Boolean = false) = {
     val routing = new Routing()
+    if(load) routing.load()
     routing.route()
   }
 
@@ -170,6 +171,17 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
             }
           }
         }
+      }
+    }
+
+    "give status from loaded model" in {
+      val request = HttpRequest(
+        HttpMethods.GET,
+        uri = "/rdiis/secret-id")
+
+      request ~> mainRoute()(true) ~> check {
+        val modelStatus = responseAs[ModelStatus]
+        modelStatus.build shouldEqual 1
       }
     }
   }

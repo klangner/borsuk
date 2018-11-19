@@ -29,7 +29,7 @@ class EnvelopeResult(points: Seq[((Sessions.Session, Double), Double)], regressi
   val dates: Seq[Sessions.Session] = this.points.map(_._1._1)
 }
 
-class Envelope(modelType: String) {
+class Envelope(modelType: String, id: String) {
   private var stormIntensityWindow: Duration = Duration.ofHours(6)
   private var flowIntensityWindow: Duration = Duration.ofHours(1)
   private var dryDayWindow = Duration.ofHours(48)
