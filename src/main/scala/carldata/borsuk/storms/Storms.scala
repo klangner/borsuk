@@ -180,11 +180,9 @@ class Storms(modelType: String, id: String) {
     val filePath = Paths.get(path.toString, this.id)
     if (Files.exists(path)) {
       Files.write(filePath, this.model.toJson(StormParamsHashMapFormat).toString.getBytes)
-      //Files.write(filePath, "123".getBytes)
     } else {
       Files.createDirectories(path)
       Files.write(filePath, this.model.toJson(StormParamsHashMapFormat).toString.getBytes)
-      //Files.write(filePath, "123".getBytes)
     }
   }
 

@@ -114,8 +114,7 @@ class Envelope(modelType: String, id: String) {
 
   def save() {
     val path = Paths.get("/borsuk_data/envelopes/", this.modelType)
-    //val filePath = Paths.get(path.toString, this.id)
-    val filePath = Paths.get(path.toString)
+    val filePath = Paths.get(path.toString, this.id)
     if (Files.exists(path)) {
       Files.write(filePath, this.model.toJson(EnvelopeResultHashMapFormat).toString.getBytes)
     } else {
