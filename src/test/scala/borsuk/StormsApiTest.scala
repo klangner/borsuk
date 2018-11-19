@@ -240,7 +240,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       }
     }
 
-    "fit for copley-pump(46225 samples) should fit in less than 20 seconds" in {
+    "fit for copley-pump(46225 samples) should fit in less than 30 seconds" in {
       val route = mainRoute()
       val copleyPumpTs = Csv.fromString(Source.fromResource("copley-pump.csv").getLines().mkString("\n"))
       val startDate = DateTimeHelper.instantToLDT(copleyPumpTs(1).index.head)
@@ -252,7 +252,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         val statusBeforeFit = checkStatus(res.id, route)
 
         fitModelRequest(res.id, fitParams) ~> route ~> check {
-          eventually(timeout(20 seconds)) {
+          eventually(timeout(30 seconds)) {
             val statusAfterFit = checkStatus(res.id, route)
             statusBeforeFit should not equal statusAfterFit
             status shouldEqual StatusCodes.OK
