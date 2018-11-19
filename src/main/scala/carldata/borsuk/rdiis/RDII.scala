@@ -57,16 +57,13 @@ class RDII(modelType: String, id: String) {
             .distinct.sorted
 
         val maxSessionWindow = if (params.maxSessionWindow == Duration.ZERO) listOfSessionWindows.last else params.maxSessionWindow
-        Storms.mergeSessions(baseSessions, baseSessions, listOfSessionWindows.filter(d => d.compareTo(maxSessionWindow) <= 0), rainfall.resolution)
+        Storms.mergeSessions(baseSessions, baseSessions.toSet, listOfSessionWindows.filter(d => d.compareTo(maxSessionWindow) <= 0), rainfall.resolution)
       }
       else List()
 
-      //println(LocalDateTime.now + " - " + storms.length.toString)
-      //var i = 1
       val rdiis: List[(String, RDIIObject)] = storms.map {
         x =>
-          //println(LocalDateTime.now + " - build model no: " + i + " storm value count: " + x._2.values.length)
-          //i += 1
+
           (x._1, RDIIBuilder(rainfall2, flow, instantToLDT(x._2.session.startIndex), instantToLDT(x._2.session.endIndex), allDWPDays)
             .withDryDayWindow(params.dryDayWindow)
             .withStormSessionWindows(x._2.sessionWindow)
@@ -162,7 +159,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(shiftedSd, shiftedEd)
       //Adjust indexes in all series, dwp && inflows already are OK
-      val rainfallSection: TimeSeries[Double] = adjust(
+      val rainfallSection: TimeSeries[Double] = TimeSeriesHelper.adjust(
         rainfall.slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), shiftedEd)
           .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum), dwp)
         .filter(x => dwp.index.contains(x._1))
@@ -175,20 +172,6 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
     }
     else RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
-  }
-
-  def adjust(raw: TimeSeries[Double], template: TimeSeries[Double]): TimeSeries[Double] = {
-    val rs = if (raw.nonEmpty && template.nonEmpty) {
-      val leftCorrected = if (raw.head.get._1.isAfter(template.head.get._1)) (template.head.get._1, 0.0) else raw.head.get
-      val rightCorrected = if (raw.last.get._1.isBefore(template.last.get._1)) (template.last.get._1, 0.0) else raw.last.get
-      (leftCorrected +: raw.dataPoints :+ rightCorrected).distinct.unzip
-    }
-    else if (template.nonEmpty) {
-      (Vector(template.head.get._1, template.last.get._1), Vector(0.0, 0.0))
-    }
-    else (Vector(), Vector())
-
-    TimeSeries(rs._1, rs._2)
   }
 
 }

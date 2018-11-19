@@ -9,11 +9,13 @@ import carldata.borsuk.BasicApiObjects._
 import carldata.borsuk.Routing
 import carldata.borsuk.envelope.ApiObjects._
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
+import carldata.series.Csv
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
 import scala.concurrent.duration._
+import scala.io.Source
 
 class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
 
@@ -29,21 +31,21 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
 
   private def fitEnvelopeRequest(id: String, fitEnvelopeParams: FitEnvelopeParams) = {
     HttpRequest(HttpMethods.POST,
-      uri = s"/envelopes/${id}/fit",
+      uri = s"/envelopes/$id/fit",
       entity = HttpEntity(ContentTypes.`application/json`, fitEnvelopeParams.toJson.compactPrint)
     )
   }
 
   private def listEnvelopeRequest(id: String) = {
-    HttpRequest(HttpMethods.GET, uri = s"/envelopes/${id}/envelope")
+    HttpRequest(HttpMethods.GET, uri = s"/envelopes/$id/envelope")
   }
 
   private def checkEnvelopeModelStatus(id: String) = {
-    HttpRequest(HttpMethods.GET, uri = s"/envelopes/${id}")
+    HttpRequest(HttpMethods.GET, uri = s"/envelopes/$id")
   }
 
   private def getEnvelopeModel(id: String, singleEnvelopeId: String) = {
-    HttpRequest(HttpMethods.GET, uri = s"/envelopes/${id}/envelope/${singleEnvelopeId}")
+    HttpRequest(HttpMethods.GET, uri = s"/envelopes/$id/envelope/$singleEnvelopeId")
   }
 
   "The Envelope" should {
@@ -205,6 +207,54 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         }
       }
     }
+
+    "get the model" in {
+      val route = mainRoute()
+
+      val csv = Source.fromResource("copley-pump.csv").getLines().mkString("\n")
+      val data = Csv.fromString(csv)
+      val flow = data.head
+      val rainfall = data(1)
+
+      createEnvelopeModelRequest("test-model-type", "test-id") ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[ModelCreatedResponse].id shouldBe "test-id"
+        val fitEnvelopeParams = FitEnvelopeParams(
+          TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), flow.values.toArray),
+          TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), rainfall.values.toArray),
+          dryDayWindow = Duration.ofMinutes(5),
+          stormIntensityWindow = Duration.ofHours(6),
+          flowIntensityWindow = Duration.ofMinutes(5),
+          minSessionWindow = Duration.ofMinutes(715),
+          maxSessionWindow = Duration.ofMinutes(725)
+        )
+        fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
+          status shouldBe StatusCodes.OK
+          eventually(timeout(120 seconds), interval(2 seconds)) {
+            checkEnvelopeModelStatus("test-id") ~> route ~> check {
+              status shouldBe StatusCodes.OK
+              responseAs[ModelStatus].build shouldBe 1
+            }
+
+            listEnvelopeRequest("test-id") ~> route ~> check {
+              status shouldBe StatusCodes.OK
+              responseAs[ListResponse].envelope.length should be > 0
+
+              val firstEnvelopeId = responseAs[ListResponse]
+                .envelope
+                .filter(x => x.sessionWindow.equals(Duration.ofHours(12)))
+                .head.id
+
+              getEnvelopeModel("test-id", firstEnvelopeId) ~> route ~> check {
+                status shouldBe StatusCodes.OK
+                responseAs[GetResponse].rainfall.take(5) shouldEqual Seq(42.75, 30.25, 28.5, 28.0, 24.5)
+              }
+            }
+          }
+        }
+      }
+    }
+
 
   }
 }
