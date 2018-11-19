@@ -19,7 +19,7 @@ object Storms {
   case class StormParams(session: Session, sessionWindow: Duration, values: Vector[Double], childIds: Seq[String])
 
   /** Get all storms (with merged storms) from rainfall */
-  def getAllStorms(rainfall: TimeSeries[Double]): List[(String, StormParams)] = {
+  def getAllStorms(rainfall: TimeSeries[Double], listOfSessionWindows: Option[Seq[Duration]]): List[(String, StormParams)] = {
     val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall)
       .zipWithIndex
       .map(x =>
@@ -29,21 +29,26 @@ object Storms {
       ).toList
 
     if (baseSessions != Nil) {
-      val listOfSessionWindows: Seq[Duration] =
-        baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
-          .map(x => Duration.between(x._1, x._2))
-          .distinct.sorted
+      val mergedSession = if (listOfSessionWindows.isDefined) {
+        mergeSessions(baseSessions, Set(), listOfSessionWindows.get, rainfall.resolution)
+      }
+      else {
+        val complexListOfSessionWindows: Seq[Duration] =
+          baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
+            .map(x => Duration.between(x._1, x._2))
+            .distinct.sorted
+        mergeSessions(baseSessions, Set(), complexListOfSessionWindows, rainfall.resolution)
 
-      val mergedSession = mergeSessions(baseSessions, baseSessions, listOfSessionWindows, rainfall.resolution)
+      }
       mergedSession
     }
     else List()
   }
 
   @tailrec
-  def mergeSessions(prev: List[(String, StormParams)], res: List[(String, StormParams)]
+  def mergeSessions(prev: List[(String, StormParams)], res: Set[(String, StormParams)]
                     , sessionWindows: Seq[Duration], resolution: Duration): List[(String, StormParams)] = {
-    if (sessionWindows.isEmpty) res
+    if (sessionWindows.isEmpty) res.toList
     else {
       val sessionWindow = sessionWindows.head
       val next: List[(String, StormParams)] = prev.tail.foldLeft[List[(String, StormParams)]](List(prev.head))((zs, x) => {
@@ -62,7 +67,7 @@ object Storms {
         else
           x :: zs
       }).reverse
-      mergeSessions(next, res ++ next, sessionWindows.tail, resolution)
+      mergeSessions(prev, res ++ next, sessionWindows.tail, resolution)
     }
   }
 
@@ -163,7 +168,7 @@ class Storms(modelType: String, id: String) {
       val index: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(endIndex), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(index.toVector, params.rainfall.values.toVector)
 
-      val mergedSession: List[(String, Storms.StormParams)] = Storms.getAllStorms(rainfall)
+      val mergedSession: List[(String, Storms.StormParams)] = Storms.getAllStorms(rainfall, None)
       model = immutable.HashMap(mergedSession: _*)
       save()
       buildNumber += 1
