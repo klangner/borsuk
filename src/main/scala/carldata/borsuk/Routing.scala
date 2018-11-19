@@ -9,7 +9,8 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import carldata.borsuk.envelope.ApiObjects.{CreateEnvelopeParams, FitEnvelopeParams}
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
-import carldata.borsuk.envelope.EnvelopeApi
+import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol._
+import carldata.borsuk.envelope.{Envelope, EnvelopeApi, EnvelopeResult}
 import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams}
 import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
 import carldata.borsuk.prediction.PredictionAPI
@@ -17,9 +18,6 @@ import carldata.borsuk.rdiis.ApiObjects.{CreateParams, FitRDIIParams}
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitRDIIParamsFormat}
 import carldata.borsuk.rdiis.RDIIObjectHashMapJsonProtocol._
 import carldata.borsuk.rdiis.{RDII, RDIIObject, RdiiApi}
-import carldata.borsuk.rdiis.ApiObjects.{CreateParams, FitRDIIParams}
-import carldata.borsuk.rdiis.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitRDIIParamsFormat}
-import carldata.borsuk.rdiis.RdiiApi
 import carldata.borsuk.storms.ApiObjects.{CreateStormsParams, FitStormsParams}
 import carldata.borsuk.storms.ApiObjectsJsonProtocol.{CreateStormsParamsFormat, FitStormsParamsFormat}
 import carldata.borsuk.storms.StormParamsHashMapJsonProtocol._
@@ -83,6 +81,25 @@ class Routing() {
           rdii.model = content.parseJson.convertTo[immutable.HashMap[String, RDIIObject]]
           rdii.buildNumber += 1
           RDIIApi.models.put(rdiiModelId, rdii)
+        }
+      }
+    }
+
+    //Envelope
+    val envelopesPath = Paths.get("/borsuk_data/envelopes/")
+    if (Files.exists(envelopesPath)) {
+      val envelopeVersions = Files.walk(envelopesPath)
+      for (envelopeVersion <- envelopeVersions.toArray) {
+        for (envelopeModel <- Files.walk(Paths.get(envelopeVersion.toString)).toArray) {
+          val envelopeModelPath = Paths.get(envelopeModel.toString)
+          val content = new String(Files.readAllBytes(envelopeModelPath))
+          val envelopeModelType = envelopeModelPath.getParent.getFileName.toString
+          val envelopeModelId = envelopeModelPath.getFileName.toString
+          //val envelope = new Envelope(envelopeModelType, envelopeModelId)
+          val envelope = new Envelope(envelopeModelType)
+          envelope.model = content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
+          envelope.buildNumber += 1
+          envelopeApi.models.put(envelopeModelId, envelope)
         }
       }
     }
@@ -170,11 +187,10 @@ class Routing() {
       }
     }
     } ~ path("envelopes" / Segment / "envelope") {
-      (id) => {
+      id =>
         get {
           envelopeApi.list(id)
         }
-      }
     } ~ path("envelopes" / Segment / "envelope" / Segment) {
       (id, envelopeId) => {
         get {

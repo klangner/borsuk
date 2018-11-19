@@ -1,20 +1,22 @@
 package carldata.borsuk.envelope
 
-import java.time.{Duration, LocalDate, Instant}
+import java.nio.file.{Files, Paths}
+import java.time.{Duration, Instant, LocalDate}
 import java.util.UUID.randomUUID
 
 import carldata.borsuk.envelope.ApiObjects.FitEnvelopeParams
-import carldata.borsuk.helper.DateTimeHelper.{instantToLDT, dtToInstant}
+import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol.EnvelopeResultHashMapFormat
+import carldata.borsuk.helper.DateTimeHelper.{dtToInstant, instantToLDT}
+import carldata.borsuk.helper.JsonHelper.{doubleFromValue, stringFromValue, timestampFromValue}
 import carldata.borsuk.helper.{DateTimeHelper, TimeSeriesHelper}
-import carldata.borsuk.helper.JsonHelper.{timestampFromValue, stringFromValue, doubleFromValue}
 import carldata.borsuk.rdiis._
 import carldata.borsuk.storms.Storms
 import carldata.series.{Sessions, TimeSeries}
 import smile.regression.OLS
+import spray.json._
 
 import scala.collection.immutable
 import scala.collection.immutable.HashMap
-import spray.json._
 
 class EnvelopeResult(points: Seq[((Sessions.Session, Double), Double)], regression: Seq[Double], window: Duration) {
   val sessionWindow: Duration = this.window
@@ -102,11 +104,23 @@ class Envelope(modelType: String) {
           (randomUUID().toString, new EnvelopeResult(dataPoints, r, sessionWindow))
       }.toList
 
+      //rdii.save()
       model = immutable.HashMap(envelopes: _*)
+      //save()
       buildNumber += 1
     }
+  }
 
-
+  def save() {
+    val path = Paths.get("/borsuk_data/envelopes/", this.modelType)
+    //val filePath = Paths.get(path.toString, this.id)
+    val filePath = Paths.get(path.toString)
+    if (Files.exists(path)) {
+      Files.write(filePath, this.model.toJson(EnvelopeResultHashMapFormat).toString.getBytes)
+    } else {
+      Files.createDirectories(path)
+      Files.write(filePath, this.model.toJson(EnvelopeResultHashMapFormat).toString.getBytes)
+    }
   }
 
   def calculateCoefficients(xs: Seq[((Sessions.Session, Double), Double)]): Seq[Double] = {
@@ -204,6 +218,7 @@ object EnvelopeResultJsonProtocol extends DefaultJsonProtocol {
       )
     }
   }
+
 }
 
 object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
@@ -236,4 +251,5 @@ object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
       )).toVector)
     }
   }
+
 }
