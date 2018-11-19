@@ -7,6 +7,9 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import carldata.borsuk.envelope.ApiObjects.{CreateEnvelopeParams, FitEnvelopeParams}
+import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
+import carldata.borsuk.envelope.EnvelopeApi
 import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams}
 import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
 import carldata.borsuk.prediction.PredictionAPI
@@ -14,6 +17,9 @@ import carldata.borsuk.rdiis.ApiObjects.{CreateParams, FitRDIIParams}
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitRDIIParamsFormat}
 import carldata.borsuk.rdiis.RDIIObjectHashMapJsonProtocol._
 import carldata.borsuk.rdiis.{RDII, RDIIObject, RdiiApi}
+import carldata.borsuk.rdiis.ApiObjects.{CreateParams, FitRDIIParams}
+import carldata.borsuk.rdiis.ApiObjectsJsonProtocol.{CreateRDIIParamsFormat, FitRDIIParamsFormat}
+import carldata.borsuk.rdiis.RdiiApi
 import carldata.borsuk.storms.ApiObjects.{CreateStormsParams, FitStormsParams}
 import carldata.borsuk.storms.ApiObjectsJsonProtocol.{CreateStormsParamsFormat, FitStormsParamsFormat}
 import carldata.borsuk.storms.StormParamsHashMapJsonProtocol._
@@ -25,12 +31,14 @@ import spray.json._
 
 import scala.collection.immutable
 import scala.collection.immutable.Seq
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
 class Routing() {
   val predictionApi = new PredictionAPI()
   val RDIIApi = new RdiiApi()
   val stormsApi = new StormsApi()
+  val envelopeApi = new EnvelopeApi(RDIIApi)
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
@@ -106,8 +114,10 @@ class Routing() {
         entity(as[CreateParams])(params => RDIIApi.create(params))
       }
     } ~ path("rdiis" / Segment / "fit") { id =>
-      post {
-        entity(as[FitRDIIParams])(data => RDIIApi.fit(id, data))
+      withRequestTimeout(60.seconds) {
+        post {
+          entity(as[FitRDIIParams])(data => RDIIApi.fit(id, data))
+        }
       }
     } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String])) {
       (id, sessionWindow) =>
@@ -144,6 +154,32 @@ class Routing() {
     } ~ path("storms" / Segment) { id =>
       get {
         stormsApi.status(id)
+      }
+    } ~ path("envelopes") {
+      post {
+        entity(as[CreateEnvelopeParams])(data => envelopeApi.create(data))
+      }
+    } ~ path("envelopes" / Segment) { id => {
+      get {
+        envelopeApi.status(id)
+      }
+    }
+    } ~ path("envelopes" / Segment / "fit") { id => {
+      post {
+        entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
+      }
+    }
+    } ~ path("envelopes" / Segment / "envelope") {
+      (id) => {
+        get {
+          envelopeApi.list(id)
+        }
+      }
+    } ~ path("envelopes" / Segment / "envelope" / Segment) {
+      (id, envelopeId) => {
+        get {
+          envelopeApi.get(id, envelopeId)
+        }
       }
     }
   }

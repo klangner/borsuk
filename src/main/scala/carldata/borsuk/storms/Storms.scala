@@ -2,7 +2,6 @@ package carldata.borsuk.storms
 
 import java.nio.file.{Files, Paths}
 import java.time.{Duration, Instant, LocalDateTime}
-import java.util.UUID.randomUUID
 
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.JsonHelper._
@@ -53,7 +52,7 @@ object Storms {
 
           val gapValues = for (_ <- 1 until (gapDuration.toMillis / resolution.toMillis).toInt) yield 0.0
 
-          (randomUUID().toString
+          (zs.head._1 + "-" + x._1
             , StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex)
             , sessionWindow
             , zs.head._2.values ++ gapValues ++ x._2.values
@@ -65,6 +64,17 @@ object Storms {
       }).reverse
       mergeSessions(next, res ++ next, sessionWindows.tail, resolution)
     }
+  }
+
+  /**
+    * Calculate maximum intensity for a single rain event.
+    */
+  def maxIntensity(session: Session, rainfall: TimeSeries[Double], windowSize: Duration): Double = {
+    val xs = rainfall.slice(session.startIndex, session.endIndex.plusSeconds(1))
+      .rollingWindow(windowSize.minusMillis(1), _.sum)
+
+    if (xs.nonEmpty) xs.dataPoints.maxBy(_._2)._2
+    else 0.0
   }
 }
 
@@ -115,6 +125,7 @@ object StormParamsHashMapJsonProtocol extends DefaultJsonProtocol {
 
   import StormParamsJsonProtocol._
   import Storms.StormParams
+  import spray.json._
 
   implicit object StormParamsHashMapFormat extends RootJsonFormat[immutable.HashMap[String, StormParams]] {
     def read(json: JsValue): HashMap[String, StormParams] = {

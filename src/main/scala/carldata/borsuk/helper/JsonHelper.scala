@@ -1,9 +1,10 @@
 package carldata.borsuk.helper
 
-import java.time.LocalDateTime
+import java.time.{Duration, LocalDateTime}
 
 import spray.json.{JsArray, JsNumber, JsString, JsValue}
 import carldata.borsuk.helper.DateTimeHelper._
+
 object JsonHelper {
 
   def parseJsField(js: JsValue, str: String): String = js.asJsObject.fields(str).toString.replace("\"", "")
@@ -37,5 +38,12 @@ object JsonHelper {
   def intFromValue(jsVal: JsValue): Int = jsVal match {
     case JsNumber(v) => v.toInt
     case _ => Int.MinValue
+  }
+
+  def durationFromValue(jsVal: JsValue): Duration = {
+    jsVal match {
+      case JsString(x) => Duration.parse(x)
+      case _ => Duration.ZERO
+    }
   }
 }

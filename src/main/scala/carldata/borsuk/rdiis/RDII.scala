@@ -35,10 +35,10 @@ class RDII(modelType: String, id: String) {
     if (params.flow.values.nonEmpty && params.rainfall.values.nonEmpty) {
       val edFlow: LocalDateTime = params.flow.startDate.plusSeconds(params.flow.resolution.getSeconds * params.flow.values.length)
       val indexFlow: Seq[Instant] = Gen.mkIndex(dtToInstant(params.flow.startDate), dtToInstant(edFlow), params.flow.resolution)
-      val flow: TimeSeries[Double] = TimeSeries(indexFlow.toVector, params.flow.values.toVector)
+      val flow: TimeSeries[Double] = TimeSeries(indexFlow.toVector, params.flow.values.toVector).filter(_._2 >= 0)
       val edRainfall: LocalDateTime = params.rainfall.startDate.plusSeconds(params.rainfall.resolution.getSeconds * params.rainfall.values.length)
       val indexRainfall: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(edRainfall), params.rainfall.resolution)
-      val rainfall: TimeSeries[Double] = TimeSeries(indexRainfall.toVector, params.rainfall.values.toVector)
+      val rainfall: TimeSeries[Double] = TimeSeries(indexRainfall.toVector, params.rainfall.values.toVector).filter(_._2 >= 0)
       val minSessionWindow = if (params.minSessionWindow == Duration.ZERO) rainfall.resolution else params.minSessionWindow
 
       val ts = rainfall.slice(rainfall.index.head, dtToInstant(edRainfall)).join(flow.slice(rainfall.index.head, dtToInstant(edRainfall)))
@@ -61,8 +61,7 @@ class RDII(modelType: String, id: String) {
             .distinct.sorted
 
         val maxSessionWindow = if (params.maxSessionWindow == Duration.ZERO) listOfSessionWindows.last else params.maxSessionWindow
-        Storms.mergeSessions(baseSessions, baseSessions, listOfSessionWindows, rainfall.resolution)
-          .filter(s => s._2.sessionWindow.compareTo(maxSessionWindow) <= 0)
+        Storms.mergeSessions(baseSessions, baseSessions, listOfSessionWindows.filter(d => d.compareTo(maxSessionWindow) <= 0), rainfall.resolution)
       }
       else List()
 
@@ -174,18 +173,21 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
         }
       val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays).slice(sd, ed)
 
-      val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(sd, ed)
+      val (shiftedSd, shiftedEd) = if (inflow.nonEmpty) (inflow.index.head, inflow.index.last.plus(inflow.resolution)) else (sd, ed)
+
+      val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(shiftedSd, shiftedEd)
       //Adjust indexes in all series, dwp && inflows already are OK
       val rainfallSection: TimeSeries[Double] = adjust(
-        rainfall.slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), ed)
+        rainfall.slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), shiftedEd)
           .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum), dwp)
         .filter(x => dwp.index.contains(x._1))
-        .slice(sd, ed)
+        .slice(shiftedSd, shiftedEd)
         .addMissing(dwp.resolution, (_, _, _) => 0.0)
 
-      val flowSection: TimeSeries[Double] = flow.slice(sd, ed).filter(x => dwp.index.contains(x._1))
+      val flowSection: TimeSeries[Double] = flow.slice(shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
 
       RDIIObject(stormSessionWindows, rainfallSection, flowSection, dwp, inflow, Seq())
+
     }
     else RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
   }
@@ -194,7 +196,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
     val rs = if (raw.nonEmpty && template.nonEmpty) {
       val leftCorrected = if (raw.head.get._1.isAfter(template.head.get._1)) (template.head.get._1, 0.0) else raw.head.get
       val rightCorrected = if (raw.last.get._1.isBefore(template.last.get._1)) (template.last.get._1, 0.0) else raw.last.get
-      (leftCorrected +: raw.dataPoints :+ rightCorrected).unzip
+      (leftCorrected +: raw.dataPoints :+ rightCorrected).distinct.unzip
     }
     else if (template.nonEmpty) {
       (Vector(template.head.get._1, template.last.get._1), Vector(0.0, 0.0))
@@ -213,6 +215,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
 
   import carldata.borsuk.BasicApiObjects._
+  import spray.json._
 
   implicit object RDIIObjectFormat extends RootJsonFormat[RDIIObject] {
     def read(json: JsValue): RDIIObject = json match {
@@ -275,7 +278,7 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
     if (tsp.values.isEmpty) {
       TimeSeries.empty
     } else {
-      val index = (0 until tsp.values.length).map(
+      val index = tsp.values.indices.map(
         x => dtToInstant(tsp.startDate.plus(tsp.resolution.multipliedBy(x)))
       ).toVector
       TimeSeries(index, tsp.values.toVector)
@@ -290,6 +293,7 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
 object RDIIObjectHashMapJsonProtocol extends DefaultJsonProtocol {
 
   import RDIIObjectJsonProtocol._
+  import spray.json._
 
   implicit object RDIIObjectHashMapFormat extends RootJsonFormat[immutable.HashMap[String, RDIIObject]] {
     def read(json: JsValue): HashMap[String, RDIIObject] = {
