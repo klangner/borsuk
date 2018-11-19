@@ -252,7 +252,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         val statusBeforeFit = checkStatus(res.id, route)
 
         fitModelRequest(res.id, fitParams) ~> route ~> check {
-          eventually(timeout(30 seconds)) {
+          eventually(timeout(120 seconds)) {
             val statusAfterFit = checkStatus(res.id, route)
             statusBeforeFit should not equal statusAfterFit
             status shouldEqual StatusCodes.OK

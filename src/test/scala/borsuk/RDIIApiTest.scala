@@ -91,7 +91,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
 
     "fit the model" in {
       val route = mainRoute()
-      val trainData = 0.to(1000).map(_ => 1.0).toArray
+      val trainData = 0.to(100).map(_ => 1.0).toArray
       val resolution: Duration = Duration.ofMinutes(10)
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
@@ -106,7 +106,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
 
         fitRequest ~> route ~> check {
           status shouldEqual StatusCodes.OK
-          eventually(timeout(30 seconds)) {
+          eventually(timeout(60 seconds)) {
             val request = HttpRequest(HttpMethods.GET, uri = s"/rdiis/${mcr.id}")
 
             request ~> route ~> check {
@@ -178,7 +178,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
     "give status from loaded model" in {
 
       val route = mainRoute()
-      val trainData = 0.to(1000).map(_ => 1.0).toArray
+      val trainData = 0.to(100).map(_ => 1.0).toArray
       val resolution: Duration = Duration.ofMinutes(10)
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
@@ -193,7 +193,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
 
         fitRequest ~> route ~> check {
           status shouldEqual StatusCodes.OK
-          eventually(timeout(30 seconds)) {
+          eventually(timeout(60 seconds)) {
             val request = HttpRequest(HttpMethods.GET, uri = s"/rdiis/secret-id")
 
             request ~> route ~> check {
