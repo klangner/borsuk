@@ -7,6 +7,21 @@ import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.helper.DateTimeHelper.dtToInstant
 
 object TimeSeriesHelper {
+
+  def adjust(raw: TimeSeries[Double], template: TimeSeries[Double]): TimeSeries[Double] = {
+    val rs = if (raw.nonEmpty && template.nonEmpty) {
+      val leftCorrected = if (raw.head.get._1.isAfter(template.head.get._1)) (template.head.get._1, 0.0) else raw.head.get
+      val rightCorrected = if (raw.last.get._1.isBefore(template.last.get._1)) (template.last.get._1, 0.0) else raw.last.get
+      (leftCorrected +: raw.dataPoints :+ rightCorrected).distinct.unzip
+    }
+    else if (template.nonEmpty) {
+      (Vector(template.head.get._1, template.last.get._1), Vector(0.0, 0.0))
+    }
+    else (Vector(), Vector())
+
+    TimeSeries(rs._1, rs._2)
+  }
+
   def concat[V](xs: Seq[TimeSeries[V]]): TimeSeries[V] = {
     if (xs.isEmpty) TimeSeries.empty[V]
     else xs.foldLeft(TimeSeries.empty[V]) { (ts, ts2) =>

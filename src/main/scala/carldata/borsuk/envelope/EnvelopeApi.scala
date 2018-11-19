@@ -5,9 +5,7 @@ import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
 import carldata.borsuk.envelope.ApiObjects._
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
-import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.rdiis.{RDII, RdiiApi}
-import carldata.series.Sessions.Session
 import spray.json._
 
 import scala.collection.mutable.Map
@@ -53,7 +51,9 @@ class EnvelopeApi(rdiiApi :RdiiApi) {
 
   def list(id: String): StandardRoute = {
     models.get(id) match {
-      case Some(envelopeModel: Envelope) => complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,
+      case Some(envelopeModel: Envelope) =>
+
+        complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,
         ListResponse(envelopeModel.list.map(x => ApiObjects.EnvelopeObject(x._1, x._2.sessionWindow)).toArray)
           .toJson.compactPrint)))
       case None => complete(StatusCodes.NotFound)
@@ -63,19 +63,16 @@ class EnvelopeApi(rdiiApi :RdiiApi) {
   def get(id: String, envelopeId: String): StandardRoute = {
     models.get(id) match {
       case Some(envelopeModel) => envelopeModel.model.get(envelopeId) match {
-        case Some(singleEnvelope) =>
+        case Some(singleEnvelope: EnvelopeResult) =>
           complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,GetResponse(
-            rainfall = Seq(1.0, 2.0, 3.0),
-            flow = Seq(1.0, 2.0, 3.0),
-            slope = 0.5,
-            intercept = 1.0,
-            rSquare =  0.1,
-            dates = Seq(
-              Session(dtToInstant(dateParse("2018-01-01T00:00:00")), dtToInstant(dateParse("2018-01-01T10:00:00"))),
-              Session(dtToInstant(dateParse("2018-01-03T00:00:00")), dtToInstant(dateParse("2018-01-03T10:00:00"))),
-              Session(dtToInstant(dateParse("2018-01-05T00:00:00")), dtToInstant(dateParse("2018-01-05T10:00:00")))
-            )
+            singleEnvelope.rainfall,
+            singleEnvelope.flows,
+            singleEnvelope.slope,
+            singleEnvelope.intercept,
+            singleEnvelope.rSquare,
+            singleEnvelope.dates
           ).toJson.compactPrint)))
+
         case None => complete(StatusCodes.NotFound)
       }
       case None => complete(StatusCodes.NotFound)
