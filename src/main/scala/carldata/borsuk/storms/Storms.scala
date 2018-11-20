@@ -19,10 +19,10 @@ object Storms {
 
   /** Get all storms (with merged storms) from rainfall */
   def getAllStorms(rainfall: TimeSeries[Double], listOfSessionWindows: Option[Seq[Duration]]): List[(String, StormParams)] = {
-    val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall)
+    val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall)
       .zipWithIndex
       .map(x =>
-        x._2.toString ->
+        x._2 ->
           StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex
             , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
       ).toList
@@ -40,27 +40,28 @@ object Storms {
 
       }
       mergedSession
-    }
+    }.map(x => (x._1.toString, x._2))
     else List()
   }
 
   @tailrec
-  def mergeSessions(prev: List[(String, StormParams)], res: Set[(String, StormParams)]
-                    , sessionWindows: Seq[Duration], resolution: Duration): List[(String, StormParams)] = {
+  def mergeSessions(prev: List[(Int, StormParams)], res: Set[(Int, StormParams)]
+                    , sessionWindows: Seq[Duration], resolution: Duration): List[(Int, StormParams)] = {
+    val highestIndex: Int = (prev.unzip._1 ++ res.unzip._1).max
     if (sessionWindows.isEmpty) res.toList
     else {
       val sessionWindow = sessionWindows.head
-      val next: List[(String, StormParams)] = prev.tail.foldLeft[List[(String, StormParams)]](List(prev.head))((zs, x) => {
+      val next: List[(Int, StormParams)] = prev.tail.foldLeft[List[(Int, StormParams)]](List(prev.head))((zs, x) => {
         if (sessionWindow.compareTo(Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)) >= 0) {
           val gapDuration = Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)
 
           val gapValues = for (_ <- 1 until (gapDuration.toMillis / resolution.toMillis).toInt) yield 0.0
 
-          (zs.head._1 + "-" + x._1
+          (highestIndex + 1
             , StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex)
             , sessionWindow
             , zs.head._2.values ++ gapValues ++ x._2.values
-            , zs.head._2.childIds ++ Seq(zs.head._1, x._1))
+            , zs.head._2.childIds ++ Seq(zs.head._1.toString, x._1.toString))
           ) :: zs.tail
         } //merge sessions
         else
