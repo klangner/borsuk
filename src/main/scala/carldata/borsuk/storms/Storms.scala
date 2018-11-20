@@ -102,7 +102,7 @@ object StormParamsJsonProtocol extends DefaultJsonProtocol {
           Session(dtToInstant(timestampFromValue(sessionJson.fields("start-date"))),
             dtToInstant(timestampFromValue(sessionJson.fields("end-date")))),
           Duration.parse(stringFromValue(x("duration"))),
-          arrayFromValue(x("values")).toVector,
+          arrayFromValue(x("values"), doubleFromValue).toVector,
           x("child-ids").convertTo[Array[String]].toSeq
         )
       case _ =>
