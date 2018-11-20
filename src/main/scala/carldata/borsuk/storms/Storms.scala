@@ -1,13 +1,15 @@
 package carldata.borsuk.storms
 
+import java.nio.file.Paths
 import java.time.{Duration, Instant, LocalDateTime}
 
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.JsonHelper._
+import carldata.borsuk.helper.{Model, PVCHelper}
 import carldata.borsuk.storms.ApiObjects.FitStormsParams
 import carldata.series.Sessions.Session
 import carldata.series.{Gen, Sessions, TimeSeries}
-import spray.json.DefaultJsonProtocol
+import spray.json._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -89,8 +91,6 @@ object Storms {
 
 object StormParamsJsonProtocol extends DefaultJsonProtocol {
 
-  import spray.json._
-
   implicit object StormParamsFormat extends RootJsonFormat[Storms.StormParams] {
     def read(json: JsValue): Storms.StormParams = json match {
 
@@ -151,10 +151,12 @@ object StormParamsHashMapJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-
 }
 
 class Storms(modelType: String, id: String) {
+
+  import carldata.borsuk.storms.StormParamsHashMapJsonProtocol._
+
   var model: immutable.HashMap[String, Storms.StormParams] = immutable.HashMap.empty[String, Storms.StormParams]
   var buildNumber: Int = 0
 
@@ -170,8 +172,15 @@ class Storms(modelType: String, id: String) {
 
       val mergedSession: List[(String, Storms.StormParams)] = Storms.getAllStorms(rainfall, None)
       model = immutable.HashMap(mergedSession: _*)
+      save()
       buildNumber += 1
     }
+  }
+
+  def save() {
+    val path = Paths.get("/borsuk_data/storms/", this.modelType)
+    val model = Model(this.modelType, this.id, this.model.toJson(StormParamsHashMapFormat).toString)
+    PVCHelper.saveModel(path, model)
   }
 
   /**

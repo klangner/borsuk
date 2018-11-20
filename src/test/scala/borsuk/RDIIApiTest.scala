@@ -9,16 +9,18 @@ import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
 import carldata.borsuk.rdiis.ApiObjects._
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
+import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
-import org.scalatest.concurrent.Eventually
+
 import scala.concurrent.duration._
 
 
 class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
 
-  private def mainRoute() = {
+  private def mainRoute()(implicit load: Boolean = false) = {
     val routing = new Routing()
+    if (load) routing.load()
     routing.route()
   }
 
@@ -170,6 +172,45 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
             }
           }
         }
+      }
+    }
+
+    "give status from loaded model" in {
+
+      val route = mainRoute()
+      val trainData = 0.to(1000).map(_ => 1.0).toArray
+      val resolution: Duration = Duration.ofMinutes(10)
+      val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
+
+      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12), Duration.ofMinutes(10), Duration.ofMinutes(10))
+
+      createModelRequest ~> route ~> check {
+        val mcr = responseAs[ModelCreatedResponse]
+        val fitRequest = HttpRequest(
+          HttpMethods.POST,
+          uri = s"/rdiis/secret-id/fit",
+          entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
+
+        fitRequest ~> route ~> check {
+          status shouldEqual StatusCodes.OK
+          eventually(timeout(20 seconds)) {
+            val request = HttpRequest(HttpMethods.GET, uri = s"/rdiis/secret-id")
+
+            request ~> route ~> check {
+              val modelStatus = responseAs[ModelStatus]
+              modelStatus.build shouldEqual 1
+            }
+          }
+        }
+      }
+
+      val request = HttpRequest(
+        HttpMethods.GET,
+        uri = "/rdiis/secret-id")
+
+      request ~> mainRoute()(true) ~> check {
+        val modelStatus = responseAs[ModelStatus]
+        modelStatus.build shouldEqual 1
       }
     }
   }

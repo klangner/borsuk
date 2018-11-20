@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 
-class EnvelopeApi(rdiiApi :RdiiApi) {
+class EnvelopeApi(rdiiApi: RdiiApi) {
   val models = Map.empty[String, Envelope]
 
   /**
@@ -23,7 +23,7 @@ class EnvelopeApi(rdiiApi :RdiiApi) {
     if (models.contains(params.id)) {
       complete(StatusCodes.Conflict -> "Error: Model with this id already exist.")
     } else {
-      models.put(params.id, new Envelope(params.modelType))
+      models.put(params.id, new Envelope(params.modelType, params.id))
 
       val rdii = new RDII(params.modelType, params.id)
       rdiiApi.models.put(params.id, rdii)
@@ -54,8 +54,8 @@ class EnvelopeApi(rdiiApi :RdiiApi) {
       case Some(envelopeModel: Envelope) =>
 
         complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,
-        ListResponse(envelopeModel.list.map(x => ApiObjects.EnvelopeObject(x._1, x._2.sessionWindow)).toArray)
-          .toJson.compactPrint)))
+          ListResponse(envelopeModel.list.map(x => ApiObjects.EnvelopeObject(x._1, x._2.sessionWindow)).toArray)
+            .toJson.compactPrint)))
       case None => complete(StatusCodes.NotFound)
     }
   }
@@ -64,7 +64,7 @@ class EnvelopeApi(rdiiApi :RdiiApi) {
     models.get(id) match {
       case Some(envelopeModel) => envelopeModel.model.get(envelopeId) match {
         case Some(singleEnvelope: EnvelopeResult) =>
-          complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,GetResponse(
+          complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`, GetResponse(
             singleEnvelope.rainfall,
             singleEnvelope.flows,
             singleEnvelope.slope,

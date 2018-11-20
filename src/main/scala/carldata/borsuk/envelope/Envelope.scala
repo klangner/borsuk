@@ -1,12 +1,14 @@
 package carldata.borsuk.envelope
 
+import java.nio.file.Paths
 import java.time.{Duration, Instant, LocalDate}
 import java.util.UUID.randomUUID
 
 import carldata.borsuk.envelope.ApiObjects.FitEnvelopeParams
+import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol.EnvelopeResultHashMapFormat
 import carldata.borsuk.helper.DateTimeHelper.{dtToInstant, instantToLDT}
 import carldata.borsuk.helper.JsonHelper.{doubleFromValue, stringFromValue, timestampFromValue}
-import carldata.borsuk.helper.{DateTimeHelper, TimeSeriesHelper}
+import carldata.borsuk.helper.{DateTimeHelper, Model, PVCHelper, TimeSeriesHelper}
 import carldata.borsuk.rdiis._
 import carldata.borsuk.storms.Storms
 import carldata.series.{Sessions, TimeSeries}
@@ -27,7 +29,7 @@ class EnvelopeResult(points: Seq[((Sessions.Session, Double), Double)], regressi
   val dates: Seq[Sessions.Session] = this.points.map(_._1._1)
 }
 
-class Envelope(modelType: String) {
+class Envelope(modelType: String, id: String) {
   private var stormIntensityWindow: Duration = Duration.ofHours(6)
   private var flowIntensityWindow: Duration = Duration.ofHours(1)
   private var dryDayWindow = Duration.ofHours(48)
@@ -97,11 +99,17 @@ class Envelope(modelType: String) {
           (randomUUID().toString, new EnvelopeResult(dataPoints, r, sessionWindow))
       }.toList
 
+      rdii.save()
       model = immutable.HashMap(envelopes: _*)
+      save()
       buildNumber += 1
     }
+  }
 
-
+  def save() {
+    val path = Paths.get("/borsuk_data/envelopes/", this.modelType)
+    val model = Model(this.modelType, this.id, this.model.toJson(EnvelopeResultHashMapFormat).toString)
+    PVCHelper.saveModel(path, model)
   }
 
   def calculateCoefficients(xs: Seq[((Sessions.Session, Double), Double)]): Seq[Double] = {

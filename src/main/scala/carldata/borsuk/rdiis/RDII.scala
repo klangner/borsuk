@@ -1,12 +1,13 @@
 package carldata.borsuk.rdiis
 
+import java.nio.file.Paths
 import java.time._
 import java.time.temporal.ChronoUnit
 
 import carldata.borsuk.BasicApiObjectsJsonProtocol._
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.JsonHelper._
-import carldata.borsuk.helper.TimeSeriesHelper
+import carldata.borsuk.helper.{Model, PVCHelper, TimeSeriesHelper}
 import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
 import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.borsuk.storms.Storms
@@ -22,6 +23,9 @@ case class RDIIObject(sessionWindow: Duration, rainfall: TimeSeries[Double], flo
                       , inflow: TimeSeries[Double], childIds: Seq[String])
 
 class RDII(modelType: String, id: String) {
+
+  import RDIIObjectHashMapJsonProtocol._
+
   var model: immutable.HashMap[String, RDIIObject] = immutable.HashMap.empty[String, RDIIObject]
   var buildNumber: Int = 0
 
@@ -71,8 +75,15 @@ class RDII(modelType: String, id: String) {
       }
 
       model = immutable.HashMap(rdiis: _*)
+      save()
       buildNumber += 1
     }
+  }
+
+  def save() {
+    val path = Paths.get("/borsuk_data/rdiis/", this.modelType)
+    val model = Model(this.modelType, this.id, this.model.toJson(RDIIObjectHashMapFormat).toString)
+    PVCHelper.saveModel(path, model)
   }
 
   /**
@@ -139,7 +150,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
     // This algorithm works only if the series are aligned
     if (rainfall.nonEmpty) {
       // Slice data to session
-      val sessionDays: Seq[LocalDate] = flow.slice(sd.minus(2, ChronoUnit.DAYS), ed)
+      val sessionDays: Seq[LocalDate] = flow.slice(sd.minus(1, ChronoUnit.DAYS), ed)
         .groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0))
         .index
         .map(instantToDay)
@@ -152,8 +163,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-
-      val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays)
+      val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays).slice(sd, ed)
 
       val (shiftedSd, shiftedEd) = if (inflow.nonEmpty) (inflow.index.head, inflow.index.last.plus(inflow.resolution)) else (sd, ed)
 
@@ -217,13 +227,16 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
     }
 
     def write(obj: RDIIObject): JsObject = {
+
+      val childs = if (obj.childIds == Nil) Vector() else obj.childIds.map(_.toJson).toVector
+
       JsObject(
         "session-window" -> JsString(obj.sessionWindow.toString),
-        "rainfall" -> TimeSeriesParams(instantToLDT(obj.rainfall.index.head), obj.rainfall.resolution, obj.rainfall.values.toArray).toJson,
-        "flow" -> TimeSeriesParams(instantToLDT(obj.flow.index.head), obj.flow.resolution, obj.flow.values.toArray).toJson,
-        "dwp" -> TimeSeriesParams(instantToLDT(obj.dwp.index.head), obj.dwp.resolution, obj.dwp.values.toArray).toJson,
-        "inflow" -> TimeSeriesParams(instantToLDT(obj.inflow.index.head), obj.inflow.resolution, obj.inflow.values.toArray).toJson,
-        "child-ids" -> JsArray(obj.childIds.map(_.toJson).toVector)
+        "rainfall" -> TimeSeriesHelper.toTimeSeriesParams(obj.rainfall).toJson,
+        "flow" -> TimeSeriesHelper.toTimeSeriesParams(obj.flow).toJson,
+        "dwp" -> TimeSeriesHelper.toTimeSeriesParams(obj.dwp).toJson,
+        "inflow" -> TimeSeriesHelper.toTimeSeriesParams(obj.inflow).toJson,
+        "child-ids" -> JsArray(childs)
       )
     }
   }
