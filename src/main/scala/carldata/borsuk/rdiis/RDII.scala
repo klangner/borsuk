@@ -1,13 +1,13 @@
 package carldata.borsuk.rdiis
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.Paths
 import java.time._
 import java.time.temporal.ChronoUnit
 
 import carldata.borsuk.BasicApiObjectsJsonProtocol._
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.JsonHelper._
-import carldata.borsuk.helper.TimeSeriesHelper
+import carldata.borsuk.helper.{Model, PVCHelper, TimeSeriesHelper}
 import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
 import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.borsuk.storms.Storms
@@ -82,13 +82,8 @@ class RDII(modelType: String, id: String) {
 
   def save() {
     val path = Paths.get("/borsuk_data/rdiis/", this.modelType)
-    val filePath = Paths.get(path.toString, this.id)
-    if (Files.exists(path)) {
-      Files.write(filePath, this.model.toJson(RDIIObjectHashMapFormat).toString.getBytes)
-    } else {
-      Files.createDirectories(path)
-      Files.write(filePath, this.model.toJson(RDIIObjectHashMapFormat).toString.getBytes)
-    }
+    val model = Model(this.modelType, this.id, this.model.toJson(RDIIObjectHashMapFormat).toString)
+    PVCHelper.saveModel(path, model)
   }
 
   /**
@@ -233,25 +228,14 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
 
     def write(obj: RDIIObject): JsObject = {
 
-      val tspRainfall = if (obj.rainfall.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()) else
-        TimeSeriesParams(instantToLDT(obj.rainfall.index.head), obj.rainfall.resolution, obj.rainfall.values.toArray)
-
-      val tspFlow = if (obj.flow.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()) else
-        TimeSeriesParams(instantToLDT(obj.flow.index.head), obj.flow.resolution, obj.flow.values.toArray)
-
-      val tspDwp = if (obj.dwp.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()) else
-        TimeSeriesParams(instantToLDT(obj.dwp.index.head), obj.dwp.resolution, obj.dwp.values.toArray)
-
-      val tspInflow = if (obj.inflow.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array()) else
-        TimeSeriesParams(instantToLDT(obj.inflow.index.head), obj.inflow.resolution, obj.inflow.values.toArray)
-      val childs = if (obj.childIds == Nil) Vector() else  obj.childIds.map(_.toJson).toVector
+      val childs = if (obj.childIds == Nil) Vector() else obj.childIds.map(_.toJson).toVector
 
       JsObject(
         "session-window" -> JsString(obj.sessionWindow.toString),
-        "rainfall" -> tspRainfall.toJson,
-        "flow" -> tspFlow.toJson,
-        "dwp" -> tspDwp.toJson,
-        "inflow" -> tspInflow.toJson,
+        "rainfall" -> TimeSeriesHelper.toTimeSeriesParams(obj.rainfall).toJson,
+        "flow" -> TimeSeriesHelper.toTimeSeriesParams(obj.flow).toJson,
+        "dwp" -> TimeSeriesHelper.toTimeSeriesParams(obj.dwp).toJson,
+        "inflow" -> TimeSeriesHelper.toTimeSeriesParams(obj.inflow).toJson,
         "child-ids" -> JsArray(childs)
       )
     }

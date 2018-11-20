@@ -1,10 +1,10 @@
 package carldata.borsuk.helper
 
-import java.time.{Instant, LocalDateTime}
+import java.time.{Duration, Instant, LocalDateTime}
 
-import carldata.series.{Gen, TimeSeries}
 import carldata.borsuk.BasicApiObjects.TimeSeriesParams
-import carldata.borsuk.helper.DateTimeHelper.dtToInstant
+import carldata.borsuk.helper.DateTimeHelper.{dtToInstant, instantToLDT}
+import carldata.series.{Gen, TimeSeries}
 
 object TimeSeriesHelper {
 
@@ -44,5 +44,10 @@ object TimeSeriesHelper {
     val ed: LocalDateTime = tsp.startDate.plusSeconds(tsp.resolution.getSeconds * tsp.values.length)
     val idx: Seq[Instant] = Gen.mkIndex(dtToInstant(tsp.startDate), dtToInstant(ed), tsp.resolution)
     TimeSeries(idx.toVector, tsp.values.toVector)
+  }
+
+  def toTimeSeriesParams(ts: TimeSeries[Double]): TimeSeriesParams = {
+    if (ts.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array())
+    else TimeSeriesParams(instantToLDT(ts.index.head), ts.resolution, ts.values.toArray)
   }
 }

@@ -1,10 +1,11 @@
 package carldata.borsuk.storms
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.Paths
 import java.time.{Duration, Instant, LocalDateTime}
 
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.JsonHelper._
+import carldata.borsuk.helper.{Model, PVCHelper}
 import carldata.borsuk.storms.ApiObjects.FitStormsParams
 import carldata.series.Sessions.Session
 import carldata.series.{Gen, Sessions, TimeSeries}
@@ -177,13 +178,8 @@ class Storms(modelType: String, id: String) {
 
   def save() {
     val path = Paths.get("/borsuk_data/storms/", this.modelType)
-    val filePath = Paths.get(path.toString, this.id)
-    if (Files.exists(path)) {
-      Files.write(filePath, this.model.toJson(StormParamsHashMapFormat).toString.getBytes)
-    } else {
-      Files.createDirectories(path)
-      Files.write(filePath, this.model.toJson(StormParamsHashMapFormat).toString.getBytes)
-    }
+    val model = Model(this.modelType, this.id, this.model.toJson(StormParamsHashMapFormat).toString)
+    PVCHelper.saveModel(path, model)
   }
 
   /**

@@ -1,6 +1,6 @@
 package carldata.borsuk.envelope
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.Paths
 import java.time.{Duration, Instant, LocalDate}
 import java.util.UUID.randomUUID
 
@@ -8,7 +8,7 @@ import carldata.borsuk.envelope.ApiObjects.FitEnvelopeParams
 import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol.EnvelopeResultHashMapFormat
 import carldata.borsuk.helper.DateTimeHelper.{dtToInstant, instantToLDT}
 import carldata.borsuk.helper.JsonHelper.{doubleFromValue, stringFromValue, timestampFromValue}
-import carldata.borsuk.helper.{DateTimeHelper, TimeSeriesHelper}
+import carldata.borsuk.helper.{DateTimeHelper, Model, PVCHelper, TimeSeriesHelper}
 import carldata.borsuk.rdiis._
 import carldata.borsuk.storms.Storms
 import carldata.series.{Sessions, TimeSeries}
@@ -105,22 +105,17 @@ class Envelope(modelType: String, id: String) {
           (randomUUID().toString, new EnvelopeResult(dataPoints, r, sessionWindow))
       }.toList
 
-      //rdii.save()
+      rdii.save()
       model = immutable.HashMap(envelopes: _*)
-      //save()
+      save()
       buildNumber += 1
     }
   }
 
   def save() {
     val path = Paths.get("/borsuk_data/envelopes/", this.modelType)
-    val filePath = Paths.get(path.toString, this.id)
-    if (Files.exists(path)) {
-      Files.write(filePath, this.model.toJson(EnvelopeResultHashMapFormat).toString.getBytes)
-    } else {
-      Files.createDirectories(path)
-      Files.write(filePath, this.model.toJson(EnvelopeResultHashMapFormat).toString.getBytes)
-    }
+    val model = Model(this.modelType, this.id, this.model.toJson(EnvelopeResultHashMapFormat).toString)
+    PVCHelper.saveModel(path, model)
   }
 
   def calculateCoefficients(xs: Seq[((Sessions.Session, Double), Double)]): Seq[Double] = {

@@ -119,7 +119,7 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
 
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
-          eventually(timeout(10 seconds), interval(2 seconds)) {
+          eventually(timeout(10.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id") ~> route ~> check {
               status shouldBe StatusCodes.OK
               responseAs[ModelStatus].build shouldBe 1
@@ -149,7 +149,7 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
 
-          eventually(timeout(10 seconds), interval(2 seconds)) {
+          eventually(timeout(10.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id") ~> route ~> check {
               status shouldBe StatusCodes.OK
               responseAs[ModelStatus].build shouldBe 1
@@ -194,7 +194,7 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
 
-          eventually(timeout(10 seconds), interval(2 seconds)) {
+          eventually(timeout(10.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id") ~> route ~> check {
               status shouldBe StatusCodes.OK
               responseAs[ModelStatus].build shouldBe 1
@@ -230,7 +230,7 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         )
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
-          eventually(timeout(120 seconds), interval(2 seconds)) {
+          eventually(timeout(120.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id") ~> route ~> check {
               status shouldBe StatusCodes.OK
               responseAs[ModelStatus].build shouldBe 1
