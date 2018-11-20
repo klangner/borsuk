@@ -158,7 +158,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
               .storms.head
               .id.replaceAll("\"", "")
 
-            id shouldEqual "0-1-2-3"
+            id shouldEqual "4"
           }
         }
       }

@@ -33,15 +33,9 @@ class Envelope(modelType: String, id: String) {
   private var stormIntensityWindow: Duration = Duration.ofHours(6)
   private var flowIntensityWindow: Duration = Duration.ofHours(1)
   private var dryDayWindow = Duration.ofHours(48)
-  private var flowBoundary = 3.0
 
   var model: immutable.HashMap[String, EnvelopeResult] = HashMap.empty[String, EnvelopeResult]
   var buildNumber: Int = 0
-
-  def withFlowBoundary(fb: Double): Envelope = {
-    flowBoundary = fb
-    this
-  }
 
   def withStormIntensityWindow(window: Duration): Envelope = {
     stormIntensityWindow = window
@@ -97,7 +91,7 @@ class Envelope(modelType: String, id: String) {
                 .inflow
                 .rollingWindow(flowIntensityWindow.minusSeconds(1), x => x.sum / x.length)
               ((session, Storms.maxIntensity(session, rainfall, stormIntensityWindow)), Inflow.intensity(inflow))
-          }.filter(_._2 > flowBoundary)
+          }.filter(_._2 > params.flowBoundary)
             .sortBy(_._1._2)
             .reverse
 
@@ -167,12 +161,12 @@ object EnvelopeResultJsonProtocol extends DefaultJsonProtocol {
           val window = Duration.parse(stringFromValue(fields("sessionWindow")))
 
           val rainfall: Seq[Double] = fields("rainfall") match {
-            case JsArray(elements) => elements.map(doubleFromValue(_))
+            case JsArray(elements) => elements.map(doubleFromValue)
             case _ => Seq()
           }
 
           val flows: Seq[Double] = fields("flows") match {
-            case JsArray(elements) => elements.map(doubleFromValue(_))
+            case JsArray(elements) => elements.map(doubleFromValue)
             case _ => Seq()
           }
 
@@ -181,13 +175,13 @@ object EnvelopeResultJsonProtocol extends DefaultJsonProtocol {
           val rSquare: Double = doubleFromValue(fields("rSquare"))
 
           val dates: Seq[Sessions.Session] = fields("dates") match {
-            case JsArray(elements) => elements.map(el => el match {
-              case JsObject(fields) => Sessions.Session(
-                dtToInstant(timestampFromValue(fields("start-date"))),
-                dtToInstant(timestampFromValue(fields("end-date")))
+            case JsArray(elements) => elements.map {
+              case JsObject(timeFrame) => Sessions.Session(
+                dtToInstant(timestampFromValue(timeFrame("start-date"))),
+                dtToInstant(timestampFromValue(timeFrame("end-date")))
               )
               case _ => Sessions.Session(Instant.MIN, Instant.MIN)
-            })
+            }
             case _ => Seq()
           }
 
@@ -230,7 +224,7 @@ object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
 
     def read(json: JsValue): HashMap[String, EnvelopeResult] = {
       json match {
-        case JsArray(elements) => {
+        case JsArray(elements) =>
           val pairs = elements.map {
             case JsObject(fields) => (
               stringFromValue(fields("key")),
@@ -240,7 +234,6 @@ object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
 
           val hash = immutable.HashMap.empty
           hash.++(pairs)
-        }
         case _ => immutable.HashMap.empty[String, EnvelopeResult]
       }
     }

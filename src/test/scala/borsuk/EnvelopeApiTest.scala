@@ -74,13 +74,14 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
     "not fit if model does not exist" in {
       val route = mainRoute()
       val fitEnvelopeParams = FitEnvelopeParams(
-        flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
-        rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
-        dryDayWindow = Duration.ofMinutes(5),
-        stormIntensityWindow = Duration.ofMinutes(5),
-        flowIntensityWindow = Duration.ofMinutes(5),
-        minSessionWindow = Duration.ofMinutes(5),
-        maxSessionWindow = Duration.ofMinutes(5)
+        flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+        , rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+        , dryDayWindow = Duration.ofMinutes(5)
+        , stormIntensityWindow = Duration.ofMinutes(5)
+        , flowIntensityWindow = Duration.ofMinutes(5)
+        , minSessionWindow = Duration.ofMinutes(5)
+        , maxSessionWindow = Duration.ofMinutes(5)
+        , 3.0
       )
 
       fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
@@ -108,13 +109,14 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         responseAs[ModelCreatedResponse].id shouldBe "test-id"
 
         val fitEnvelopeParams = FitEnvelopeParams(
-          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
-          rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
-          dryDayWindow = Duration.ofMinutes(5),
-          stormIntensityWindow = Duration.ofMinutes(5),
-          flowIntensityWindow = Duration.ofMinutes(5),
-          minSessionWindow = Duration.ofMinutes(5),
-          maxSessionWindow = Duration.ofMinutes(5)
+          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+          , rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+          , dryDayWindow = Duration.ofMinutes(5)
+          , stormIntensityWindow = Duration.ofMinutes(5)
+          , flowIntensityWindow = Duration.ofMinutes(5)
+          , minSessionWindow = Duration.ofMinutes(5)
+          , maxSessionWindow = Duration.ofMinutes(5)
+          , 3.0
         )
 
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
@@ -137,13 +139,14 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         responseAs[ModelCreatedResponse].id shouldBe "test-id"
 
         val fitEnvelopeParams = FitEnvelopeParams(
-          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
-          rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
-          dryDayWindow = Duration.ofMinutes(5),
-          stormIntensityWindow = Duration.ofMinutes(5),
-          flowIntensityWindow = Duration.ofMinutes(5),
-          minSessionWindow = Duration.ofMinutes(5),
-          maxSessionWindow = Duration.ofMinutes(5)
+          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+          , rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+          , dryDayWindow = Duration.ofMinutes(5)
+          , stormIntensityWindow = Duration.ofMinutes(5)
+          , flowIntensityWindow = Duration.ofMinutes(5)
+          , minSessionWindow = Duration.ofMinutes(5)
+          , maxSessionWindow = Duration.ofMinutes(5)
+          , 3.0
         )
 
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
@@ -182,13 +185,14 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         responseAs[ModelCreatedResponse].id shouldBe "test-id"
 
         val fitEnvelopeParams = FitEnvelopeParams(
-          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
-          rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0)),
-          dryDayWindow = Duration.ofMinutes(5),
-          stormIntensityWindow = Duration.ofMinutes(5),
-          flowIntensityWindow = Duration.ofMinutes(5),
-          minSessionWindow = Duration.ofMinutes(5),
-          maxSessionWindow = Duration.ofMinutes(5)
+          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+          , rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+          , dryDayWindow = Duration.ofMinutes(5)
+          , stormIntensityWindow = Duration.ofMinutes(5)
+          , flowIntensityWindow = Duration.ofMinutes(5)
+          , minSessionWindow = Duration.ofMinutes(5)
+          , maxSessionWindow = Duration.ofMinutes(5)
+          , 3.0
         )
 
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
@@ -220,13 +224,14 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         status shouldBe StatusCodes.OK
         responseAs[ModelCreatedResponse].id shouldBe "test-id"
         val fitEnvelopeParams = FitEnvelopeParams(
-          TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), flow.values.toArray),
-          TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), rainfall.values.toArray),
-          dryDayWindow = Duration.ofMinutes(5),
-          stormIntensityWindow = Duration.ofHours(6),
-          flowIntensityWindow = Duration.ofMinutes(5),
-          minSessionWindow = Duration.ofMinutes(715),
-          maxSessionWindow = Duration.ofMinutes(725)
+          TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), flow.values.toArray)
+          , TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), rainfall.values.toArray)
+          , dryDayWindow = Duration.ofMinutes(5)
+          , stormIntensityWindow = Duration.ofHours(6)
+          , flowIntensityWindow = Duration.ofMinutes(5)
+          , minSessionWindow = Duration.ofMinutes(715)
+          , maxSessionWindow = Duration.ofMinutes(725)
+          , 3.0
         )
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK

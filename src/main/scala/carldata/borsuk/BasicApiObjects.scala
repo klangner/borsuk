@@ -37,7 +37,7 @@ object BasicApiObjectsJsonProtocol extends DefaultJsonProtocol {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
         val resolution = request.get("resolution").map(stringFromValue).map(Duration.parse).getOrElse(Duration.ofHours(1))
-        val values = request.get("values").map(arrayFromValue).getOrElse(Array.empty[Double])
+        val values = request.get("values").map(arrayFromValue(_, doubleFromValue)).getOrElse(Array.empty[Double])
 
         TimeSeriesParams(startDate, resolution, values)
       case _ => TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array())

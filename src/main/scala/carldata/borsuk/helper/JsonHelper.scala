@@ -5,13 +5,17 @@ import java.time.{Duration, LocalDateTime}
 import spray.json.{JsArray, JsNumber, JsString, JsValue}
 import carldata.borsuk.helper.DateTimeHelper._
 
+import scala.reflect.ClassTag
+
 object JsonHelper {
 
   def parseJsField(js: JsValue, str: String): String = js.asJsObject.fields(str).toString.replace("\"", "")
 
-  def arrayFromValue(jsVal: JsValue): Array[Double] = jsVal match {
-    case JsArray(vs) => vs.map(doubleFromValue).toArray
-    case _ => Array.empty[Double]
+  def arrayFromValue[T: ClassTag](jsVal: JsValue, f: JsValue => T): Array[T] = {
+    jsVal match {
+      case JsArray(vs) => vs.map(f).toArray
+      case _ => Array.empty[T]
+    }
   }
 
   def stringFromValue(jsVal: JsValue): String = jsVal match {
