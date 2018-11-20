@@ -85,7 +85,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def read(value: JsValue): FitPredictionParams = value match {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
-        val values = request.get("values").map(arrayFromValue).getOrElse(Array.empty[Double])
+        val values = request.get("values").map(arrayFromValue(_, doubleFromValue)).getOrElse(Array.empty[Double])
         FitPredictionParams(startDate, values)
       case _ => FitPredictionParams(LocalDateTime.now(), Array.empty)
     }
@@ -143,7 +143,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
     def read(value: JsValue): PredictionResponse = value match {
       case JsObject(request) =>
-        val values = request.get("values").map(arrayFromValue).getOrElse(Array.empty[Double])
+        val values = request.get("values").map(arrayFromValue(_, doubleFromValue)).getOrElse(Array.empty[Double])
         PredictionResponse(values)
       case _ => PredictionResponse(Array.empty)
     }
