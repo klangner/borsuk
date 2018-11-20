@@ -16,9 +16,10 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitEnvelopeParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams, dryDayWindow: Duration,
-                               stormIntensityWindow: Duration, flowIntensityWindow: Duration,
-                               minSessionWindow: Duration, maxSessionWindow: Duration)
+  case class FitEnvelopeParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams, dryDayWindow: Duration
+                               , stormIntensityWindow: Duration, flowIntensityWindow: Duration
+                               , minSessionWindow: Duration, maxSessionWindow: Duration
+                               , flowBoundary: Double)
 
   case class EnvelopeObject(id: String, sessionWindow: Duration)
 
@@ -105,8 +106,10 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
             else Duration.ZERO
             , if (x.contains("maxSessionWindow")) durationFromValue(x("maxSessionWindow"))
             else Duration.ZERO
+            , x.get("flowBoundary").map(doubleFromValue).getOrElse(3.0)
           )
-        case _ => FitEnvelopeParams(emptyTSP, emptyTSP, Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
+        case _ => FitEnvelopeParams(emptyTSP, emptyTSP, Duration.ZERO, Duration.ZERO, Duration.ZERO
+          , Duration.ZERO, Duration.ZERO, Double.NaN)
       }
     }
   }
