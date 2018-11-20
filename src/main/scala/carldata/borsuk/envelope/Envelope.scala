@@ -57,8 +57,8 @@ class Envelope(modelType: String) {
   def fit(params: FitEnvelopeParams, rdii: RDII): Unit = {
     if (params.flow.values.nonEmpty && params.rainfall.values.nonEmpty) {
 
-      val flow = TimeSeriesHelper.parse(params.flow)
-      val rainfall = TimeSeriesHelper.parse(params.rainfall)
+      val flow = TimeSeriesHelper.parse(params.flow).filter(_._2 >= 0)
+      val rainfall = TimeSeriesHelper.parse(params.rainfall).filter(_._2 >= 0)
 
       val minSessionWindow: Duration = if (params.minSessionWindow == Duration.ZERO) {
         Duration.ofHours(12)
