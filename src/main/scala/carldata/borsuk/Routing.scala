@@ -46,6 +46,8 @@ class Routing() {
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
 
+  val MB = 1048576
+
   /** Loading models from Persistent Volume Claim */
   def load(): Unit = {
     def createEnvelope(model: Model): Option[Envelope] = {
@@ -104,9 +106,11 @@ class Routing() {
         entity(as[CreateParams])(params => RDIIApi.create(params))
       }
     } ~ path("rdiis" / Segment / "fit") { id =>
-      withRequestTimeout(60.seconds) {
-        post {
-          entity(as[FitRDIIParams])(data => RDIIApi.fit(id, data))
+      withRequestTimeout(10.seconds) {
+        withSizeLimit(20 * MB) {
+          post {
+            entity(as[FitRDIIParams])(data => RDIIApi.fit(id, data))
+          }
         }
       }
     } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String])) {
@@ -129,47 +133,58 @@ class Routing() {
       }
     } ~ path("storms" / Segment / "fit") { id =>
       post {
-        entity(as[FitStormsParams])(data => stormsApi.fit(id, data))
+        withRequestTimeout(5.seconds) {
+          withSizeLimit(20 * MB) {
+            entity(as[FitStormsParams]) { data =>
+              stormsApi.fit(id, data)
+            }
+          }
+        }
       }
     } ~ (path("storms" / Segment / "storm") & parameters("sessionWindow".as[String])) {
-      (id, sessionWindow) =>
+        (id, sessionWindow) =>
+          get {
+            stormsApi.list(id, Duration.parse(sessionWindow))
+          }
+      } ~ path("storms" / Segment / "storm" / Segment) {
+        (modelId, stormId) =>
+          get {
+            stormsApi.get(modelId, stormId)
+          }
+      } ~ path("storms" / Segment) { id =>
         get {
-          stormsApi.list(id, Duration.parse(sessionWindow))
+          stormsApi.status(id)
         }
-    } ~ path("storms" / Segment / "storm" / Segment) {
-      (modelId, stormId) =>
-        get {
-          stormsApi.get(modelId, stormId)
+      } ~ path("envelopes") {
+        post {
+          entity(as[CreateEnvelopeParams])(data => envelopeApi.create(data))
         }
-    } ~ path("storms" / Segment) { id =>
-      get {
-        stormsApi.status(id)
-      }
-    } ~ path("envelopes") {
-      post {
-        entity(as[CreateEnvelopeParams])(data => envelopeApi.create(data))
-      }
-    } ~ path("envelopes" / Segment) { id => {
-      get {
-        envelopeApi.status(id)
-      }
-    }
-    } ~ path("envelopes" / Segment / "fit") { id => {
-      post {
-        entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
-      }
-    }
-    } ~ path("envelopes" / Segment / "envelope") {
-      id =>
+      } ~ path("envelopes" / Segment) { id => {
         get {
-          envelopeApi.list(id)
+          envelopeApi.status(id)
         }
-    } ~ path("envelopes" / Segment / "envelope" / Segment) {
-      (id, envelopeId) => {
-        get {
-          envelopeApi.get(id, envelopeId)
+      }
+      } ~ path("envelopes" / Segment / "fit") { id => {
+        post {
+          withRequestTimeout(10.seconds) {
+            withSizeLimit(20 * MB) {
+              entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
+            }
+          }
+        }
+      }
+      } ~ path("envelopes" / Segment / "envelope") {
+        id =>
+          get {
+            envelopeApi.list(id)
+          }
+      } ~ path("envelopes" / Segment / "envelope" / Segment) {
+        (id, envelopeId) => {
+          get {
+            envelopeApi.get(id, envelopeId)
+          }
         }
       }
     }
   }
-}
+
