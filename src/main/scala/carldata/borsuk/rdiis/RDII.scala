@@ -172,9 +172,9 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
       val rainfallSection: TimeSeries[Double] =
         rainfall
           .slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), shiftedEd.plus(1, ChronoUnit.DAYS))
-          .filter(x => TimeSeriesHelper.concat(patternInflows).index.contains(x._1))
           .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum)
           .addMissing(dwp.resolution, (_, _, _) => 0.0)
+          .filter(x => dwp.index.contains(x._1))
           .slice(shiftedSd, shiftedEd)
 
       val flowSection: TimeSeries[Double] = flow.slice(shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
