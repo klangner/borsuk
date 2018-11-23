@@ -46,6 +46,8 @@ class Routing() {
     HttpMethods.HEAD,
     HttpMethods.OPTIONS))
 
+  val MB = 1048576
+
   /** Loading models from Persistent Volume Claim */
   def load(): Unit = {
     def createEnvelope(model: Model): Option[Envelope] = {
@@ -105,8 +107,10 @@ class Routing() {
       }
     } ~ path("rdiis" / Segment / "fit") { id =>
       withRequestTimeout(60.seconds) {
-        post {
-          entity(as[FitRDIIParams])(data => RDIIApi.fit(id, data))
+        withSizeLimit(20 * MB) {
+          post {
+            entity(as[FitRDIIParams])(data => RDIIApi.fit(id, data))
+          }
         }
       }
     } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String])) {
@@ -129,7 +133,13 @@ class Routing() {
       }
     } ~ path("storms" / Segment / "fit") { id =>
       post {
-        entity(as[FitStormsParams])(data => stormsApi.fit(id, data))
+        withRequestTimeout(30.seconds) {
+          withSizeLimit(20 * MB) {
+            entity(as[FitStormsParams]) { data =>
+              stormsApi.fit(id, data)
+            }
+          }
+        }
       }
     } ~ (path("storms" / Segment / "storm") & parameters("sessionWindow".as[String])) {
       (id, sessionWindow) =>
@@ -156,7 +166,11 @@ class Routing() {
     }
     } ~ path("envelopes" / Segment / "fit") { id => {
       post {
-        entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
+        withRequestTimeout(60.seconds) {
+          withSizeLimit(20 * MB) {
+            entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
+          }
+        }
       }
     }
     } ~ path("envelopes" / Segment / "envelope") {
