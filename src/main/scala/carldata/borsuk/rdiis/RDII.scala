@@ -133,6 +133,8 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
   private var stormSessionWindows: Duration = Duration.ofHours(12)
   private var dryDayWindow = Duration.ofHours(48)
 
+  val inflow: TimeSeries[Double] = Inflow.fromSession(Session(startDate.toInstant(ZoneOffset.UTC)
+    , endDate.plusDays(1).toInstant(ZoneOffset.UTC)), flow, allDWPDays)
 
   def withDryDayWindow(window: Duration): RDIIBuilder = {
     dryDayWindow = window
