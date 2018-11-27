@@ -236,7 +236,7 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         )
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
-          eventually(timeout(1020.seconds), interval(2.seconds)) {
+          eventually(timeout(120.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id") ~> route ~> check {
               status shouldBe StatusCodes.OK
               responseAs[ModelStatus].build shouldBe 1
@@ -255,7 +255,9 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
                 status shouldBe StatusCodes.OK
               val getResponse = responseAs[GetResponse]
                 getResponse.rainfall.take(5) shouldEqual Seq(42.75, 30.25, 28.5, 28.0, 24.5)
-                getResponse.flow.take(5) shouldEqual Seq(42.75, 30.25, 28.5, 28.0, 24.5)
+                getResponse.flow.take(5)
+                  .zip(Seq(8.092, 5.389, 4.226, 11.138, 3.939))
+                  .forall(x => Math.abs(x._2 - x._1) < 0.001) shouldBe true
               }
 
             }
