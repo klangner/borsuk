@@ -75,25 +75,24 @@ class Envelope(modelType: String, id: String) {
 
       val rainfall2 = TimeSeriesHelper.adjust(rainfall, flow)
 
-      val envelopes = createStorms(rainfall2, minSessionWindow, maxSessionWindow).map {
+      val envelopes = createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow).map {
         sessionWindowAndStorm =>
-          val storms: Seq[(String, Storms.StormParams)] = sessionWindowAndStorm._2
+          val storms: Seq[(String, Storms.StormParams)] = sessionWindowAndStorm._2.take(19)
           val sessionWindow = sessionWindowAndStorm._1
-
           val rdiis = createRdiis(storms, rainfall2, flow)
 
-          rdii.model ++= immutable.HashMap(rdiis: _*)
+          rdii.model ++= immutable.HashMap(rdiis.map(x => (x._1, x._2)): _*)
 
-          val dataPoints: Seq[((Sessions.Session, Double), Double)] = storms.zip(rdiis).map {
+          val dataPoints: Seq[((Sessions.Session, Double), Double)] = storms.sortBy(_._1).zip(rdiis.sortBy(_._1)).map {
             stormWithRdii =>
               val session: Sessions.Session = stormWithRdii._1._2.session
-              val inflow: TimeSeries[Double] = stormWithRdii._2._2
-                .inflow
+              val inflow: TimeSeries[Double] = stormWithRdii._2._3
                 .rollingWindow(flowIntensityWindow.minusSeconds(1), x => x.sum / x.length)
               ((session, Storms.maxIntensity(session, rainfall, stormIntensityWindow)), Inflow.intensity(inflow))
           }.filter(_._2 > params.flowBoundary)
             .sortBy(_._1._2)
             .reverse
+
 
           val r = calculateCoefficients(dataPoints)
           (randomUUID().toString, new EnvelopeResult(dataPoints, r, sessionWindow))
@@ -122,7 +121,7 @@ class Envelope(modelType: String, id: String) {
   }
 
   def createStorms(rainfall: TimeSeries[Double], minSessionWindow: Duration
-                   , maxSessionWindow: Duration): Map[Duration, List[(String, Storms.StormParams)]] = {
+                   , maxSessionWindow: Duration, intensityWindow: Duration): Map[Duration, List[(String, Storms.StormParams)]] = {
 
     val listOfSessionWindows: Seq[Duration] = for {
       d <- minSessionWindow.toMinutes to maxSessionWindow.toMinutes by Duration.ofMinutes(5).toMinutes
@@ -132,20 +131,30 @@ class Envelope(modelType: String, id: String) {
       .filter(x => x._2.sessionWindow.compareTo(minSessionWindow) >= 0)
       .filter(x => x._2.sessionWindow.compareTo(maxSessionWindow) <= 0)
       .groupBy(_._2.sessionWindow)
+      .map {
+        s =>
+          val sp = s._2.map(x => (x, Storms.maxIntensity(x._2.session, rainfall, intensityWindow)))
+            .filter(_._2 > 0)
+            .sortBy(-_._2).toVector
+            .map(_._1).toList
+          s._1 -> sp
+      }
 
   }
 
   def createRdiis(storms: Seq[(String, Storms.StormParams)], rainfall: TimeSeries[Double]
-                  , flow: TimeSeries[Double]): Seq[(String, RDIIObject)] = {
+                  , flow: TimeSeries[Double]): Seq[(String, RDIIObject, TimeSeries[Double])] = {
     val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall, dryDayWindow)
     storms.map(storm => {
+      val builder = RDIIBuilder(rainfall
+        , flow
+        , DateTimeHelper.instantToLDT(storm._2.session.startIndex)
+        , DateTimeHelper.instantToLDT(storm._2.session.endIndex).minusDays(1)
+        , allDWPDays
+      )
+
       (storm._1,
-        RDIIBuilder(rainfall
-          , flow
-          , DateTimeHelper.instantToLDT(storm._2.session.startIndex)
-          , DateTimeHelper.instantToLDT(storm._2.session.endIndex)
-          , allDWPDays
-        ).build())
+        builder.build(), builder.inflow)
     })
   }
 

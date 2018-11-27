@@ -133,6 +133,9 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
   private var stormSessionWindows: Duration = Duration.ofHours(12)
   private var dryDayWindow = Duration.ofHours(48)
 
+  val inflow: TimeSeries[Double] = Inflow.fromSession(Session(startDate.toInstant(ZoneOffset.UTC)
+    , endDate.plusDays(1).toInstant(ZoneOffset.UTC)), flow, allDWPDays)
+
   def withDryDayWindow(window: Duration): RDIIBuilder = {
     dryDayWindow = window
     this
@@ -163,9 +166,8 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-      val inflow: TimeSeries[Double] = Inflow.fromSession(Session(sd, ed), flow, allDWPDays).slice(sd, ed)
-
-      val (shiftedSd, shiftedEd) = if (inflow.nonEmpty) (inflow.index.head, inflow.index.last.plus(inflow.resolution)) else (sd, ed)
+      val slicedInflow: TimeSeries[Double] = inflow.slice(sd, ed)
+      val (shiftedSd, shiftedEd) = if (slicedInflow.nonEmpty) (slicedInflow.index.head, slicedInflow.index.last.plus(slicedInflow.resolution)) else (sd, ed)
 
       val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(shiftedSd, shiftedEd)
       //Adjust indexes in all series, dwp && inflows already are OK
@@ -179,7 +181,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       val flowSection: TimeSeries[Double] = flow.slice(shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
 
-      RDIIObject(stormSessionWindows, rainfallSection, flowSection, dwp, inflow, Seq())
+      RDIIObject(stormSessionWindows, rainfallSection, flowSection, dwp, slicedInflow, Seq())
 
     }
     else RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
