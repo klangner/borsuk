@@ -9,6 +9,7 @@ import carldata.borsuk.BasicApiObjects._
 import carldata.borsuk.Routing
 import carldata.borsuk.envelope.ApiObjects._
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
+import carldata.borsuk.helper.DateTimeHelper
 import carldata.series.Csv
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, WordSpec}
@@ -224,18 +225,18 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
         status shouldBe StatusCodes.OK
         responseAs[ModelCreatedResponse].id shouldBe "test-id"
         val fitEnvelopeParams = FitEnvelopeParams(
-          TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), flow.values.toArray)
-          , TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), rainfall.values.toArray)
-          , dryDayWindow = Duration.ofMinutes(5)
+          TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), flow.values.toArray)
+          , TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), rainfall.values.toArray)
+          , dryDayWindow = Duration.ofDays(2)
           , stormIntensityWindow = Duration.ofHours(6)
-          , flowIntensityWindow = Duration.ofMinutes(5)
-          , minSessionWindow = Duration.ofMinutes(715)
-          , maxSessionWindow = Duration.ofMinutes(725)
+          , flowIntensityWindow = Duration.ofHours(1)
+          , minSessionWindow = Duration.ofMinutes(720)
+          , maxSessionWindow = Duration.ofMinutes(720)
           , 3.0
         )
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
-          eventually(timeout(120.seconds), interval(2.seconds)) {
+          eventually(timeout(1020.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id") ~> route ~> check {
               status shouldBe StatusCodes.OK
               responseAs[ModelStatus].build shouldBe 1
@@ -252,8 +253,11 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
 
               getEnvelopeModel("test-id", firstEnvelopeId) ~> route ~> check {
                 status shouldBe StatusCodes.OK
-                responseAs[GetResponse].rainfall.take(5) shouldEqual Seq(42.75, 30.25, 28.5, 28.0, 24.5)
+              val getResponse = responseAs[GetResponse]
+                getResponse.rainfall.take(5) shouldEqual Seq(42.75, 30.25, 28.5, 28.0, 24.5)
+                getResponse.flow.take(5) shouldEqual Seq(42.75, 30.25, 28.5, 28.0, 24.5)
               }
+
             }
           }
         }

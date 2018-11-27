@@ -42,7 +42,9 @@ object Storms {
 
       }
       mergedSession
-    }.map(x => (x._1.toString, x._2))
+    }
+      .map(x => (x._1.toString, x._2))
+      .sortBy(_._2.session.startIndex)
     else List()
   }
 
