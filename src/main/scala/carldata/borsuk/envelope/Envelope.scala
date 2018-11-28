@@ -77,7 +77,7 @@ class Envelope(modelType: String, id: String) {
 
       val envelopes = createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow).map {
         sessionWindowAndStorm =>
-          val storms: Seq[(String, Storms.StormParams)] = sessionWindowAndStorm._2.take(19)
+          val storms: Seq[(String, Storms.StormParams)] = sessionWindowAndStorm._2
           val sessionWindow = sessionWindowAndStorm._1
           val rdiis = createRdiis(storms, rainfall2, flow)
 
