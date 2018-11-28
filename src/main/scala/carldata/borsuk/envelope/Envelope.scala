@@ -81,7 +81,7 @@ class Envelope(modelType: String, id: String) {
           val sessionWindow = sessionWindowAndStorm._1
           val rdiis = createRdiis(storms, rainfall2, flow)
 
-          rdii.model ++= immutable.HashMap(rdiis.map(x => (x._1, x._2)): _*)
+          rdii.model = immutable.HashMap(rdiis.map(x => (x._1, x._2)): _*)
 
           val dataPoints: Seq[((Sessions.Session, Double), Double)] = storms.sortBy(_._1).zip(rdiis.sortBy(_._1)).map {
             stormWithRdii =>

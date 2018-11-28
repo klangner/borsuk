@@ -2,6 +2,7 @@ package carldata.borsuk.storms
 
 import java.nio.file.Paths
 import java.time.{Duration, Instant, LocalDateTime}
+import java.util.UUID.randomUUID
 
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.JsonHelper._
@@ -21,12 +22,11 @@ object Storms {
 
   /** Get all storms (with merged storms) from rainfall */
   def getAllStorms(rainfall: TimeSeries[Double], listOfSessionWindows: Option[Seq[Duration]]): List[(String, StormParams)] = {
-    val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall)
-      .zipWithIndex
+    val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall)
       .map(x =>
-        x._2 ->
-          StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex
-            , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
+        randomUUID().toString ->
+          StormParams(x, rainfall.resolution, rainfall.slice(x.startIndex
+            , x.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
       ).toList
 
     if (baseSessions != Nil) {
@@ -49,19 +49,19 @@ object Storms {
   }
 
   @tailrec
-  def mergeSessions(prev: List[(Int, StormParams)], res: Set[(Int, StormParams)]
-                    , sessionWindows: Seq[Duration], resolution: Duration): List[(Int, StormParams)] = {
-    val highestIndex: Int = (prev.unzip._1 ++ res.unzip._1).max
+  def mergeSessions(prev: List[(String, StormParams)], res: Set[(String, StormParams)]
+                    , sessionWindows: Seq[Duration], resolution: Duration): List[(String, StormParams)] = {
+    // val highestIndex: Int = (prev.unzip._1 ++ res.unzip._1).max
     if (sessionWindows.isEmpty) res.toList
     else {
       val sessionWindow = sessionWindows.head
-      val next: List[(Int, StormParams)] = prev.tail.foldLeft[List[(Int, StormParams)]](List(prev.head))((zs, x) => {
+      val next: List[(String, StormParams)] = prev.tail.foldLeft[List[(String, StormParams)]](List(prev.head))((zs, x) => {
         if (sessionWindow.compareTo(Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)) >= 0) {
           val gapDuration = Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)
 
           val gapValues = for (_ <- 1 until (gapDuration.toMillis / resolution.toMillis).toInt) yield 0.0
 
-          (highestIndex + 1
+          (randomUUID().toString
             , StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex)
             , sessionWindow
             , zs.head._2.values ++ gapValues ++ x._2.values

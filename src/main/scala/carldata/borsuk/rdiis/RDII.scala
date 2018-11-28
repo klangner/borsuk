@@ -3,6 +3,7 @@ package carldata.borsuk.rdiis
 import java.nio.file.Paths
 import java.time._
 import java.time.temporal.ChronoUnit
+import java.util.UUID.randomUUID
 
 import carldata.borsuk.BasicApiObjectsJsonProtocol._
 import carldata.borsuk.helper.DateTimeHelper._
@@ -46,12 +47,11 @@ class RDII(modelType: String, id: String) {
 
       val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2, params.dryDayWindow)
 
-      val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall, minSessionWindow)
-        .zipWithIndex
+      val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall, minSessionWindow)
         .map(x =>
-          x._2 ->
-            StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex
-              , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
+          randomUUID().toString ->
+            StormParams(x, rainfall.resolution, rainfall.slice(x.startIndex
+              , x.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
         ).toList
 
       val storms = if (baseSessions != Nil) {
