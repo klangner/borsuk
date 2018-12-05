@@ -42,7 +42,7 @@ class RDII(modelType: String, id: String) {
       val minSessionWindow = if (params.minSessionWindow == Duration.ZERO) rainfall.resolution else params.minSessionWindow
 
       val ts = rainfall.slice(rainfall.index.head, dtToInstant(edRainfall)).join(flow.slice(rainfall.index.head, dtToInstant(edRainfall)))
-      val t2 = rainfall.join(flow)
+
       val rainfall2 = TimeSeries(ts.index, ts.values.map(_._1))
 
       val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2, params.dryDayWindow)
@@ -61,7 +61,9 @@ class RDII(modelType: String, id: String) {
             .map(x => Duration.between(x._1, x._2))
             .distinct.sorted
 
-        val maxSessionWindow = if (params.maxSessionWindow == Duration.ZERO) listOfSessionWindows.last else params.maxSessionWindow
+        val maxSessionWindow = if (params.maxSessionWindow == Duration.ZERO) listOfSessionWindows.last
+        else params.maxSessionWindow
+
         Storms.mergeSessions(baseSessions, baseSessions.toSet, listOfSessionWindows.filter(d => d.compareTo(maxSessionWindow) <= 0)
           , rainfall.resolution, highestIndex)
       }

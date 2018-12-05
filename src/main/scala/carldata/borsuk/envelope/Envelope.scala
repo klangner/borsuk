@@ -78,11 +78,8 @@ class Envelope(modelType: String, id: String) {
         params.maxSessionWindow
       }
 
-      //val rainfall2 = TimeSeriesHelper.adjust(rainfall, flow)
       val (rainfall2, flow2) = alignTimeSeries(rainfall, flow)
-      //
-      val (r1, r2, f1, f2) = (rainfall.last, rainfall2.last, flow.last, flow2.last)
-      //val storms2  =createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow)
+
       val envelopes = createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow).map {
         sessionWindowAndStorm =>
           val storms: Seq[(String, Storms.StormParams)] = sessionWindowAndStorm._2
@@ -90,13 +87,7 @@ class Envelope(modelType: String, id: String) {
           val rdiis = createRdiis(storms, rainfall2, flow2)
 
           rdii.model ++= immutable.HashMap(rdiis.map(x => (x._1, x._2)): _*)
-          val dataPoints2: Seq[((Sessions.Session, Double), Double)] = storms.sortBy(_._1).zip(rdiis.sortBy(_._1)).map {
-            stormWithRdii =>
-              val session: Sessions.Session = stormWithRdii._1._2.session
-              val inflow: TimeSeries[Double] = stormWithRdii._2._3
-                .rollingWindow(flowIntensityWindow.minusSeconds(1), x => x.sum / x.length)
-              ((session, Storms.maxIntensity(session, rainfall2, stormIntensityWindow)), Inflow.intensity(inflow))
-          }.sortBy(-_._1._2)
+
           val dataPoints: Seq[((Sessions.Session, Double), Double)] = storms.sortBy(_._1).zip(rdiis.sortBy(_._1)).map {
             stormWithRdii =>
               val session: Sessions.Session = stormWithRdii._1._2.session
@@ -135,18 +126,14 @@ class Envelope(modelType: String, id: String) {
   }
 
   def createStorms(rainfall: TimeSeries[Double], minSessionWindow: Duration
-                   , maxSessionWindow: Duration, intensityWindow: Duration): Map[Duration, List[(String, Storms.StormParams)]] = {
+                   , maxSessionWindow: Duration
+                   , intensityWindow: Duration): Map[Duration, List[(String, Storms.StormParams)]] = {
 
     val listOfSessionWindows: Seq[Duration] = for {
       d <- minSessionWindow.toMinutes to maxSessionWindow.toMinutes by Duration.ofMinutes(5).toMinutes
     } yield Duration.ofMinutes(d)
-val gg=
-  Storms.getAllStorms(rainfall, Some(listOfSessionWindows), true)
-    .filter(x => x._2.sessionWindow.compareTo(minSessionWindow) >= 0)
-    .filter(x => x._2.sessionWindow.compareTo(maxSessionWindow) <= 0)
-    .groupBy(_._2.sessionWindow)
 
-    Storms.getAllStorms(rainfall, Some(listOfSessionWindows), true)
+    Storms.getAllStorms(rainfall, Some(listOfSessionWindows))
       .filter(x => x._2.sessionWindow.compareTo(minSessionWindow) >= 0)
       .filter(x => x._2.sessionWindow.compareTo(maxSessionWindow) <= 0)
       .groupBy(_._2.sessionWindow)

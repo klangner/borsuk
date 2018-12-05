@@ -137,9 +137,6 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         eventually(timeout(5.seconds), interval(2.seconds)) {
           listModelRequest(modelId, "PT15M") ~> route ~> check {
             val res = responseAs[ListStormsResponse].storms
-            res.map(println)
-            println(res)
-            println(res.length)
             val stormsCount = responseAs[ListStormsResponse].storms.length
             stormsCount shouldEqual 1
           }
