@@ -9,7 +9,7 @@ import carldata.borsuk.BasicApiObjects._
 import carldata.borsuk.Routing
 import carldata.borsuk.envelope.ApiObjects._
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
-import carldata.borsuk.helper.{Cleaner, DateTimeHelper, Flow, Rain}
+import carldata.borsuk.helper.DateTimeHelper
 import carldata.series.Csv
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, WordSpec}
