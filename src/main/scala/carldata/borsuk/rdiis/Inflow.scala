@@ -21,7 +21,7 @@ object Inflow {
     val patternDays = sessionDays.map(x => (x, findDryDay(x, dryDays)))
 
     val patternInflows: Seq[(LocalDate, TimeSeries[Double])] = patternDays.map(x => (x._1, DryWeatherPattern.get(x._2.getOrElse(LocalDate.MAX), flow)))
-    slicedFlow.map { x =>
+    val res = slicedFlow.map { x =>
       val (d, t) = (instantToDay(x._1), instantToTime(x._1))
       val patternValue = patternInflows.filter(p => p._1 == d).head._2
         .filter(p => instantToTime(p._1) == t)
@@ -31,6 +31,7 @@ object Inflow {
     }
       .filter(x => !x._2.isNaN)
       .mapValues(Math.max(_, 0.0))
+      res
   }
 
   /**
