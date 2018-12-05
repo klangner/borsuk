@@ -47,11 +47,12 @@ class RDII(modelType: String, id: String) {
 
       val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2, params.dryDayWindow)
 
-      val baseSessions: List[(String, StormParams)] = Sessions.findSessions(rainfall, minSessionWindow)
+      val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall, minSessionWindow)
+        .zipWithIndex
         .map(x =>
-          randomUUID().toString ->
-            StormParams(x, rainfall.resolution, rainfall.slice(x.startIndex
-              , x.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
+          x._2 ->
+            StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex
+              , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
         ).toList
 
       val storms = if (baseSessions != Nil) {

@@ -129,7 +129,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       val route = mainRoute()
 
       createModelRequest ~> route ~> check {
-        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.of(2018,1,1,0,0,0), Duration.ofMinutes(5)
           , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
         //will create 4 sessions, lets get first and check the values!
         fitModelRequest(modelId, fitParams)
@@ -154,11 +154,12 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       } ~> route ~> check {
         eventually(timeout(10.seconds)) {
           listModelRequest(modelId, "PT20M") ~> route ~> check {
+            val storms = responseAs[ListStormsResponse]
             val id: String = responseAs[ListStormsResponse]
               .storms.head
               .id.replaceAll("\"", "")
 
-            id shouldEqual "4"
+            id shouldEqual "6"
           }
         }
       }
@@ -198,13 +199,16 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
       val route = mainRoute()
 
       createModelRequest ~> route ~> check {
-        val fitParams = FitStormsParams(TimeSeriesParams(LocalDateTime.now, Duration.ofMinutes(5)
+        val fitParams = FitStormsParams(TimeSeriesParams(
+          LocalDateTime.of(2018,1,1,0,0,0),
+          Duration.ofMinutes(5)
           , Array(0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0)))
         //will create 4 sessions, lets get first and check the values!
         fitModelRequest(modelId, fitParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
-          eventually(timeout(20.seconds)) {
+          eventually(timeout(300.seconds)) {
             listModelRequest(modelId, "PT7M") ~> route ~> check {
+              val storms = responseAs[ListStormsResponse].storms
               val stormId = responseAs[ListStormsResponse].storms.head.id
               getModelRequest(modelId, stormId)
             } ~> route ~> check {
