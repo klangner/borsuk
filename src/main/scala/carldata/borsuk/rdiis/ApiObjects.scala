@@ -141,8 +141,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def read(json: JsValue): ApiObjects.RDIIObject = {
       val fields = json.asJsObject.fields
       val id: String = fields("id").toString
-      val startDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
-      val endDate: LocalDateTime = DateTimeHelper.dateParse(fields("start-date").toString)
+      val startDate: LocalDateTime = DateTimeHelper.dateParse(stringFromValue(fields("start-date")))
+      val endDate: LocalDateTime = DateTimeHelper.dateParse(stringFromValue(fields("end-date")))
       RDIIObject(id, startDate, endDate)
     }
   }
