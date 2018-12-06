@@ -299,11 +299,6 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
               status shouldBe StatusCodes.OK
               responseAs[ListResponse].envelope.length should be > 0
 
-              val firstEnvelopeId = responseAs[ListResponse]
-                .envelope
-                .filter(x => x.sessionWindow.equals(Duration.ofHours(12)))
-                .head.id
-
               val rdiiListRequest = HttpRequest(HttpMethods.GET, uri = s"/rdiis/test-id/rdii?sessionWindow=PT12H")
 
               rdiiListRequest ~> route ~> check {
