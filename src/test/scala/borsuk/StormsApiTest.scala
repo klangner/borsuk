@@ -100,7 +100,7 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
           eventually(timeout(20.seconds), interval(2.seconds)) {
             listModelRequest(modelId, "PT5M") ~> route ~> check {
               val stormsCount = responseAs[ListStormsResponse].storms.length
-              stormsCount shouldEqual 2
+              stormsCount shouldEqual 4
             }
           }
         }
@@ -134,8 +134,9 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         //will create 4 sessions, lets get first and check the values!
         fitModelRequest(modelId, fitParams)
       } ~> route ~> check {
-        eventually(timeout(10.seconds)) {
-          listModelRequest(modelId, "PT20M") ~> route ~> check {
+        eventually(timeout(5.seconds), interval(2.seconds)) {
+          listModelRequest(modelId, "PT15M") ~> route ~> check {
+            val res = responseAs[ListStormsResponse].storms
             val stormsCount = responseAs[ListStormsResponse].storms.length
             stormsCount shouldEqual 1
           }
@@ -153,12 +154,12 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         fitModelRequest(modelId, fitParams)
       } ~> route ~> check {
         eventually(timeout(10.seconds)) {
-          listModelRequest(modelId, "PT20M") ~> route ~> check {
+          listModelRequest(modelId, "PT15M") ~> route ~> check {
             val id: String = responseAs[ListStormsResponse]
               .storms.head
               .id.replaceAll("\"", "")
 
-            id shouldEqual "4"
+            id shouldEqual "9"
           }
         }
       }
@@ -204,11 +205,11 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         fitModelRequest(modelId, fitParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
           eventually(timeout(20.seconds)) {
-            listModelRequest(modelId, "PT7M") ~> route ~> check {
+            listModelRequest(modelId, "PT22M") ~> route ~> check {
               val stormId = responseAs[ListStormsResponse].storms.head.id
               getModelRequest(modelId, stormId)
             } ~> route ~> check {
-              responseAs[GetStormsResponse].values shouldEqual Array(1.0)
+              responseAs[GetStormsResponse].values shouldEqual Array(1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0)
               status shouldEqual StatusCodes.OK
             }
           }

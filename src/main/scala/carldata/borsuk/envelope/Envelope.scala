@@ -8,7 +8,7 @@ import carldata.borsuk.envelope.ApiObjects.FitEnvelopeParams
 import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol.EnvelopeResultHashMapFormat
 import carldata.borsuk.helper.DateTimeHelper.{dtToInstant, instantToLDT}
 import carldata.borsuk.helper.JsonHelper.{doubleFromValue, stringFromValue, timestampFromValue}
-import carldata.borsuk.helper.{DateTimeHelper, Model, PVCHelper, TimeSeriesHelper}
+import carldata.borsuk.helper._
 import carldata.borsuk.rdiis._
 import carldata.borsuk.storms.Storms
 import carldata.series.{Sessions, TimeSeries}
@@ -56,6 +56,11 @@ class Envelope(modelType: String, id: String) {
     model
   }
 
+  def alignTimeSeries(xs: TimeSeries[Double], ys: TimeSeries[Double]): (TimeSeries[Double], TimeSeries[Double]) = {
+    val ts = xs.join(ys)
+    (TimeSeries(ts.index, ts.values.map(_._1)), TimeSeries(ts.index, ts.values.map(_._2)))
+  }
+
   def fit(params: FitEnvelopeParams, rdii: RDII): Unit = {
     if (params.flow.values.nonEmpty && params.rainfall.values.nonEmpty) {
 
@@ -73,13 +78,13 @@ class Envelope(modelType: String, id: String) {
         params.maxSessionWindow
       }
 
-      val rainfall2 = TimeSeriesHelper.adjust(rainfall, flow)
+      val (rainfall2, flow2) = alignTimeSeries(rainfall, flow)
 
       val envelopes = createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow).map {
         sessionWindowAndStorm =>
           val storms: Seq[(String, Storms.StormParams)] = sessionWindowAndStorm._2
           val sessionWindow = sessionWindowAndStorm._1
-          val rdiis = createRdiis(storms, rainfall2, flow)
+          val rdiis = createRdiis(storms, rainfall2, flow2)
 
           rdii.model ++= immutable.HashMap(rdiis.map(x => (x._1, x._2)): _*)
 
@@ -88,13 +93,13 @@ class Envelope(modelType: String, id: String) {
               val session: Sessions.Session = stormWithRdii._1._2.session
               val inflow: TimeSeries[Double] = stormWithRdii._2._3
                 .rollingWindow(flowIntensityWindow.minusSeconds(1), x => x.sum / x.length)
-              ((session, Storms.maxIntensity(session, rainfall, stormIntensityWindow)), Inflow.intensity(inflow))
+              ((session, Storms.maxIntensity(session, rainfall2, stormIntensityWindow)), Inflow.intensity(inflow))
           }.filter(_._2 > params.flowBoundary)
             .sortBy(_._1._2)
             .reverse
 
 
-          val r = calculateCoefficients(dataPoints)
+          val r = calculateCoefficients(dataPoints.take(15))
           (randomUUID().toString, new EnvelopeResult(dataPoints, r, sessionWindow))
       }.toList
 
@@ -121,7 +126,8 @@ class Envelope(modelType: String, id: String) {
   }
 
   def createStorms(rainfall: TimeSeries[Double], minSessionWindow: Duration
-                   , maxSessionWindow: Duration, intensityWindow: Duration): Map[Duration, List[(String, Storms.StormParams)]] = {
+                   , maxSessionWindow: Duration
+                   , intensityWindow: Duration): Map[Duration, List[(String, Storms.StormParams)]] = {
 
     val listOfSessionWindows: Seq[Duration] = for {
       d <- minSessionWindow.toMinutes to maxSessionWindow.toMinutes by Duration.ofMinutes(5).toMinutes
