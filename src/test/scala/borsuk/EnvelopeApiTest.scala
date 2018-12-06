@@ -135,38 +135,38 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
 
     "list the existing model" in {
       val route = mainRoute()
+
+      val csv = Source.fromResource("copley-pump.csv").getLines().mkString("\n")
+      val data = Csv.fromString(csv)
+      val flow = data.head
+      val rainfall = data(1)
+
       createEnvelopeModelRequest("test-model-type", "test-id") ~> route ~> check {
         status shouldBe StatusCodes.OK
         responseAs[ModelCreatedResponse].id shouldBe "test-id"
-
         val fitEnvelopeParams = FitEnvelopeParams(
-          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
-          , rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
-          , dryDayWindow = Duration.ofMinutes(5)
-          , stormIntensityWindow = Duration.ofMinutes(5)
-          , flowIntensityWindow = Duration.ofMinutes(5)
-          , minSessionWindow = Duration.ofMinutes(5)
-          , maxSessionWindow = Duration.ofMinutes(5)
+          TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), flow.values.toArray)
+          , TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), rainfall.values.toArray)
+          , dryDayWindow = Duration.ofDays(2)
+          , stormIntensityWindow = Duration.ofHours(6)
+          , flowIntensityWindow = Duration.ofHours(1)
+          , minSessionWindow = Duration.ofMinutes(720)
+          , maxSessionWindow = Duration.ofMinutes(720)
           , 3.0
         )
-
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
-
-          eventually(timeout(10.seconds), interval(2.seconds)) {
+          eventually(timeout(120.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id") ~> route ~> check {
               status shouldBe StatusCodes.OK
               responseAs[ModelStatus].build shouldBe 1
             }
-          }
 
-          listEnvelopeRequest("test-id") ~> route ~> check {
-            status shouldBe StatusCodes.OK
-            responseAs[ListResponse].envelope.length shouldEqual 1
-            //responseAs[ListResponse].envelope(0).id shouldBe "1"
-            responseAs[ListResponse].envelope(0).sessionWindow shouldBe Duration.ofMinutes(5)
+            listEnvelopeRequest("test-id") ~> route ~> check {
+              status shouldBe StatusCodes.OK
+              responseAs[ListResponse].envelope.length should be > 0
+            }
           }
-
         }
       }
     }
@@ -253,7 +253,7 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
 
               getEnvelopeModel("test-id", firstEnvelopeId) ~> route ~> check {
                 status shouldBe StatusCodes.OK
-              val getResponse = responseAs[GetResponse]
+                val getResponse = responseAs[GetResponse]
                 getResponse.rainfall.take(5) shouldEqual Seq(42.75, 30.25, 28.5, 28.0, 24.5)
                 getResponse.flow.take(5)
                   .zip(Seq(8.092, 5.389, 4.226, 11.138, 3.939))
@@ -266,6 +266,51 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
       }
     }
 
+    "create rdiis" in {
+      val route = mainRoute()
+
+      val csv = Source.fromResource("copley-pump.csv").getLines().mkString("\n")
+      val data = Csv.fromString(csv)
+      val flow = data.head
+      val rainfall = data(1)
+
+      createEnvelopeModelRequest("test-model-type", "test-id") ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[ModelCreatedResponse].id shouldBe "test-id"
+        val fitEnvelopeParams = FitEnvelopeParams(
+          TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), flow.values.toArray)
+          , TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), rainfall.values.toArray)
+          , dryDayWindow = Duration.ofDays(2)
+          , stormIntensityWindow = Duration.ofHours(6)
+          , flowIntensityWindow = Duration.ofHours(1)
+          , minSessionWindow = Duration.ofMinutes(720)
+          , maxSessionWindow = Duration.ofMinutes(720)
+          , 3.0
+        )
+        fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
+          status shouldBe StatusCodes.OK
+          eventually(timeout(120.seconds), interval(2.seconds)) {
+            checkEnvelopeModelStatus("test-id") ~> route ~> check {
+              status shouldBe StatusCodes.OK
+              responseAs[ModelStatus].build shouldBe 1
+            }
+
+            listEnvelopeRequest("test-id") ~> route ~> check {
+              status shouldBe StatusCodes.OK
+              responseAs[ListResponse].envelope.length should be > 0
+
+              val rdiiListRequest = HttpRequest(HttpMethods.GET, uri = s"/rdiis/test-id/rdii?sessionWindow=PT12H")
+
+              rdiiListRequest ~> route ~> check {
+                import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
+
+                responseAs[carldata.borsuk.rdiis.ApiObjects.ListResponse].rdii.length should be > 0
+              }
+            }
+          }
+        }
+      }
+    }
 
   }
 }

@@ -53,6 +53,7 @@ class RDII(modelType: String, id: String) {
       val minSessionWindow = if (params.minSessionWindow == Duration.ZERO) rainfall.resolution else params.minSessionWindow
 
       val ts = rainfall.slice(rainfall.index.head, dtToInstant(edRainfall)).join(flow.slice(rainfall.index.head, dtToInstant(edRainfall)))
+
       val rainfall2 = TimeSeries(ts.index, ts.values.map(_._1))
       Log.info("rainfall2: " + SizeEstimator.estimate(rainfall2))
 
@@ -75,6 +76,7 @@ class RDII(modelType: String, id: String) {
             StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex
               , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
         ).toList
+      val highestIndex = baseSessions.map(_._1).max
 
       Log.info("baseSessions: " + SizeEstimator.estimate(baseSessions.asJava))
 
@@ -84,8 +86,11 @@ class RDII(modelType: String, id: String) {
             .map(x => Duration.between(x._1, x._2))
             .distinct.sorted
 
-        val maxSessionWindow = if (params.maxSessionWindow == Duration.ZERO) listOfSessionWindows.last else params.maxSessionWindow
-        Storms.mergeSessions(baseSessions, baseSessions.toSet, listOfSessionWindows.filter(d => d.compareTo(maxSessionWindow) <= 0), rainfall.resolution)
+        val maxSessionWindow = if (params.maxSessionWindow == Duration.ZERO) listOfSessionWindows.last
+        else params.maxSessionWindow
+
+        Storms.mergeSessions(baseSessions, baseSessions.toSet, listOfSessionWindows.filter(d => d.compareTo(maxSessionWindow) <= 0)
+          , rainfall.resolution, highestIndex)
       }
       else List()
 
@@ -223,7 +228,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(shiftedSd, shiftedEd)
       //Adjust indexes in all series, dwp && inflows already are OK
-      val rainfallSection: TimeSeries[Double] =if(dwp.isEmpty) TimeSeries.empty else
+      val rainfallSection: TimeSeries[Double] = if (dwp.isEmpty) TimeSeries.empty else
         rainfall
           .slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), shiftedEd.plus(1, ChronoUnit.HOURS))
           .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum)
