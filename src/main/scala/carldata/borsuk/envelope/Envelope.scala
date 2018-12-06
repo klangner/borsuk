@@ -2,7 +2,6 @@ package carldata.borsuk.envelope
 
 import java.nio.file.Paths
 import java.time.{Duration, Instant, LocalDate}
-import java.util.UUID.randomUUID
 
 import carldata.borsuk.envelope.ApiObjects.FitEnvelopeParams
 import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol.EnvelopeResultHashMapFormat
@@ -80,28 +79,30 @@ class Envelope(modelType: String, id: String) {
 
       val (rainfall2, flow2) = alignTimeSeries(rainfall, flow)
 
-      val envelopes = createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow).map {
-        sessionWindowAndStorm =>
-          val storms: Seq[(String, Storms.StormParams)] = sessionWindowAndStorm._2
-          val sessionWindow = sessionWindowAndStorm._1
-          val rdiis = createRdiis(storms, rainfall2, flow2)
+      val envelopes = createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow)
+        .zipWithIndex
+        .map {
+          sessionWindowAndStorm =>
+            val storms: Seq[(String, Storms.StormParams)] = sessionWindowAndStorm._1._2
+            val sessionWindow = sessionWindowAndStorm._1._1
+            val rdiis = createRdiis(storms, rainfall2, flow2)
 
-          rdii.model ++= immutable.HashMap(rdiis.map(x => (x._1, x._2)): _*)
+            rdii.model ++= immutable.HashMap(rdiis.map(x => (x._1, x._2)): _*)
 
-          val dataPoints: Seq[((Sessions.Session, Double), Double)] = storms.sortBy(_._1).zip(rdiis.sortBy(_._1)).map {
-            stormWithRdii =>
-              val session: Sessions.Session = stormWithRdii._1._2.session
-              val inflow: TimeSeries[Double] = stormWithRdii._2._3
-                .rollingWindow(flowIntensityWindow.minusSeconds(1), x => x.sum / x.length)
-              ((session, Storms.maxIntensity(session, rainfall2, stormIntensityWindow)), Inflow.intensity(inflow))
-          }.filter(_._2 > params.flowBoundary)
-            .sortBy(_._1._2)
-            .reverse
+            val dataPoints: Seq[((Sessions.Session, Double), Double)] = storms.sortBy(_._1).zip(rdiis.sortBy(_._1)).map {
+              stormWithRdii =>
+                val session: Sessions.Session = stormWithRdii._1._2.session
+                val inflow: TimeSeries[Double] = stormWithRdii._2._3
+                  .rollingWindow(flowIntensityWindow.minusSeconds(1), x => x.sum / x.length)
+                ((session, Storms.maxIntensity(session, rainfall2, stormIntensityWindow)), Inflow.intensity(inflow))
+            }.filter(_._2 > params.flowBoundary)
+              .sortBy(_._1._2)
+              .reverse
 
 
-          val r = calculateCoefficients(dataPoints.take(15))
-          (randomUUID().toString, new EnvelopeResult(dataPoints, r, sessionWindow))
-      }.toList
+            val r = calculateCoefficients(dataPoints.take(15))
+            (sessionWindowAndStorm._2.toString, new EnvelopeResult(dataPoints, r, sessionWindow))
+        }.toList
 
       rdii.save()
       model = immutable.HashMap(envelopes: _*)
