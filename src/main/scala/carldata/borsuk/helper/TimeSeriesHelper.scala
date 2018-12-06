@@ -50,4 +50,12 @@ object TimeSeriesHelper {
     if (ts.isEmpty) TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array())
     else TimeSeriesParams(instantToLDT(ts.index.head), ts.resolution, ts.values.toArray)
   }
+
+  def slice(ts: TimeSeries[Double], start: Instant, end: Instant): TimeSeries[Double] = {
+    //val st = ts.index.indexWhere(i => i.isAfter(start) || i == start)
+    //val ed = ts.index.lastIndexWhere(i => i.isBefore(end))
+
+    //new TimeSeries(ts.index.slice(st, ed), ts.values.slice(st, ed))
+    ts
+  }
 }
