@@ -246,8 +246,12 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
               status shouldBe StatusCodes.OK
               responseAs[ListResponse].envelope.length should be > 0
 
-              val firstEnvelopeId = responseAs[ListResponse]
+              val envelopes = responseAs[ListResponse]
                 .envelope
+
+              envelopes.map(_.id).contains("0") shouldBe true
+
+              val firstEnvelopeId = envelopes
                 .filter(x => x.sessionWindow.equals(Duration.ofHours(12)))
                 .head.id
 
