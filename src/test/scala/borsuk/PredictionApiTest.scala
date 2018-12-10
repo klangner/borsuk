@@ -1,15 +1,20 @@
 package borsuk
 
-import java.time.LocalDateTime
+import java.time.{Duration, LocalDateTime}
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.prediction.ApiObjects._
 import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
 import carldata.borsuk.Routing
+import carldata.borsuk.helper.TimeSeriesHelper
+import carldata.series.Csv
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
+
+import scala.io.Source
 
 
 class PredictionApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport {
@@ -18,6 +23,8 @@ class PredictionApiTest extends WordSpec with Matchers with ScalatestRouteTest w
     val routing = new Routing()
     routing.route()
   }
+
+  private val emptyTSP = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array())
 
   private val createModelRequest: HttpRequest = {
     val params = CreatePredictionParams("daily-pattern-v0", "secret-id")
@@ -48,7 +55,7 @@ class PredictionApiTest extends WordSpec with Matchers with ScalatestRouteTest w
     }
 
     "not fit if model doesn't exist" in {
-      val params = FitPredictionParams(LocalDateTime.now, Array())
+      val params = FitPredictionParams(emptyTSP, emptyTSP)
       val request = HttpRequest(
         HttpMethods.POST,
         uri = "/prediction/000/fit",
@@ -83,7 +90,7 @@ class PredictionApiTest extends WordSpec with Matchers with ScalatestRouteTest w
     "not fit the model with unsufficient data" in {
       val route = mainRoute()
       val trainData = 0.to(8).map(_ => 1.0).toArray
-      val fitParams = FitPredictionParams(LocalDateTime.now, trainData)
+      val fitParams = FitPredictionParams(emptyTSP, emptyTSP)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
@@ -108,8 +115,13 @@ class PredictionApiTest extends WordSpec with Matchers with ScalatestRouteTest w
 
     "fit the model" in {
       val route = mainRoute()
-      val trainData = 0.to(1000).map(_ => 1.0).toArray
-      val fitParams = FitPredictionParams(LocalDateTime.now, trainData)
+      val csv = Source.fromResource("copley-pump.csv").getLines().mkString("\n")
+      val data = Csv.fromString(csv)
+      val flow = TimeSeriesHelper.toTimeSeriesParams(data.head)
+      val rainfall = TimeSeriesHelper.toTimeSeriesParams(data(1))
+
+      
+      val fitParams = FitPredictionParams(flow, rainfall)
 
       createModelRequest ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]

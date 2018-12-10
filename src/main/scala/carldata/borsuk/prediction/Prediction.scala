@@ -1,26 +1,31 @@
 package carldata.borsuk.prediction
 
-import smile.regression.{RandomForest, randomForest}
+import java.time.LocalDate
 
+import carldata.series.TimeSeries
 
 /** Prediction for the time series data */
 class Prediction(modelType: String, id: String) {
-  var model: Option[RandomForest] = None
+  var model: Option[trainedModel] = None
   var buildNumber: Int = 0
   var score: Double = 0.0
 
   /** Fit model */
-  def fit(ts: Array[Double]): Unit = {
-    if (ts.length > 9) {
-      val features: Array[Array[Double]] = ts.indices.map(_ % 24).map(i => Array(i.toDouble)).toArray
-      model = Some(randomForest(features, ts, mtry = 1))
+  def fit(flow: TimeSeries[Double], rainfall: TimeSeries[Double]): Unit = {
+    if (flow.nonEmpty && rainfall.nonEmpty) {
+      val features = DailyPatternModel.fit(flow)
+      model = Some(features)
       buildNumber += 1
     }
   }
 
   /** Predict values for the next 24h */
-  def predict(): Array[Double] = {
-    val features = 0.until(24).map(i => Array(i.toDouble)).toArray
-    model.map(_.predict(features)).getOrElse(Array())
+  def predict(day: LocalDate): Array[Double] = {
+    model.map {
+      DailyPatternModel.predict(day, _)
+        .features
+        .values.unzip._1.toArray
+    }
+      .getOrElse(Array())
   }
 }
