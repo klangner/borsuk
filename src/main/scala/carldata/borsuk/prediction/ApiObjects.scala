@@ -1,8 +1,10 @@
 package carldata.borsuk.prediction
 
-import java.time.LocalDateTime
+import java.time.{Duration, LocalDateTime}
 import java.util.UUID.randomUUID
 
+import carldata.borsuk.BasicApiObjects.TimeSeriesParams
+import carldata.borsuk.BasicApiObjectsJsonProtocol._
 import carldata.borsuk.helper.JsonHelper._
 import spray.json._
 
@@ -16,7 +18,7 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitPredictionParams(startDate: LocalDateTime, values: Array[Double])
+  case class FitPredictionParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams)
 
   case class PredictionRequest(startDate: LocalDateTime, samples: Int)
 
@@ -75,19 +77,22 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     * FitParams formatter
     */
   implicit object FitPredictionParamsFormat extends RootJsonFormat[FitPredictionParams] {
+    val emptyTSP = TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array())
+
     def write(params: FitPredictionParams): JsObject = {
       JsObject(
-        "start-date" -> JsString(params.startDate.toString),
-        "values" -> JsArray(params.values.map(JsNumber(_)).toVector)
+        "flow" -> params.flow.toJson,
+        "rainfall" -> params.rainfall.toJson
       )
     }
 
     def read(value: JsValue): FitPredictionParams = value match {
       case JsObject(request) =>
-        val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
-        val values = request.get("values").map(arrayFromValue(_, doubleFromValue)).getOrElse(Array.empty[Double])
-        FitPredictionParams(startDate, values)
-      case _ => FitPredictionParams(LocalDateTime.now(), Array.empty)
+
+        val flow = request.get("flow").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP)
+        val rainfall = request.get("rainfall").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP)
+        FitPredictionParams(flow, rainfall)
+      case _ => FitPredictionParams(emptyTSP, emptyTSP)
     }
   }
 
