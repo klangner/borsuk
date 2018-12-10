@@ -181,7 +181,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
         "intercept" -> intercept,
         "rsquare" -> rSquare,
         "storms" -> storms,
-        "flow" -> flow,
+        "flows" -> flow,
         "dates" -> dates
       )
     }
@@ -191,7 +191,7 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       value match {
         case JsObject(x) =>
           val rainfall = x.getOrElse("storms", JsArray()).convertTo[Array[Double]].toSeq
-          val flow = x.getOrElse("flow", JsArray()).convertTo[Array[Double]].toSeq
+          val flow = x.getOrElse("flows", JsArray()).convertTo[Array[Double]].toSeq
           val slope = x.getOrElse("slope", JsNumber(0.0)).convertTo[Double]
           val intercept = x.getOrElse("intercept", JsNumber(0.0)).convertTo[Double]
           val rsquare = x.getOrElse("rsquare", JsNumber(0.0)).convertTo[Double]
