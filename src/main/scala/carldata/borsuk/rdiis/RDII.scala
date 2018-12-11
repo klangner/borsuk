@@ -5,21 +5,19 @@ import java.time._
 import java.time.temporal.ChronoUnit
 
 import carldata.borsuk.BasicApiObjectsJsonProtocol._
-import carldata.borsuk.Main.Log
 import carldata.borsuk.helper.DateTimeHelper._
 import carldata.borsuk.helper.JsonHelper._
-import carldata.borsuk.helper.{Model, PVCHelper, SizeEstimator, TimeSeriesHelper}
+import carldata.borsuk.helper.{Model, PVCHelper, TimeSeriesHelper}
 import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
 import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.borsuk.storms.Storms
 import carldata.borsuk.storms.Storms.StormParams
 import carldata.series.Sessions.Session
 import carldata.series.{Gen, Sessions, TimeSeries}
-//import clouseau.Calculate
+
 import org.slf4j.LoggerFactory
 import spray.json._
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.collection.immutable.HashMap
 
@@ -39,46 +37,39 @@ class RDII(modelType: String, id: String) {
 
     Log.info("Start Fit model: " + this.id)
     if (params.flow.values.nonEmpty && params.rainfall.values.nonEmpty) {
-      Log.info("Phase1 model: " + this.id)
       val edFlow: LocalDateTime = params.flow.startDate.plusSeconds(params.flow.resolution.getSeconds * params.flow.values.length)
-      Log.info("Phase2 model: " + this.id)
       val indexFlow: Seq[Instant] = Gen.mkIndex(dtToInstant(params.flow.startDate), dtToInstant(edFlow), params.flow.resolution)
-      Log.info("Phase3 model: " + this.id)
       val flow: TimeSeries[Double] = TimeSeries(indexFlow.toVector, params.flow.values.toVector).filter(_._2 >= 0)
-      Log.info("flow: " + SizeEstimator.estimate(flow))
+      //Log.info("flow: " + SizeEstimator.estimate(flow))
       val edRainfall: LocalDateTime = params.rainfall.startDate.plusSeconds(params.rainfall.resolution.getSeconds * params.rainfall.values.length)
       val indexRainfall: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(edRainfall), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(indexRainfall.toVector, params.rainfall.values.toVector).filter(_._2 >= 0)
-      Log.info("rainfall: " + SizeEstimator.estimate(rainfall))
       val minSessionWindow = if (params.minSessionWindow == Duration.ZERO) rainfall.resolution else params.minSessionWindow
 
-      val ts = rainfall.slice(rainfall.index.head, dtToInstant(edRainfall)).join(flow.slice(rainfall.index.head, dtToInstant(edRainfall)))
+      val ts = TimeSeriesHelper.slice(rainfall, rainfall.index.head, dtToInstant(edRainfall))
+        .join(TimeSeriesHelper.slice(flow, rainfall.index.head, dtToInstant(edRainfall)))
 
       val rainfall2 = TimeSeries(ts.index, ts.values.map(_._1))
-      Log.info("rainfall2: " + SizeEstimator.estimate(rainfall2))
 
       // memory info
-      val mb = 1024*1024
-      val runtime = Runtime.getRuntime
-      Log.info("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / mb)
-      Log.info("** Free Memory:  " + runtime.freeMemory / mb)
-      Log.info("** Total Memory: " + runtime.totalMemory / mb)
-      Log.info("** Max Memory:   " + runtime.maxMemory / mb)
-      Log.info("** Available Processors:   " + runtime.availableProcessors())
+      //      val mb = 1024*1024
+      //      val runtime = Runtime.getRuntime
+      //      Log.info("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / mb)
+      //      Log.info("** Free Memory:  " + runtime.freeMemory / mb)
+      //      Log.info("** Total Memory: " + runtime.totalMemory / mb)
+      //      Log.info("** Max Memory:   " + runtime.maxMemory / mb)
+      //      Log.info("** Available Processors:   " + runtime.availableProcessors())
 
       val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2, params.dryDayWindow)
-      Log.info("allDWPDays: " + SizeEstimator.estimate(allDWPDays.asJava))
 
       val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall, minSessionWindow)
         .zipWithIndex
         .map(x =>
           x._2 ->
-            StormParams(x._1, rainfall.resolution, rainfall.slice(x._1.startIndex
+            StormParams(x._1, rainfall.resolution, TimeSeriesHelper.slice(rainfall, x._1.startIndex
               , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
         ).toList
       val highestIndex = baseSessions.map(_._1).max
-
-      Log.info("baseSessions: " + SizeEstimator.estimate(baseSessions.asJava))
 
       val storms = if (baseSessions != Nil) {
         val listOfSessionWindows: Seq[Duration] =
@@ -94,8 +85,6 @@ class RDII(modelType: String, id: String) {
       }
       else List()
 
-      Log.info("storms: " + SizeEstimator.estimate(storms))
-
       val rdiis: List[(String, RDIIObject)] = storms.map {
         x =>
 
@@ -105,26 +94,11 @@ class RDII(modelType: String, id: String) {
             .build())
       }
 
-      Log.info("rdiis: " + SizeEstimator.estimate(rdiis))
-
       model = immutable.HashMap(rdiis: _*)
 
-      Log.info("model: " + SizeEstimator.estimate(model))
-      // memory info
-      Log.info("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / mb)
-      Log.info("** Free Memory:  " + runtime.freeMemory / mb)
-      Log.info("** Total Memory: " + runtime.totalMemory / mb)
-      Log.info("** Max Memory:   " + runtime.maxMemory / mb)
-      Log.info("** Available Processors:   " + runtime.availableProcessors())
       save()
       buildNumber += 1
       Log.info("Stop Fit model: " + this.id)
-      // memory info
-      Log.info("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / mb)
-      Log.info("** Free Memory:  " + runtime.freeMemory / mb)
-      Log.info("** Total Memory: " + runtime.totalMemory / mb)
-      Log.info("** Max Memory:   " + runtime.maxMemory / mb)
-      Log.info("** Available Processors:   " + runtime.availableProcessors())
     }
   }
 
@@ -207,7 +181,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
     // This algorithm works only if the series are aligned
     if (rainfall.nonEmpty) {
       // Slice data to session
-      val sessionDays: Seq[LocalDate] = flow.slice(sd.minus(1, ChronoUnit.DAYS), ed)
+      val sessionDays: Seq[LocalDate] = TimeSeriesHelper.slice(flow, sd.minus(1, ChronoUnit.DAYS), ed)
         .groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0))
         .index
         .map(instantToDay)
@@ -223,20 +197,21 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-      val slicedInflow: TimeSeries[Double] = inflow.slice(sd, ed.plus(inflow.resolution))
+      val slicedInflow: TimeSeries[Double] = TimeSeriesHelper.slice(inflow, sd, ed.plus(inflow.resolution))
       val (shiftedSd, shiftedEd) = if (slicedInflow.nonEmpty) (slicedInflow.index.head, slicedInflow.index.last.plus(slicedInflow.resolution)) else (sd, ed)
 
-      val dwp: TimeSeries[Double] = TimeSeriesHelper.concat(patternInflows).slice(shiftedSd, shiftedEd)
+      val dwp: TimeSeries[Double] = TimeSeriesHelper.slice(TimeSeriesHelper.concat(patternInflows), shiftedSd, shiftedEd)
       //Adjust indexes in all series, dwp && inflows already are OK
       val rainfallSection: TimeSeries[Double] = if (dwp.isEmpty) TimeSeries.empty else
-        rainfall
-          .slice(startDate.minusMonths(3).toInstant(ZoneOffset.UTC), shiftedEd.plus(1, ChronoUnit.HOURS))
-          .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum)
-          .addMissing(dwp.resolution, (_, _, _) => 0.0)
-          .filter(x => dwp.index.contains(x._1))
-          .slice(shiftedSd, shiftedEd)
+        TimeSeriesHelper.slice(
+          TimeSeriesHelper.slice(rainfall,
+            startDate.minusMonths(3).toInstant(ZoneOffset.UTC), shiftedEd.plus(1, ChronoUnit.HOURS))
+            .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum)
+            .addMissing(dwp.resolution, (_, _, _) => 0.0)
+            .filter(x => dwp.index.contains(x._1))
+          , shiftedSd, shiftedEd)
 
-      val flowSection: TimeSeries[Double] = flow.slice(shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
+      val flowSection: TimeSeries[Double] = TimeSeriesHelper.slice(flow, shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
 
       //Log.info("flowSection: " + SizeEstimator.estimate(flowSection))
       Log.info("Build stop for storm with startDate: " + startDate + " ad endDate: " + endDate)
