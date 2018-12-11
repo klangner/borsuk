@@ -12,7 +12,7 @@ import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
 import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol._
 import carldata.borsuk.envelope.{Envelope, EnvelopeApi, EnvelopeResult}
 import carldata.borsuk.helper.{Model, PVCHelper}
-import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams}
+import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams, PredictionRequest}
 import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
 import carldata.borsuk.prediction.PredictionAPI
 import carldata.borsuk.rdiis.ApiObjects.{CreateParams, FitRDIIParams}
@@ -95,7 +95,7 @@ class Routing() {
       }
     } ~ path("prediction" / Segment / "predict") { id =>
       post {
-        entity(as[String])(data => predictionApi.predict(id, data))
+        entity(as[PredictionRequest])(data => predictionApi.predict(id, data))
       }
     } ~ path("prediction" / Segment) { id =>
       get {
