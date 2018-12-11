@@ -181,25 +181,31 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
 
     "not get the envelope when model exists but wrong envelopeId is passed" in {
       val route = mainRoute()
+
+      val csv = Source.fromResource("copley-pump.csv").getLines().mkString("\n")
+      val data = Csv.fromString(csv)
+      val flow = data.head
+      val rainfall = data(1)
+
       createEnvelopeModelRequest("test-model-type", "test-id") ~> route ~> check {
         status shouldBe StatusCodes.OK
         responseAs[ModelCreatedResponse].id shouldBe "test-id"
 
         val fitEnvelopeParams = FitEnvelopeParams(
-          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
-          , rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
-          , dryDayWindow = Duration.ofMinutes(5)
-          , stormIntensityWindow = Duration.ofMinutes(5)
-          , flowIntensityWindow = Duration.ofMinutes(5)
-          , minSessionWindow = Duration.ofMinutes(5)
-          , maxSessionWindow = Duration.ofMinutes(5)
+          TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), flow.values.toArray)
+          , TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), rainfall.values.toArray)
+          , dryDayWindow = Duration.ofDays(2)
+          , stormIntensityWindow = Duration.ofHours(6)
+          , flowIntensityWindow = Duration.ofHours(1)
+          , minSessionWindow = Duration.ofMinutes(720)
+          , maxSessionWindow = Duration.ofMinutes(720)
           , 3.0
         )
 
         fitEnvelopeRequest("test-id", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
 
-          eventually(timeout(10.seconds), interval(2.seconds)) {
+          eventually(timeout(120.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id") ~> route ~> check {
               status shouldBe StatusCodes.OK
               responseAs[ModelStatus].build shouldBe 1

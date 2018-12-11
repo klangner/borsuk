@@ -1,8 +1,5 @@
 package carldata.borsuk.prediction
 
-import java.time.{Duration, LocalDate}
-import java.time.temporal.{ChronoUnit, TemporalUnit}
-
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
@@ -52,10 +49,10 @@ class PredictionAPI() {
     * Predict series values.
     * Model first should be trained with function fit
     */
-  def predict(modelId: String, data: String): StandardRoute = {
+  def predict(modelId: String, data: PredictionRequest): StandardRoute = {
     models.get(modelId) match {
       case Some(model) =>
-        val values = model.predict(LocalDate.now().plus(Duration.ofDays(1)))
+        val values = model.predict(data.startDate.toLocalDate)
         val response = PredictionResponse(values)
         complete(HttpResponse(
           StatusCodes.OK,
