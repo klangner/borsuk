@@ -20,9 +20,9 @@ object ApiObjects {
 
   case class FitPredictionParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams)
 
-  case class PredictionRequest(startDate: LocalDateTime, samples: Int)
+  case class PredictionRequest(startDate: LocalDateTime)
 
-  case class PredictionResponse(values: Array[Double])
+  case class PredictionResponse(flow: TimeSeriesParams)
 
   case class ModelStatus(build: Int, score: Double)
 
@@ -122,17 +122,15 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   implicit object PredictionRequestFormat extends RootJsonFormat[PredictionRequest] {
     def write(req: PredictionRequest): JsObject = {
       JsObject(
-        "start-date" -> JsString(req.startDate.toString),
-        "samples" -> JsNumber(req.samples)
+        "start-date" -> JsString(req.startDate.toString)
       )
     }
 
     def read(value: JsValue): PredictionRequest = value match {
       case JsObject(request) =>
         val startDate = request.get("start-date").map(timestampFromValue).getOrElse(LocalDateTime.now())
-        val samples = request.get("samples").map(doubleFromValue).map(_.toInt).getOrElse(0)
-        PredictionRequest(startDate, samples)
-      case _ => PredictionRequest(LocalDateTime.now(), 0)
+        PredictionRequest(startDate)
+      case _ => PredictionRequest(LocalDateTime.now())
     }
   }
 
@@ -140,17 +138,18 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     * PredictionResponse formatter
     */
   implicit object PredictionResponseFormat extends RootJsonFormat[PredictionResponse] {
+    val emptyTSP = TimeSeriesParams(LocalDateTime.now(), Duration.ZERO, Array())
     def write(res: PredictionResponse): JsObject = {
       JsObject(
-        "values" -> JsArray(res.values.map(JsNumber(_)).toVector)
+        "flow" -> res.flow.toJson
       )
     }
 
     def read(value: JsValue): PredictionResponse = value match {
       case JsObject(request) =>
-        val values = request.get("values").map(arrayFromValue(_, doubleFromValue)).getOrElse(Array.empty[Double])
-        PredictionResponse(values)
-      case _ => PredictionResponse(Array.empty)
+        val flow = request.get("flow").map(_.convertTo[TimeSeriesParams]).getOrElse(emptyTSP)
+        PredictionResponse(flow)
+      case _ => PredictionResponse(emptyTSP)
     }
   }
 
