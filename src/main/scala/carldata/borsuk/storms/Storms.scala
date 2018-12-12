@@ -25,13 +25,22 @@ object Storms {
   def getAllStorms(rainfall: TimeSeries[Double]
                    , listOfSessionWindows: Option[Seq[Duration]]): List[(String, StormParams)] = {
 
-    Log.info("Get all storms")
+    Log.debug("Get all storms")
     val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall)
       .zipWithIndex
       .map(x =>
         x._2 ->
           StormParams(x._1, rainfall.resolution
             , TimeSeriesHelper.slice(rainfall, x._1.startIndex
+              , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
+      ).toList
+
+    val baseSessionsOLD: List[(Int, StormParams)] = Sessions.findSessions(rainfall)
+      .zipWithIndex
+      .map(x =>
+        x._2 ->
+          StormParams(x._1, rainfall.resolution
+            , rainfall.slice(x._1.startIndex
               , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
       ).toList
 
@@ -97,7 +106,6 @@ object Storms {
     * Calculate maximum intensity for a single rain event.
     */
   def maxIntensity(session: Session, rainfall: TimeSeries[Double], windowSize: Duration): Double = {
-    Log.info("Calculate maximum intensity")
     val xs = TimeSeriesHelper.slice(rainfall, session.startIndex, session.endIndex.plusSeconds(1))
       .rollingWindow(windowSize.minusMillis(1), _.sum)
 
@@ -186,7 +194,7 @@ class Storms(modelType: String, id: String) {
   /** Fit model */
   def fit(params: FitStormsParams): Unit = {
 
-    Log.info("Start Fit model: " + this.id)
+    Log.debug("Start Fit model: " + this.id)
     if (params.rainfall.values.nonEmpty) {
 
       val resolution = params.rainfall.resolution
@@ -198,23 +206,23 @@ class Storms(modelType: String, id: String) {
       model = immutable.HashMap(mergedSession: _*)
       save()
       buildNumber += 1
-      Log.info("Stop Fit model: " + this.id)
+      Log.debug("Stop Fit model: " + this.id)
     }
   }
 
   def save() {
-    Log.info("Save model: " + this.id)
+    Log.debug("Save model: " + this.id)
     val path = Paths.get("/borsuk_data/storms/", this.modelType)
     val model = Model(this.modelType, this.id, this.model.toJson(StormParamsHashMapFormat).toString)
     PVCHelper.saveModel(path, model)
-    Log.info("Model: " + this.id + " saved")
+    Log.debug("Model: " + this.id + " saved")
   }
 
   /**
     * List all storms
     */
   def list(sessionWindow: Duration): Seq[(String, Session)] = {
-    Log.info("List for model: " + this.id)
+    Log.debug("List for model: " + this.id)
     if (model.nonEmpty) {
       model.filter(x => x._2.sessionWindow.compareTo(sessionWindow) <= 0)
         .groupBy(_._2.sessionWindow)
@@ -226,7 +234,7 @@ class Storms(modelType: String, id: String) {
 
   /** Get the storm */
   def get(storm_id: String): Option[(Instant, Instant, Seq[Double])] = {
-    Log.info("Get model: " + this.id + " with Storm_ID: " + storm_id)
+    Log.debug("Get model: " + this.id + " with Storm_ID: " + storm_id)
     model.filter(_._1 == storm_id)
       .map(x => (x._2.session.startIndex, x._2.session.endIndex, x._2.values))
       .headOption

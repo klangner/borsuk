@@ -17,18 +17,18 @@ class Prediction(modelType: String, id: String) {
 
   /** Fit model */
   def fit(flow: TimeSeries[Double], rainfall: TimeSeries[Double]): Unit = {
-    Log.info("Start Fit model: " + this.id)
+    Log.debug("Start Fit model: " + this.id)
     if (flow.nonEmpty && rainfall.nonEmpty) {
       val features = DailyPatternModel.fit(flow)
       model = Some(features)
       buildNumber += 1
     }
-    Log.info("Stop Fit model: " + this.id)
+    Log.debug("Stop Fit model: " + this.id)
   }
 
   /** Predict values for the next 7 days */
   def predict(startDay: LocalDate): TimeSeriesParams = {
-    Log.info("Predict model: " + this.id + " for Start Day: " + startDay)
+    Log.debug("Predict model: " + this.id + " for Start Day: " + startDay)
     model.map { m: trainedModel =>
       val xs = (for (i: Int <- 0 until 7) yield i)
         .map { day =>

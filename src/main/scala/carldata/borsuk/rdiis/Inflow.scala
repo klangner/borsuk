@@ -17,7 +17,7 @@ object Inflow {
   def fromSession(session: Session, flow: TimeSeries[Double], dryDays: Seq[LocalDate]): TimeSeries[Double] = {
     def moveBorder(sessionBorder: Instant): Instant = dayToInstant(instantToDay(sessionBorder))
 
-    val slicedFlow = TimeSeriesHelper.slice(flow, moveBorder(session.startIndex).minus(2, ChronoUnit.DAYS)
+    val slicedFlow = TimeSeriesHelper.slice(flow, moveBorder(session.startIndex.minus(2, ChronoUnit.DAYS))
       , moveBorder(session.endIndex.plus(1, ChronoUnit.DAYS)))
 
     val sessionDays = slicedFlow.groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0)).index.map(instantToDay)

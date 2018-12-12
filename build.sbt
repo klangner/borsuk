@@ -33,5 +33,3 @@ assemblyMergeStrategy in assembly := {
 scalacOptions := Seq("-unchecked", "-deprecation")
 
 assemblyJarName in assembly := "borsuk.jar"
-
-test in Test := {}

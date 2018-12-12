@@ -35,14 +35,6 @@ object Main {
 
     // HTTP listener will run in main thread
     Log.info("Server started on port 8080.")
-    // memory info
-    val mb = 1024*1024
-    val runtime = Runtime.getRuntime
-    Log.info("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / mb)
-    Log.info("** Free Memory:  " + runtime.freeMemory / mb)
-    Log.info("** Total Memory: " + runtime.totalMemory / mb)
-    Log.info("** Max Memory:   " + runtime.maxMemory / mb)
-    Log.info("** Available Processors:   " + runtime.availableProcessors())
     val routing = new Routing()
     routing.load()
     Await.result(Http().bindAndHandle(routing.route(), "0.0.0.0", 8080), Duration.Inf)

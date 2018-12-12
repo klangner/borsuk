@@ -35,12 +35,11 @@ class RDII(modelType: String, id: String) {
   /** Fit model */
   def fit(params: FitRDIIParams): Unit = {
 
-    Log.info("Start Fit model: " + this.id)
+    Log.debug("Start Fit model: " + this.id)
     if (params.flow.values.nonEmpty && params.rainfall.values.nonEmpty) {
       val edFlow: LocalDateTime = params.flow.startDate.plusSeconds(params.flow.resolution.getSeconds * params.flow.values.length)
       val indexFlow: Seq[Instant] = Gen.mkIndex(dtToInstant(params.flow.startDate), dtToInstant(edFlow), params.flow.resolution)
       val flow: TimeSeries[Double] = TimeSeries(indexFlow.toVector, params.flow.values.toVector).filter(_._2 >= 0)
-      //Log.info("flow: " + SizeEstimator.estimate(flow))
       val edRainfall: LocalDateTime = params.rainfall.startDate.plusSeconds(params.rainfall.resolution.getSeconds * params.rainfall.values.length)
       val indexRainfall: Seq[Instant] = Gen.mkIndex(dtToInstant(params.rainfall.startDate), dtToInstant(edRainfall), params.rainfall.resolution)
       val rainfall: TimeSeries[Double] = TimeSeries(indexRainfall.toVector, params.rainfall.values.toVector).filter(_._2 >= 0)
@@ -51,14 +50,16 @@ class RDII(modelType: String, id: String) {
 
       val rainfall2 = TimeSeries(ts.index, ts.values.map(_._1))
 
+      // This code is for remembering how to use it
+      //Log.debug("flow: " + SizeEstimator.estimate(flow))
       // memory info
-      //      val mb = 1024*1024
-      //      val runtime = Runtime.getRuntime
-      //      Log.info("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / mb)
-      //      Log.info("** Free Memory:  " + runtime.freeMemory / mb)
-      //      Log.info("** Total Memory: " + runtime.totalMemory / mb)
-      //      Log.info("** Max Memory:   " + runtime.maxMemory / mb)
-      //      Log.info("** Available Processors:   " + runtime.availableProcessors())
+      //val mb = 1024*1024
+      //val runtime = Runtime.getRuntime
+      //Log.debug("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / mb)
+      //Log.debug("** Free Memory:  " + runtime.freeMemory / mb)
+      //Log.debug("** Total Memory: " + runtime.totalMemory / mb)
+      //Log.debug("** Max Memory:   " + runtime.maxMemory / mb)
+      //Log.debug("** Available Processors:   " + runtime.availableProcessors())
 
       val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2, params.dryDayWindow)
 
@@ -98,23 +99,23 @@ class RDII(modelType: String, id: String) {
 
       save()
       buildNumber += 1
-      Log.info("Stop Fit model: " + this.id)
+      Log.debug("Stop Fit model: " + this.id)
     }
   }
 
   def save() {
-    Log.info("Save model: " + this.id)
+    Log.debug("Save model: " + this.id)
     val path = Paths.get("/borsuk_data/rdiis/", this.modelType)
     val model = Model(this.modelType, this.id, this.model.toJson(RDIIObjectHashMapFormat).toString)
     PVCHelper.saveModel(path, model)
-    Log.info("Model: " + this.id + " saved")
+    Log.debug("Model: " + this.id + " saved")
   }
 
   /**
     * List all rdiis with sessionWindow
     */
   def list(sessionWindow: Duration): Seq[(String, LocalDateTime, LocalDateTime)] = {
-    Log.info("List for model: " + this.id)
+    Log.debug("List for model: " + this.id)
     val lessOrEqualModel = model.filter(x => x._2.sessionWindow.compareTo(sessionWindow) <= 0)
       .filter(x => x._2.inflow.nonEmpty)
       .toSeq
@@ -133,7 +134,7 @@ class RDII(modelType: String, id: String) {
     */
   def get(rdii_id: String): Option[(LocalDateTime, LocalDateTime
     , Array[Double], Array[Double], Array[Double], Array[Double])] = {
-    Log.info("Get model: " + this.id + " with RDII_ID: " + rdii_id)
+    Log.debug("Get model: " + this.id + " with RDII_ID: " + rdii_id)
     if (model.contains(rdii_id))
       model.filter(_._1 == rdii_id)
         .map { x =>
@@ -155,7 +156,6 @@ class RDII(modelType: String, id: String) {
 case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], startDate: LocalDateTime
                        , endDate: LocalDateTime, allDWPDays: Seq[LocalDate]) {
 
-  private val Log = LoggerFactory.getLogger("RDII")
   private var stormSessionWindows: Duration = Duration.ofHours(12)
   private var dryDayWindow = Duration.ofHours(48)
 
@@ -177,7 +177,6 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
     val sd = startDate.toInstant(ZoneOffset.UTC)
     val ed = endDate.plusDays(1).toInstant(ZoneOffset.UTC)
 
-    Log.info("Build start for storm with startDate: " + startDate + " ad endDate: " + endDate)
     // This algorithm works only if the series are aligned
     if (rainfall.nonEmpty) {
       // Slice data to session
@@ -186,10 +185,8 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
         .index
         .map(instantToDay)
 
-      //Log.info("sessionDays: " + SizeEstimator.estimate(sessionDays))
       //Find dwp for every day in session
       val patternDays: Seq[(LocalDate, Option[LocalDate])] = sessionDays.map(x => (x, findDryDay(x, allDWPDays)))
-      //Log.info("patternDays: " + SizeEstimator.estimate(patternDays))
       //Take flow from dwp
       val patternInflows = patternDays.map(x => (x._1, DryWeatherPattern.get(x._2.getOrElse(LocalDate.MAX), flow)))
         .map { x => x._2.dataPoints.map(t => (LocalDateTime.of(x._1, instantToTime(t._1)), t._2)) }
@@ -213,12 +210,9 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       val flowSection: TimeSeries[Double] = TimeSeriesHelper.slice(flow, shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
 
-      //Log.info("flowSection: " + SizeEstimator.estimate(flowSection))
-      Log.info("Build stop for storm with startDate: " + startDate + " ad endDate: " + endDate)
       RDIIObject(stormSessionWindows, rainfallSection, flowSection, dwp, slicedInflow, Seq())
     }
     else {
-      Log.info("Build stop rainfall is empty for storm with startDate: " + startDate + " ad endDate: " + endDate)
       RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
     }
   }
