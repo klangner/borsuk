@@ -11,6 +11,7 @@ import carldata.borsuk.helper._
 import carldata.borsuk.rdiis._
 import carldata.borsuk.storms.Storms
 import carldata.series.{Sessions, TimeSeries}
+import org.slf4j.LoggerFactory
 import smile.regression.OLS
 import spray.json._
 
@@ -32,6 +33,7 @@ class Envelope(modelType: String, id: String) {
   private var stormIntensityWindow: Duration = Duration.ofHours(6)
   private var flowIntensityWindow: Duration = Duration.ofHours(1)
   private var dryDayWindow = Duration.ofHours(48)
+  private val Log = LoggerFactory.getLogger("Envelope")
 
   var model: immutable.HashMap[String, EnvelopeResult] = HashMap.empty[String, EnvelopeResult]
   var buildNumber: Int = 0
@@ -52,6 +54,7 @@ class Envelope(modelType: String, id: String) {
   }
 
   def list(): HashMap[String, EnvelopeResult] = {
+    Log.debug("List for model: " + this.id)
     model
   }
 
@@ -61,6 +64,7 @@ class Envelope(modelType: String, id: String) {
   }
 
   def fit(params: FitEnvelopeParams, rdii: RDII): Unit = {
+    Log.debug("Start Fit model: " + this.id)
     if (params.flow.values.nonEmpty && params.rainfall.values.nonEmpty) {
 
       val flow = TimeSeriesHelper.parse(params.flow).filter(_._2 >= 0)
@@ -109,12 +113,15 @@ class Envelope(modelType: String, id: String) {
       save()
       buildNumber += 1
     }
+    Log.debug("Stop Fit model: " + this.id)
   }
 
   def save() {
+    Log.debug("Save model: " + this.id)
     val path = Paths.get("/borsuk_data/envelopes/", this.modelType)
     val model = Model(this.modelType, this.id, this.model.toJson(EnvelopeResultHashMapFormat).toString)
     PVCHelper.saveModel(path, model)
+    Log.debug("Model: " + this.id + " saved")
   }
 
   def calculateCoefficients(xs: Seq[((Sessions.Session, Double), Double)]): Seq[Double] = {

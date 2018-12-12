@@ -5,8 +5,8 @@ version := "0.3"
 scalaVersion := "2.12.7"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-http" % "10.1.3",
-  "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.3",
+  "com.typesafe.akka" %% "akka-http" % "10.1.5",
+  "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.5",
   "com.github.haifengl" %% "smile-scala" % "1.5.1",
   "com.github.haifengl" % "smile-netlib" % "1.5.1",
   "io.github.carldata" %% "timeseries" % "0.6.6",
@@ -21,7 +21,7 @@ libraryDependencies ++= Seq(
   // Test dependencies
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-  "com.typesafe.akka" %% "akka-http-testkit" % "10.1.3"
+  "com.typesafe.akka" %% "akka-http-testkit" % "10.1.5"
 )
 
 assemblyMergeStrategy in assembly := {

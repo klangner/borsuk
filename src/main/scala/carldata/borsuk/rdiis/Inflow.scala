@@ -4,6 +4,7 @@ import java.time._
 import java.time.temporal.ChronoUnit
 
 import carldata.borsuk.helper.DateTimeHelper._
+import carldata.borsuk.helper.TimeSeriesHelper
 import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.series.Sessions.Session
 import carldata.series.TimeSeries
@@ -16,7 +17,7 @@ object Inflow {
   def fromSession(session: Session, flow: TimeSeries[Double], dryDays: Seq[LocalDate]): TimeSeries[Double] = {
     def moveBorder(sessionBorder: Instant): Instant = dayToInstant(instantToDay(sessionBorder))
 
-    val slicedFlow = flow.slice(moveBorder(session.startIndex).minus(2, ChronoUnit.DAYS)
+    val slicedFlow = TimeSeriesHelper.slice(flow, moveBorder(session.startIndex.minus(2, ChronoUnit.DAYS))
       , moveBorder(session.endIndex.plus(1, ChronoUnit.DAYS)))
 
     val sessionDays = slicedFlow.groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0)).index.map(instantToDay)
