@@ -35,15 +35,6 @@ object Storms {
               , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
       ).toList
 
-    val baseSessionsOLD: List[(Int, StormParams)] = Sessions.findSessions(rainfall)
-      .zipWithIndex
-      .map(x =>
-        x._2 ->
-          StormParams(x._1, rainfall.resolution
-            , rainfall.slice(x._1.startIndex
-              , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
-      ).toList
-
     if (baseSessions != Nil) {
       val highestIndex = baseSessions.map(_._1).max
       val mergedSession = if (listOfSessionWindows.isDefined) {
