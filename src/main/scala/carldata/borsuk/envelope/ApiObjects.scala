@@ -170,8 +170,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
       val storms = JsArray(response.rainfall.toVector.map(x => JsNumber(x)))
       val flow = JsArray(response.flow.toVector.map(x => JsNumber(x)))
       val dates = JsArray(response.dates.toVector.map(x => JsObject(
-        "from" -> JsString(x.startIndex.toString),
-        "to" -> JsString(x.endIndex.toString)
+        "from" -> JsString(x.startIndex.toString.stripSuffix("Z")),
+        "to" -> JsString(x.endIndex.toString.stripSuffix("Z"))
       )))
       val slope = JsNumber(response.slope)
       val intercept = JsNumber(response.intercept)

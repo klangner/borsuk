@@ -7,13 +7,16 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
+import carldata.borsuk.helper.TimeSeriesHelper
 import carldata.borsuk.rdiis.ApiObjects._
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
+import carldata.series.Csv
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, WordSpec}
 import spray.json._
 
 import scala.concurrent.duration._
+import scala.io.Source
 
 
 class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
@@ -211,6 +214,49 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       request ~> mainRoute()(true) ~> check {
         val modelStatus = responseAs[ModelStatus]
         modelStatus.build shouldEqual 1
+      }
+    }
+
+    "get model on real data" in {
+      val route = mainRoute()
+      val csv = Source.fromResource("copley-pump.csv").getLines().mkString("\n")
+      val data = Csv.fromString(csv)
+      val flow = data.head
+      val rainfall = data(1)
+      val flowTSP = TimeSeriesHelper.toTimeSeriesParams(flow)
+      val rainfallTSP = TimeSeriesHelper.toTimeSeriesParams(rainfall)
+
+
+      val fitParams = FitRDIIParams(flowTSP, rainfallTSP, Duration.ofHours(12), Duration.ofDays(2), Duration.ofDays(2))
+
+      createModelRequest ~> route ~> check {
+        val mcr = responseAs[ModelCreatedResponse]
+        val fitRequest = HttpRequest(
+          HttpMethods.POST,
+          uri = s"/rdiis/${mcr.id}/fit",
+          entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
+
+          fitRequest ~> route ~> check {
+            status shouldEqual StatusCodes.OK
+            val listRequest = HttpRequest(HttpMethods.GET, uri = s"/rdiis/${mcr.id}/rdii?sessionWindow=P2D")
+            eventually(timeout(120.seconds), interval(2.seconds)) {
+            listRequest ~> route ~> check {
+              val rdiis = responseAs[ListResponse].rdii
+              rdiis.length should be > 0
+              val json = response.entity.toString
+              val getRequest = HttpRequest(HttpMethods.GET, uri = s"/rdiis/${mcr.id}/rdii/0")
+              //lets check date format (if dont have "Z" - which tell that is UTC zone)
+              val singleEventStartDate = json.split(""""start-date":"""")(4).split(""""""").head
+              val singleEventEndDate = json.split(""""end-date":"""")(4).split(""""""").head
+              singleEventStartDate shouldBe "2014-01-26T09:20"
+              singleEventEndDate shouldBe "2014-02-02T10:30"
+
+              getRequest ~> route ~> check {
+                status shouldEqual StatusCodes.OK
+              }
+            }
+          }
+        }
       }
     }
   }

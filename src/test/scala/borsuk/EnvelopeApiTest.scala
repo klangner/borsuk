@@ -263,6 +263,14 @@ class EnvelopeApiTest extends WordSpec with Matchers with ScalatestRouteTest wit
 
               getEnvelopeModel("test-id", firstEnvelopeId) ~> route ~> check {
                 status shouldBe StatusCodes.OK
+                val json = response.entity.toString
+
+                //lets check date format (if dont have "Z" - which tell that is UTC zone)
+                val singleEventStartDate = json.split(""""from":"""")(4).split(""""""").head
+                val singleEventEndDate = json.split(""""to":"""")(4).split(""""""").head
+                singleEventStartDate shouldBe "2014-03-08T10:10:00"
+                singleEventEndDate shouldBe "2014-03-09T08:35:00"
+
                 val getResponse = responseAs[GetResponse]
                 getResponse.rainfall.take(5) shouldEqual Seq(42.75, 30.25, 28.5, 28.0, 24.5)
                 getResponse.flow.take(5)

@@ -133,8 +133,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
     def write(rdii: ApiObjects.RDIIObject): JsObject = {
       JsObject(
         "id" -> rdii.id.toJson,
-        "start-date" -> rdii.startDate.toString.toJson,
-        "end-date" -> rdii.endDate.toString.toJson
+        "start-date" -> rdii.startDate.toString.stripSuffix("Z").toJson,
+        "end-date" -> rdii.endDate.toString.stripSuffix("Z").toJson
       )
     }
 
@@ -176,8 +176,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
   implicit object GetResponseFormat extends RootJsonFormat[GetResponse] {
     def write(response: GetResponse): JsObject = {
       JsObject(
-        "start-date" -> JsString(response.startDate.toString),
-        "end-date" -> JsString(response.endDate.toString),
+        "start-date" -> JsString(response.startDate.toString.stripSuffix("Z")),
+        "end-date" -> JsString(response.endDate.toString.stripSuffix("Z")),
         "rainfall" -> JsArray(response.rainfall.map(_.toJson).toVector),
         "flow" -> JsArray(response.flow.map(_.toJson).toVector),
         "dwp" -> JsArray(response.dwp.map(_.toJson).toVector),
