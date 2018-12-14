@@ -27,7 +27,7 @@ object BasicApiObjectsJsonProtocol extends DefaultJsonProtocol {
   implicit object TimeSeriesParamsFormat extends RootJsonFormat[TimeSeriesParams] {
     def write(params: TimeSeriesParams): JsObject = {
       JsObject(
-        "start-date" -> JsString(params.startDate.toString),
+        "start-date" -> JsString(params.startDate.toString.stripSuffix("Z")),
         "resolution" -> JsString(params.resolution.toString),
         "values" -> JsArray(params.values.map(JsNumber(_)).toVector)
       )

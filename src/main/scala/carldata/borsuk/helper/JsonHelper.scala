@@ -1,7 +1,7 @@
 package carldata.borsuk.helper
 
 import java.time.{Duration, LocalDateTime}
-
+import spray.json.DefaultJsonProtocol._
 import spray.json.{JsArray, JsNumber, JsString, JsValue}
 import carldata.borsuk.helper.DateTimeHelper._
 
@@ -20,7 +20,7 @@ object JsonHelper {
 
   def stringFromValue(jsVal: JsValue): String = jsVal match {
     case JsString(str) => str
-    case v: JsValue => v.toString
+    case v: JsValue => v.convertTo[String]
   }
 
   def timestampFromValue(jsVal: JsValue): LocalDateTime = jsVal match {
