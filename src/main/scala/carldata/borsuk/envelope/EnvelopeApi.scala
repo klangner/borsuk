@@ -8,22 +8,21 @@ import akka.http.scaladsl.server.StandardRoute
 import carldata.borsuk.envelope.ApiObjects._
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
 import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol._
-import carldata.borsuk.helper.{Model, PVCHelper}
+import carldata.borsuk.helper.PVCHelper
 import carldata.borsuk.rdiis.{RDII, RdiiApi}
 import spray.json._
 
 import scala.collection.immutable
-import scala.collection.mutable.Map
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 
 class EnvelopeApi(rdiiApi: RdiiApi) {
-  val models = Map.empty[String, Envelope]
   private val envelopesPath: String = "/borsuk_data/envelopes/"
 
-  def createModel(modelType: String, id: String): Option[Envelope] = {
+  def loadModel(modelType: String, id: String): Option[Envelope] = {
     val envelope = new Envelope(modelType, id)
+
     val path: Path = Paths.get(envelopesPath + modelType)
     PVCHelper.loadModel(path, id).map {
       model =>
@@ -40,22 +39,21 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
     val path: Path = Paths.get(envelopesPath + params.modelType)
 
     if (PVCHelper.modelExist(path, params.id)) {
-      println(path +"\t"+params.id)
       complete(StatusCodes.Conflict -> "Error: Model with this id already exist.")
     } else {
       new Envelope(params.modelType, params.id).save()
-      val rdii = new RDII(params.modelType, params.id)
-      rdiiApi.models.put(params.id, rdii)
+      val rdii = new RDII("rdii-v0", params.id)
       rdii.save()
+
       complete(HttpResponse(StatusCodes.OK,
         entity = HttpEntity(ContentTypes.`application/json`, ModelCreatedResponse(params.id).toJson.compactPrint)))
     }
   }
 
   def fit(id: String, params: FitEnvelopeParams): StandardRoute = {
-    createModel(params.modelType, id) match {
+    loadModel(params.modelType, id) match {
       case Some(envelopeModel: Envelope) =>
-        rdiiApi.models.get(id) match {
+        rdiiApi.loadModel("rdii-v0", id) match {
           case Some(rdiiModel) =>
             Future {
               envelopeModel.fit(params, rdiiModel)
@@ -69,7 +67,7 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
 
   def list(id: String, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "envelope-v0"
-    createModel(mt, id) match {
+    loadModel(mt, id) match {
       case Some(envelopeModel: Envelope) =>
 
         complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,
@@ -81,7 +79,7 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
 
   def get(id: String, envelopeId: String, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "envelope-v0"
-    createModel(mt, id) match {
+    loadModel(mt, id) match {
       case Some(envelopeModel) => envelopeModel.model.get(envelopeId) match {
         case Some(singleEnvelope: EnvelopeResult) =>
           complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`, GetResponse(
@@ -101,7 +99,7 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
 
   def status(id: String, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "envelope-v0"
-    createModel(mt, id) match {
+    loadModel(mt, id) match {
       case Some(envelopeModel) => complete(HttpResponse(StatusCodes.OK,
         entity = HttpEntity(ContentTypes.`application/json`, ModelStatus(envelopeModel.buildNumber).toJson.compactPrint)))
       case None => complete(StatusCodes.NotFound)

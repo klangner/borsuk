@@ -18,7 +18,9 @@ object ApiObjects {
 
   case class ModelCreatedResponse(id: String)
 
-  case class FitRDIIParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams, dryDayWindow: Duration, minSessionWindow: Duration, maxSessionWindow: Duration)
+  case class FitRDIIParams(flow: TimeSeriesParams, rainfall: TimeSeriesParams, dryDayWindow: Duration
+                           , minSessionWindow: Duration, maxSessionWindow: Duration
+                           , modelType: String)
 
   case class RDIIObject(id: String, startDate: LocalDateTime, endDate: LocalDateTime)
 
@@ -51,10 +53,10 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
 
     def read(value: JsValue): CreateParams = value match {
       case JsObject(request) =>
-        val modelType = request.get("type").map(stringFromValue).getOrElse("daily-pattern-v0")
+        val modelType = request.get("type").map(stringFromValue).getOrElse("rdii-v0")
         val id = request.get("id").map(stringFromValue).getOrElse(randomUUID().toString)
         CreateParams(modelType, id)
-      case _ => CreateParams("daily-pattern-v0", randomUUID().toString)
+      case _ => CreateParams("rdii-v0", randomUUID().toString)
     }
   }
 
@@ -88,7 +90,9 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
         "rainfall" -> params.rainfall.toJson,
         "dryDayWindow" -> params.dryDayWindow.toString.toJson,
         "minSessionWindow" -> params.minSessionWindow.toString.toJson,
-        "maxSessionWindow" -> params.maxSessionWindow.toString.toJson
+        "maxSessionWindow" -> params.maxSessionWindow.toString.toJson,
+        "type" -> params.modelType.toString.toJson
+
       )
     }
 
@@ -103,8 +107,9 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
           else Duration.ZERO,
           if (x.contains("maxSessionWindow")) Duration.parse(x("maxSessionWindow").asInstanceOf[JsString].value)
           else Duration.ZERO
+          , x.get("type").map(stringFromValue).getOrElse("rdii-v0")
         )
-      case _ => FitRDIIParams(emptyTSP, emptyTSP, Duration.ZERO, Duration.ZERO, Duration.ZERO)
+      case _ => FitRDIIParams(emptyTSP, emptyTSP, Duration.ZERO, Duration.ZERO, Duration.ZERO, "")
     }
   }
 

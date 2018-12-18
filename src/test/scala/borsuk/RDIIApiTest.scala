@@ -1,5 +1,6 @@
 package borsuk
 
+import java.nio.file.Paths
 import java.time.{Duration, LocalDateTime}
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -7,19 +8,30 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
-import carldata.borsuk.helper.TimeSeriesHelper
+import carldata.borsuk.helper.{PVCHelper, TimeSeriesHelper}
 import carldata.borsuk.rdiis.ApiObjects._
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
 import carldata.series.Csv
 import org.scalatest.concurrent.Eventually
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import spray.json._
 
 import scala.concurrent.duration._
 import scala.io.Source
 
 
-class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with Eventually {
+class RDIIApiTest extends WordSpec with Matchers
+  with ScalatestRouteTest
+  with SprayJsonSupport
+  with Eventually
+  with BeforeAndAfterAll {
+
+  private val rdiisPath: String = "/borsuk_data/rdiis/"
+
+  override def afterAll(): Unit = {
+    //cleaning
+    for (i <- 1 to 20) PVCHelper.deleteModel(Paths.get(rdiisPath + "rdii-v0"), "rdii-test-id" + i)
+  }
 
   private def mainRoute()(implicit load: Boolean = false) = {
     val routing = new Routing()
@@ -27,8 +39,8 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
     routing.route()
   }
 
-  private val createModelRequest: HttpRequest = {
-    val params = CreateParams("rdii-v0", "secret-id")
+  private def createModelRequest(id: String): HttpRequest = {
+    val params = CreateParams("rdii-v0", id)
     HttpRequest(
       HttpMethods.POST,
       uri = "/rdiis",
@@ -38,17 +50,17 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
   "The RDII" should {
 
     "create new model" in {
-      createModelRequest ~> mainRoute() ~> check {
+      createModelRequest("rdii-test-id1") ~> mainRoute() ~> check {
         val res = responseAs[ModelCreatedResponse]
-        res.id shouldEqual "secret-id"
+        res.id shouldEqual "rdii-test-id1"
         status shouldEqual StatusCodes.OK
       }
     }
 
     "create new model with id already in use" in {
       val route = mainRoute()
-      createModelRequest ~> route ~> check {
-        createModelRequest
+      createModelRequest("rdii-test-id2") ~> route ~> check {
+        createModelRequest("rdii-test-id2")
       } ~> route ~> check {
         responseAs[String] shouldEqual "Error: Model with this id already exist."
         status shouldEqual StatusCodes.Conflict
@@ -60,7 +72,8 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val trainData = 0.to(1000).map(_ => 1.0).toArray
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12), Duration.ofHours(12), Duration.ofHours(12))
+      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12)
+        , Duration.ofHours(12), Duration.ofHours(12) , "rdii-v0")
 
       val request = HttpRequest(
         HttpMethods.POST,
@@ -98,9 +111,10 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val resolution: Duration = Duration.ofMinutes(10)
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12), Duration.ofMinutes(10), Duration.ofMinutes(10))
+      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12)
+        , Duration.ofMinutes(10), Duration.ofMinutes(10), "rdii-v0")
 
-      createModelRequest ~> route ~> check {
+      createModelRequest("rdii-test-id7") ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
         val fitRequest = HttpRequest(
           HttpMethods.POST,
@@ -127,9 +141,10 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val resolution: Duration = Duration.ofMinutes(10)
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12), Duration.ofDays(2), Duration.ofDays(2))
+      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12)
+        , Duration.ofDays(2), Duration.ofDays(2), "rdii-v0")
 
-      createModelRequest ~> route ~> check {
+      createModelRequest("rdii-test-id8") ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
         val fitRequest = HttpRequest(
           HttpMethods.POST,
@@ -153,9 +168,10 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val resolution: Duration = Duration.ofMinutes(10)
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12), Duration.ofDays(2), Duration.ofDays(2))
+      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12)
+        , Duration.ofDays(2), Duration.ofDays(2), "rdii-v0")
 
-      createModelRequest ~> route ~> check {
+      createModelRequest("rdii-test-id9") ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
         val fitRequest = HttpRequest(
           HttpMethods.POST,
@@ -185,19 +201,19 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val resolution: Duration = Duration.ofMinutes(10)
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
-      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12), Duration.ofMinutes(10), Duration.ofMinutes(10))
+      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12)
+        , Duration.ofMinutes(10), Duration.ofMinutes(10), "rdii-v0")
 
-      createModelRequest ~> route ~> check {
-        val mcr = responseAs[ModelCreatedResponse]
+      createModelRequest("rdii-test-id10") ~> route ~> check {
         val fitRequest = HttpRequest(
           HttpMethods.POST,
-          uri = s"/rdiis/secret-id/fit",
+          uri = s"/rdiis/rdii-test-id10/fit",
           entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
 
         fitRequest ~> route ~> check {
           status shouldEqual StatusCodes.OK
           eventually(timeout(20 seconds)) {
-            val request = HttpRequest(HttpMethods.GET, uri = s"/rdiis/secret-id")
+            val request = HttpRequest(HttpMethods.GET, uri = s"/rdiis/rdii-test-id10")
 
             request ~> route ~> check {
               val modelStatus = responseAs[ModelStatus]
@@ -209,7 +225,7 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
 
       val request = HttpRequest(
         HttpMethods.GET,
-        uri = "/rdiis/secret-id")
+        uri = "/rdiis/rdii-test-id10")
 
       request ~> mainRoute()(true) ~> check {
         val modelStatus = responseAs[ModelStatus]
@@ -227,19 +243,20 @@ class RDIIApiTest extends WordSpec with Matchers with ScalatestRouteTest with Sp
       val rainfallTSP = TimeSeriesHelper.toTimeSeriesParams(rainfall)
 
 
-      val fitParams = FitRDIIParams(flowTSP, rainfallTSP, Duration.ofHours(12), Duration.ofDays(2), Duration.ofDays(2))
+      val fitParams = FitRDIIParams(flowTSP, rainfallTSP, Duration.ofHours(12)
+        , Duration.ofDays(2), Duration.ofDays(2), "rdii-v0")
 
-      createModelRequest ~> route ~> check {
+      createModelRequest("rdii-test-id11") ~> route ~> check {
         val mcr = responseAs[ModelCreatedResponse]
         val fitRequest = HttpRequest(
           HttpMethods.POST,
           uri = s"/rdiis/${mcr.id}/fit",
           entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
 
-          fitRequest ~> route ~> check {
-            status shouldEqual StatusCodes.OK
-            val listRequest = HttpRequest(HttpMethods.GET, uri = s"/rdiis/${mcr.id}/rdii?sessionWindow=P2D")
-            eventually(timeout(120.seconds), interval(2.seconds)) {
+        fitRequest ~> route ~> check {
+          status shouldEqual StatusCodes.OK
+          val listRequest = HttpRequest(HttpMethods.GET, uri = s"/rdiis/${mcr.id}/rdii?sessionWindow=P2D")
+          eventually(timeout(120.seconds), interval(2.seconds)) {
             listRequest ~> route ~> check {
               val rdiis = responseAs[ListResponse].rdii
               rdiis.length should be > 0

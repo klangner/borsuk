@@ -39,7 +39,7 @@ class Routing() {
   val stormsApi = new StormsApi()
   val envelopeApi = new EnvelopeApi(RDIIApi)
   private val stormsPath: Path = Paths.get("/borsuk_data/storms/")
-  private val rdiisPath: Path = Paths.get("/borsuk_data/rdiis/")
+  //  private val rdiisPath: Path = Paths.get("/borsuk_data/rdiis/")
   private val envelopesPath: Path = Paths.get("/borsuk_data/envelopes/")
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
@@ -51,35 +51,8 @@ class Routing() {
 
   val MB = 1048576
 
-  def createEnvelopeApi(model: Model, id: String): Option[Envelope] = {
-    val envelopesPath: Path = Paths.get("/borsuk_data/envelopes/")
-
-    val envelope = new Envelope(model.modelType, model.id)
-    PVCHelper.loadModel(envelopesPath, id).map {
-      model =>
-        envelope.model = model.content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
-        envelope.buildNumber += 1
-        envelope
-    }
-  }
-
-  def createEnvelope(model: Model, envelopeApi: EnvelopeApi): Option[Envelope] = {
-    val envelope = new Envelope(model.modelType, model.id)
-    envelope.model = model.content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
-    envelope.buildNumber += 1
-    envelopeApi.models.put(model.id, envelope)
-  }
-
   /** Loading models from Persistent Volume Claim */
   def load(): Unit = {
-
-
-    def createRdii(model: Model): Option[RDII] = {
-      val rdii = new RDII(model.modelType, model.id)
-      rdii.model = model.content.parseJson.convertTo[immutable.HashMap[String, RDIIObject]]
-      rdii.buildNumber += 1
-      RDIIApi.models.put(model.id, rdii)
-    }
 
     def createStorm(model: Model): Option[Storms] = {
       val storm = new Storms(model.modelType, model.id)
@@ -90,7 +63,7 @@ class Routing() {
 
 
     PVCHelper.loadModels(stormsPath, createStorm)
-    PVCHelper.loadModels(rdiisPath, createRdii)
+    //  PVCHelper.loadModels(rdiisPath, createRdii)
   }
 
   /** Routing */
@@ -126,20 +99,21 @@ class Routing() {
           }
         }
       }
-    } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String])) {
-      (id, sessionWindow) =>
+    } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String], "type".as[String] ?)) {
+      (id, sessionWindow, modelType) =>
         get {
-          RDIIApi.list(id, Duration.parse(sessionWindow))
+          RDIIApi.list(id, Duration.parse(sessionWindow), modelType)
         }
-    } ~ path("rdiis" / Segment / "rdii" / Segment) {
-      (modelId, rdiiId) =>
+    } ~ (path("rdiis" / Segment / "rdii" / Segment) & parameters("type".as[String] ?)) {
+      (modelId, rdiiId, modelType) =>
         get {
-          RDIIApi.get(modelId, rdiiId)
+          RDIIApi.get(modelId, rdiiId, modelType)
         }
-    } ~ path("rdiis" / Segment) { id =>
-      get {
-        RDIIApi.status(id)
-      }
+    } ~ (path("rdiis" / Segment) & parameters("type".as[String] ?)) {
+      (id, modelType) =>
+        get {
+          RDIIApi.status(id, modelType)
+        }
     } ~ path("storms") {
       post {
         entity(as[CreateStormsParams])(params => stormsApi.create(params))

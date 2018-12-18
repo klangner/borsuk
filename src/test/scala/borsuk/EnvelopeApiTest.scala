@@ -28,6 +28,8 @@ class EnvelopeApiTest extends WordSpec
   with BeforeAndAfter
   with BeforeAndAfterAll {
 
+  private val envelopesPath: String = "/borsuk_data/envelopes/"
+
   override def afterAll(): Unit = {
     //cleaning
     for (i <- 1 to 20) PVCHelper.deleteModel(Paths.get(envelopesPath + "envelope-v0"), "test-id" + i)
@@ -62,7 +64,6 @@ class EnvelopeApiTest extends WordSpec
     HttpRequest(HttpMethods.GET, uri = s"/envelopes/$id/envelope/$singleEnvelopeId")
   }
 
-  private val envelopesPath: String = "/borsuk_data/envelopes/"
   "The Envelope" should {
 
     "create new model" in {
@@ -159,9 +160,9 @@ class EnvelopeApiTest extends WordSpec
       val rainfall = data(1)
 
       createEnvelopeModelRequest("envelope-v0", "test-id7") ~> route ~> check {
-        println("hoho1\t" + status)
-        //status shouldBe StatusCodes.OK
-        //responseAs[ModelCreatedResponse].id shouldBe "test-id"
+
+        status shouldBe StatusCodes.OK
+        responseAs[ModelCreatedResponse].id shouldBe "test-id7"
         val fitEnvelopeParams = FitEnvelopeParams(
           TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), flow.values.toArray)
           , TimeSeriesParams(DateTimeHelper.dateParse("2013-10-22T11:55:00Z"), Duration.ofMinutes(5), rainfall.values.toArray)
@@ -174,7 +175,7 @@ class EnvelopeApiTest extends WordSpec
           , "envelope-v0"
         )
         fitEnvelopeRequest("test-id7", fitEnvelopeParams) ~> route ~> check {
-          println("hoho\t" + status)
+
           status shouldBe StatusCodes.OK
           eventually(timeout(120.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id7") ~> route ~> check {

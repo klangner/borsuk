@@ -88,7 +88,8 @@ object ApiObjectsJsonProtocol extends DefaultJsonProtocol {
         "dryDayWindow" -> params.dryDayWindow.toString.toJson,
         "minSessionWindow" -> params.minSessionWindow.toString.toJson,
         "maxSessionWindow" -> params.maxSessionWindow.toString.toJson,
-        "flowBoundary" -> JsNumber(params.flowBoundary)
+        "flowBoundary" -> JsNumber(params.flowBoundary),
+        "type" -> params.modelType.toString.toJson
       )
     }
 
