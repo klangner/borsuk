@@ -1,6 +1,6 @@
 package carldata.borsuk
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import java.time.Duration
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
@@ -38,6 +38,9 @@ class Routing() {
   val RDIIApi = new RdiiApi()
   val stormsApi = new StormsApi()
   val envelopeApi = new EnvelopeApi(RDIIApi)
+  private val stormsPath: Path = Paths.get("/borsuk_data/storms/")
+  private val rdiisPath: Path = Paths.get("/borsuk_data/rdiis/")
+  private val envelopesPath: Path = Paths.get("/borsuk_data/envelopes/")
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
@@ -48,14 +51,28 @@ class Routing() {
 
   val MB = 1048576
 
+  def createEnvelopeApi(model: Model, id: String): Option[Envelope] = {
+    val envelopesPath: Path = Paths.get("/borsuk_data/envelopes/")
+
+    val envelope = new Envelope(model.modelType, model.id)
+    PVCHelper.loadModel(envelopesPath, id).map {
+      model =>
+        envelope.model = model.content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
+        envelope.buildNumber += 1
+        envelope
+    }
+  }
+
+  def createEnvelope(model: Model, envelopeApi: EnvelopeApi): Option[Envelope] = {
+    val envelope = new Envelope(model.modelType, model.id)
+    envelope.model = model.content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
+    envelope.buildNumber += 1
+    envelopeApi.models.put(model.id, envelope)
+  }
+
   /** Loading models from Persistent Volume Claim */
   def load(): Unit = {
-    def createEnvelope(model: Model): Option[Envelope] = {
-      val envelope = new Envelope(model.modelType, model.id)
-      envelope.model = model.content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
-      envelope.buildNumber += 1
-      envelopeApi.models.put(model.id, envelope)
-    }
+
 
     def createRdii(model: Model): Option[RDII] = {
       val rdii = new RDII(model.modelType, model.id)
@@ -71,13 +88,9 @@ class Routing() {
       stormsApi.models.put(model.id, storm)
     }
 
-    val stormsPath = Paths.get("/borsuk_data/storms/")
-    val rdiisPath = Paths.get("/borsuk_data/rdiis/")
-    val envelopesPath = Paths.get("/borsuk_data/envelopes/")
 
-    PVCHelper.loadModel(stormsPath, createStorm)
-    PVCHelper.loadModel(rdiisPath, createRdii)
-    PVCHelper.loadModel(envelopesPath, createEnvelope)
+    PVCHelper.loadModels(stormsPath, createStorm)
+    PVCHelper.loadModels(rdiisPath, createRdii)
   }
 
   /** Routing */
@@ -159,29 +172,31 @@ class Routing() {
       post {
         entity(as[CreateEnvelopeParams])(data => envelopeApi.create(data))
       }
-    } ~ path("envelopes" / Segment) { id => {
-      get {
-        envelopeApi.status(id)
+    } ~ (path("envelopes" / Segment) & parameters("type".as[String] ?)) {
+      (id, modelType) => {
+        get {
+          envelopeApi.status(id, modelType)
+        }
       }
-    }
-    } ~ path("envelopes" / Segment / "fit") { id => {
-      post {
-        withRequestTimeout(60.seconds) {
-          withSizeLimit(20 * MB) {
-            entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
+    } ~ path("envelopes" / Segment / "fit") {
+      id => {
+        post {
+          withRequestTimeout(60.seconds) {
+            withSizeLimit(20 * MB) {
+              entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
+            }
           }
         }
       }
-    }
-    } ~ path("envelopes" / Segment / "envelope") {
-      id =>
+    } ~ (path("envelopes" / Segment / "envelope") & parameters("type".as[String] ?)) {
+      (id, modelType) =>
         get {
-          envelopeApi.list(id)
+          envelopeApi.list(id, modelType)
         }
-    } ~ path("envelopes" / Segment / "envelope" / Segment) {
-      (id, envelopeId) => {
+    } ~ (path("envelopes" / Segment / "envelope" / Segment) & parameters("type".as[String] ?)) {
+      (id, envelopeId, modelType) => {
         get {
-          envelopeApi.get(id, envelopeId)
+          envelopeApi.get(id, envelopeId, modelType)
         }
       }
     }
