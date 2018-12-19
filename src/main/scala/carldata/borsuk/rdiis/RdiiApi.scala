@@ -1,31 +1,51 @@
 package carldata.borsuk.rdiis
 
+import java.nio.file.{Path, Paths}
 import java.time.Duration
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
+import carldata.borsuk.helper.PVCHelper
 import carldata.borsuk.rdiis.ApiObjects._
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
+import carldata.borsuk.rdiis.RDIIObjectHashMapJsonProtocol._
 import spray.json._
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.collection.immutable
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class RdiiApi {
-  val models = collection.mutable.Map.empty[String, RDII]
+
+  private val rdiisPath: String = "/borsuk_data/rdiis/"
+
+  def loadModel(modelType: String, id: String): Option[RDII] = {
+    val rdii = new RDII(modelType, id)
+
+    val path = Paths.get(rdiisPath + modelType)
+
+    PVCHelper.loadModel(path, id).map {
+      model =>
+        rdii.model = model.content.parseJson.convertTo[immutable.HashMap[String, RDIIObject]]
+        rdii.buildNumber += 1
+        rdii
+    }
+  }
 
   /**
     * Create new rdii model.
     * Use fit function to train this model
     */
   def create(params: CreateParams): StandardRoute = {
-    if (models.contains(params.id)) {
+    val path: Path = Paths.get(rdiisPath + params.modelType)
+
+    if (PVCHelper.modelExist(path, params.id)) {
       complete(StatusCodes.Conflict -> "Error: Model with this id already exist.")
     }
     else {
       val rdii = new RDII(params.modelType, params.id)
-      models.put(params.id, rdii)
+      rdii.save()
       val response = ModelCreatedResponse(params.id)
 
       complete(HttpResponse(
@@ -36,8 +56,8 @@ class RdiiApi {
   }
 
   /** Fit the model to the training data */
-  def fit(modelId: String, params: FitRDIIParams): StandardRoute = {
-    models.get(modelId) match {
+  def fit(id: String, params: FitRDIIParams): StandardRoute = {
+    loadModel(params.modelType, id) match {
       case Some(model) =>
         Future {
           model.fit(params)
@@ -50,9 +70,9 @@ class RdiiApi {
   }
 
   /** List the models of the training data */
-  def list(modelId: String, sessionWindow: Duration): StandardRoute = {
-
-    models.get(modelId) match {
+  def list(id: String, sessionWindow: Duration, modelType: Option[String]): StandardRoute = {
+    val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
+    loadModel(mt, id) match {
       case Some(model) =>
 
         val response = ListResponse {
@@ -72,8 +92,9 @@ class RdiiApi {
   }
 
   /** Get the model of the training data */
-  def get(modelId: String, rdiiId: String): StandardRoute = {
-    models.get(modelId) match {
+  def get(id: String, rdiiId: String, modelType: Option[String]): StandardRoute = {
+    val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
+    loadModel(mt, id) match {
       case Some(model) =>
         model.get(rdiiId) match {
           case Some(rdii) =>
@@ -96,8 +117,9 @@ class RdiiApi {
     * Check model status. This function can be used to check if new revision of the model is trained
     * and the current model metric score.
     */
-  def status(modelId: String): StandardRoute = {
-    models.get(modelId) match {
+  def status(id: String, modelType: Option[String]): StandardRoute = {
+    val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
+    loadModel(mt, id) match {
       case Some(model) =>
         val status = ModelStatus(model.buildNumber)
         complete(HttpResponse(

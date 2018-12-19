@@ -1,6 +1,6 @@
 package carldata.borsuk
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import java.time.Duration
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
@@ -38,6 +38,7 @@ class Routing() {
   val RDIIApi = new RdiiApi()
   val stormsApi = new StormsApi()
   val envelopeApi = new EnvelopeApi(RDIIApi)
+  private val stormsPath: Path = Paths.get("/borsuk_data/storms/")
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
@@ -50,19 +51,6 @@ class Routing() {
 
   /** Loading models from Persistent Volume Claim */
   def load(): Unit = {
-    def createEnvelope(model: Model): Option[Envelope] = {
-      val envelope = new Envelope(model.modelType, model.id)
-      envelope.model = model.content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
-      envelope.buildNumber += 1
-      envelopeApi.models.put(model.id, envelope)
-    }
-
-    def createRdii(model: Model): Option[RDII] = {
-      val rdii = new RDII(model.modelType, model.id)
-      rdii.model = model.content.parseJson.convertTo[immutable.HashMap[String, RDIIObject]]
-      rdii.buildNumber += 1
-      RDIIApi.models.put(model.id, rdii)
-    }
 
     def createStorm(model: Model): Option[Storms] = {
       val storm = new Storms(model.modelType, model.id)
@@ -71,13 +59,8 @@ class Routing() {
       stormsApi.models.put(model.id, storm)
     }
 
-    val stormsPath = Paths.get("/borsuk_data/storms/")
-    val rdiisPath = Paths.get("/borsuk_data/rdiis/")
-    val envelopesPath = Paths.get("/borsuk_data/envelopes/")
 
-    PVCHelper.loadModel(stormsPath, createStorm)
-    PVCHelper.loadModel(rdiisPath, createRdii)
-    PVCHelper.loadModel(envelopesPath, createEnvelope)
+    PVCHelper.loadModels(stormsPath, createStorm)
   }
 
   /** Routing */
@@ -113,20 +96,21 @@ class Routing() {
           }
         }
       }
-    } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String])) {
-      (id, sessionWindow) =>
+    } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String], "type".as[String] ?)) {
+      (id, sessionWindow, modelType) =>
         get {
-          RDIIApi.list(id, Duration.parse(sessionWindow))
+          RDIIApi.list(id, Duration.parse(sessionWindow), modelType)
         }
-    } ~ path("rdiis" / Segment / "rdii" / Segment) {
-      (modelId, rdiiId) =>
+    } ~ (path("rdiis" / Segment / "rdii" / Segment) & parameters("type".as[String] ?)) {
+      (modelId, rdiiId, modelType) =>
         get {
-          RDIIApi.get(modelId, rdiiId)
+          RDIIApi.get(modelId, rdiiId, modelType)
         }
-    } ~ path("rdiis" / Segment) { id =>
-      get {
-        RDIIApi.status(id)
-      }
+    } ~ (path("rdiis" / Segment) & parameters("type".as[String] ?)) {
+      (id, modelType) =>
+        get {
+          RDIIApi.status(id, modelType)
+        }
     } ~ path("storms") {
       post {
         entity(as[CreateStormsParams])(params => stormsApi.create(params))
@@ -159,29 +143,31 @@ class Routing() {
       post {
         entity(as[CreateEnvelopeParams])(data => envelopeApi.create(data))
       }
-    } ~ path("envelopes" / Segment) { id => {
-      get {
-        envelopeApi.status(id)
+    } ~ (path("envelopes" / Segment) & parameters("type".as[String] ?)) {
+      (id, modelType) => {
+        get {
+          envelopeApi.status(id, modelType)
+        }
       }
-    }
-    } ~ path("envelopes" / Segment / "fit") { id => {
-      post {
-        withRequestTimeout(60.seconds) {
-          withSizeLimit(20 * MB) {
-            entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
+    } ~ path("envelopes" / Segment / "fit") {
+      id => {
+        post {
+          withRequestTimeout(60.seconds) {
+            withSizeLimit(20 * MB) {
+              entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
+            }
           }
         }
       }
-    }
-    } ~ path("envelopes" / Segment / "envelope") {
-      id =>
+    } ~ (path("envelopes" / Segment / "envelope") & parameters("type".as[String] ?)) {
+      (id, modelType) =>
         get {
-          envelopeApi.list(id)
+          envelopeApi.list(id, modelType)
         }
-    } ~ path("envelopes" / Segment / "envelope" / Segment) {
-      (id, envelopeId) => {
+    } ~ (path("envelopes" / Segment / "envelope" / Segment) & parameters("type".as[String] ?)) {
+      (id, envelopeId, modelType) => {
         get {
-          envelopeApi.get(id, envelopeId)
+          envelopeApi.get(id, envelopeId, modelType)
         }
       }
     }
