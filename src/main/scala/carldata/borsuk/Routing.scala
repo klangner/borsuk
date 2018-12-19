@@ -39,8 +39,6 @@ class Routing() {
   val stormsApi = new StormsApi()
   val envelopeApi = new EnvelopeApi(RDIIApi)
   private val stormsPath: Path = Paths.get("/borsuk_data/storms/")
-  //  private val rdiisPath: Path = Paths.get("/borsuk_data/rdiis/")
-  private val envelopesPath: Path = Paths.get("/borsuk_data/envelopes/")
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
@@ -63,7 +61,6 @@ class Routing() {
 
 
     PVCHelper.loadModels(stormsPath, createStorm)
-    //  PVCHelper.loadModels(rdiisPath, createRdii)
   }
 
   /** Routing */
