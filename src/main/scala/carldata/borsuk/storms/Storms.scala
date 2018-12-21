@@ -21,39 +21,42 @@ object Storms {
   case class StormParams(session: Session, sessionWindow: Duration, values: Vector[Double], childIds: Seq[String])
 
   private val Log = LoggerFactory.getLogger("Storms")
+
   /** Get all storms (with merged storms) from rainfall */
   def getAllStorms(rainfall: TimeSeries[Double]
                    , listOfSessionWindows: Option[Seq[Duration]]): List[(String, StormParams)] = {
+    if (rainfall.nonEmpty) {
+      Log.debug("Get all storms")
+      val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall)
+        .zipWithIndex
+        .map(x =>
+          x._2 ->
+            StormParams(x._1, rainfall.resolution
+              , TimeSeriesHelper.slice(rainfall, x._1.startIndex
+                , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
+        ).toList
 
-    Log.debug("Get all storms")
-    val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall)
-      .zipWithIndex
-      .map(x =>
-        x._2 ->
-          StormParams(x._1, rainfall.resolution
-            , TimeSeriesHelper.slice(rainfall, x._1.startIndex
-              , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
-      ).toList
+      if (baseSessions != Nil) {
+        val highestIndex = baseSessions.map(_._1).max
+        val mergedSession = if (listOfSessionWindows.isDefined) {
+          mergeSessions(baseSessions, Set(), listOfSessionWindows.get, rainfall.resolution, highestIndex)
+        }
+        else {
+          val complexListOfSessionWindows: Seq[Duration] =
+            baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
+              .map(x => Duration.between(x._1, x._2))
+              .distinct.sorted
 
-    if (baseSessions != Nil) {
-      val highestIndex = baseSessions.map(_._1).max
-      val mergedSession = if (listOfSessionWindows.isDefined) {
-        mergeSessions(baseSessions, Set(), listOfSessionWindows.get, rainfall.resolution, highestIndex)
+          mergeSessions(baseSessions, baseSessions.toSet, complexListOfSessionWindows, rainfall.resolution, highestIndex)
+
+        }
+
+        mergedSession
       }
-      else {
-        val complexListOfSessionWindows: Seq[Duration] =
-          baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
-            .map(x => Duration.between(x._1, x._2))
-            .distinct.sorted
-
-        mergeSessions(baseSessions, baseSessions.toSet, complexListOfSessionWindows, rainfall.resolution, highestIndex)
-
-      }
-
-      mergedSession
+        .map(x => (x._1.toString, x._2))
+        .sortBy(_._2.session.startIndex)
+      else List()
     }
-      .map(x => (x._1.toString, x._2))
-      .sortBy(_._2.session.startIndex)
     else List()
   }
 
@@ -83,7 +86,7 @@ object Storms {
           ) :: zs.tail
         } //merge sessions
         else {
-          val x2 =  (highestIndex + x._1, StormParams(x._2.session, sessionWindow, x._2.values, x._2.childIds))
+          val x2 = (highestIndex + x._1, StormParams(x._2.session, sessionWindow, x._2.values, x._2.childIds))
           x2 :: zs
         }
 

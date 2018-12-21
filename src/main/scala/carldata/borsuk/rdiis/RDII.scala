@@ -90,9 +90,8 @@ class RDII(modelType: String, id: String) {
       }
 
       model = immutable.HashMap(rdiis: _*)
-
-      save()
       buildNumber += 1
+      save()
       Log.debug("Stop Fit model: " + this.id)
     }
   }
@@ -100,7 +99,8 @@ class RDII(modelType: String, id: String) {
   def save() {
     Log.debug("Save model: " + this.id)
     val path = Paths.get("/borsuk_data/rdiis/", this.modelType)
-    val model = Model(this.modelType, this.id, this.model.toJson(RDIIObjectHashMapFormat).toString)
+    val rDIIFileContent = new RDIIFileContent(this.model, buildNumber)
+    val model = Model(this.modelType, this.id, rDIIFileContent.toJson(RDIIFileContentJsonProtocol.RDIIFileContentFormat).toString)
     PVCHelper.saveModel(path, model)
     Log.debug("Model: " + this.id + " saved")
   }

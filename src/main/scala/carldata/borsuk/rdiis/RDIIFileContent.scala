@@ -12,9 +12,9 @@ class RDIIFileContent(er: immutable.HashMap[String, RDIIObject], bn: Int) {
   val buildNumber: Int = bn
 }
 
-object EnvelopeFileContentJsonProtocol extends DefaultJsonProtocol {
+object RDIIFileContentJsonProtocol extends DefaultJsonProtocol {
 
-  implicit object EnvelopeFileContentFormat extends RootJsonFormat[RDIIFileContent] {
+  implicit object RDIIFileContentFormat extends RootJsonFormat[RDIIFileContent] {
     def read(json: JsValue): RDIIFileContent = {
       json match {
         case JsObject(fields) =>

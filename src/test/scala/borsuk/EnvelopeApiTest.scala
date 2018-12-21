@@ -425,5 +425,49 @@ class EnvelopeApiTest extends WordSpec
       }
     }
 
+    "fit the model twice" in {
+      val route = mainRoute()
+      val route2 = mainRoute()
+      createEnvelopeModelRequest("envelope-v0", "test-id13") ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[ModelCreatedResponse].id shouldBe "test-id13"
+
+        val fitEnvelopeParams = FitEnvelopeParams(
+          flow = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+          , rainfall = TimeSeriesParams(LocalDateTime.now(), Duration.ofMinutes(5), Array(1.0, 2.0, 3.0))
+          , dryDayWindow = Duration.ofMinutes(5)
+          , stormIntensityWindow = Duration.ofMinutes(5)
+          , flowIntensityWindow = Duration.ofMinutes(5)
+          , minSessionWindow = Duration.ofMinutes(5)
+          , maxSessionWindow = Duration.ofMinutes(5)
+          , 3.0
+          , "envelope-v0"
+        )
+
+        fitEnvelopeRequest("test-id13", fitEnvelopeParams) ~> route ~> check {
+          status shouldBe StatusCodes.OK
+          eventually(timeout(10.seconds), interval(2.seconds)) {
+            checkEnvelopeModelStatus("test-id13") ~> route ~> check {
+              status shouldBe StatusCodes.OK
+              val modelStatus1 = responseAs[ModelStatus]
+              modelStatus1.build shouldBe 1
+              fitEnvelopeRequest("test-id13", fitEnvelopeParams) ~> route2 ~> check {
+                status shouldBe StatusCodes.OK
+                eventually(timeout(10.seconds), interval(2.seconds)) {
+                  checkEnvelopeModelStatus("test-id13") ~> route2 ~> check {
+                    status shouldBe StatusCodes.OK
+                    val modelStatus2 = responseAs[ModelStatus]
+                    modelStatus2.build shouldBe 2
+                  }
+                }
+              }
+
+            }
+          }
+        }
+
+      }
+    }
+
   }
 }

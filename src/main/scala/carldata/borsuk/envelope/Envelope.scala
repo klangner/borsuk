@@ -106,8 +106,8 @@ class Envelope(modelType: String, id: String) {
   def save() {
     Log.debug("Save model: " + this.id)
     val path = Paths.get("/borsuk_data/envelopes/", this.modelType)
-    val eff = new EnvelopeFileContent(this.model,buildNumber)
-    val model = Model(this.modelType, this.id, eff.toJson(EnvelopeFileContentFormat).toString)
+    val envelopeFileContent = new EnvelopeFileContent(this.model,buildNumber)
+    val model = Model(this.modelType, this.id, envelopeFileContent.toJson(EnvelopeFileContentFormat).toString)
     PVCHelper.saveModel(path, model)
     Log.debug("Model: " + this.id + " saved")
   }
