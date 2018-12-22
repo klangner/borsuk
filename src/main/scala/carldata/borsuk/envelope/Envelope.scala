@@ -1,12 +1,10 @@
 package carldata.borsuk.envelope
 
 import java.nio.file.Paths
-import java.time.{Duration, Instant, LocalDate}
+import java.time.{Duration, LocalDate}
 
 import carldata.borsuk.envelope.ApiObjects.FitEnvelopeParams
-import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol.EnvelopeResultHashMapFormat
-import carldata.borsuk.helper.DateTimeHelper.{dtToInstant, instantToLDT}
-import carldata.borsuk.helper.JsonHelper.{doubleFromValue, stringFromValue, timestampFromValue}
+import carldata.borsuk.envelope.EnvelopeFileContentJsonProtocol.EnvelopeFileContentFormat
 import carldata.borsuk.helper._
 import carldata.borsuk.rdiis._
 import carldata.borsuk.storms.Storms
@@ -17,17 +15,6 @@ import spray.json._
 
 import scala.collection.immutable
 import scala.collection.immutable.HashMap
-
-class EnvelopeResult(points: Seq[((Sessions.Session, Double), Double)], regression: Seq[Double], window: Duration) {
-  val sessionWindow: Duration = this.window
-  val rainfall: Seq[Double] = this.points.unzip._1.map(_._2)
-  val flows: Seq[Double] = this.points.unzip._2
-  val dataPoints: Seq[(Double, Double)] = points.map(x => (x._1._2, x._2))
-  val slope: Double = this.regression.head
-  val intercept: Double = this.regression(1)
-  val rSquare: Double = this.regression(2)
-  val dates: Seq[Sessions.Session] = this.points.map(_._1._1)
-}
 
 class Envelope(modelType: String, id: String) {
   private var stormIntensityWindow: Duration = Duration.ofHours(6)
@@ -110,8 +97,8 @@ class Envelope(modelType: String, id: String) {
 
       rdii.save()
       model = immutable.HashMap(envelopes: _*)
-      save()
       buildNumber += 1
+      save()
     }
     Log.debug("Stop Fit model: " + this.id)
   }
@@ -119,7 +106,8 @@ class Envelope(modelType: String, id: String) {
   def save() {
     Log.debug("Save model: " + this.id)
     val path = Paths.get("/borsuk_data/envelopes/", this.modelType)
-    val model = Model(this.modelType, this.id, this.model.toJson(EnvelopeResultHashMapFormat).toString)
+    val envelopeFileContent = new EnvelopeFileContent(this.model,buildNumber)
+    val model = Model(this.modelType, this.id, envelopeFileContent.toJson(EnvelopeFileContentFormat).toString)
     PVCHelper.saveModel(path, model)
     Log.debug("Model: " + this.id + " saved")
   }
@@ -170,103 +158,6 @@ class Envelope(modelType: String, id: String) {
       (storm._1,
         builder.build(), builder.inflow)
     })
-  }
-
-}
-
-object EnvelopeResultJsonProtocol extends DefaultJsonProtocol {
-
-  implicit object EnvelopeResultFormat extends RootJsonFormat[EnvelopeResult] {
-    def read(json: JsValue): EnvelopeResult = {
-      json match {
-        case JsObject(fields) =>
-
-          val window = Duration.parse(stringFromValue(fields("sessionWindow")))
-
-          val rainfall: Seq[Double] = fields("rainfall") match {
-            case JsArray(elements) => elements.map(doubleFromValue)
-            case _ => Seq()
-          }
-
-          val flows: Seq[Double] = fields("flows") match {
-            case JsArray(elements) => elements.map(doubleFromValue)
-            case _ => Seq()
-          }
-
-          val slope: Double = doubleFromValue(fields("slope"))
-          val intercept: Double = doubleFromValue(fields("intercept"))
-          val rSquare: Double = doubleFromValue(fields("rSquare"))
-
-          val dates: Seq[Sessions.Session] = fields("dates") match {
-            case JsArray(elements) => elements.map {
-              case JsObject(timeFrame) => Sessions.Session(
-                dtToInstant(timestampFromValue(timeFrame("start-date"))),
-                dtToInstant(timestampFromValue(timeFrame("end-date")))
-              )
-              case _ => Sessions.Session(Instant.MIN, Instant.MIN)
-            }
-            case _ => Seq()
-          }
-
-          val points: Seq[((Sessions.Session, Double), Double)] = dates.zip(rainfall).zip(flows)
-          val regression = Seq(slope, intercept, rSquare)
-
-          new EnvelopeResult(points, regression, window)
-
-        case _ => new EnvelopeResult(Seq(), Seq(), Duration.ZERO)
-      }
-    }
-
-    def write(obj: EnvelopeResult): JsValue = {
-      JsObject(
-        "sessionWindow" -> JsString(obj.sessionWindow.toString),
-        "rainfall" -> JsArray(obj.rainfall.map(JsNumber(_)).toVector),
-        "flows" -> JsArray(obj.flows.map(JsNumber(_)).toVector),
-        "dataPoints" -> JsArray(obj.dataPoints.map(x => JsObject(
-          "val1" -> JsNumber(x._1),
-          "val2" -> JsNumber(x._2)
-        )).toVector),
-        "slope" -> JsNumber(obj.slope),
-        "intercept" -> JsNumber(obj.intercept),
-        "rSquare" -> JsNumber(obj.rSquare),
-        "dates" -> JsArray(obj.dates.map(x => JsObject(
-          "start-date" -> JsString(instantToLDT(x.startIndex).toString),
-          "end-date" -> JsString(instantToLDT(x.endIndex).toString)
-        )).toVector)
-      )
-    }
-  }
-
-}
-
-object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
-
-  import EnvelopeResultJsonProtocol._
-
-  implicit object EnvelopeResultHashMapFormat extends RootJsonFormat[immutable.HashMap[String, EnvelopeResult]] {
-
-    def read(json: JsValue): HashMap[String, EnvelopeResult] = {
-      json match {
-        case JsArray(elements) =>
-          val pairs = elements.map {
-            case JsObject(fields) => (
-              stringFromValue(fields("key")),
-              fields("value").convertTo[EnvelopeResult])
-            case _ => ("", new EnvelopeResult(Seq(), Seq(), Duration.ZERO))
-          }.toMap
-
-          val hash = immutable.HashMap.empty
-          hash.++(pairs)
-        case _ => immutable.HashMap.empty[String, EnvelopeResult]
-      }
-    }
-
-    def write(obj: HashMap[String, EnvelopeResult]): JsValue = {
-      JsArray(obj.map(x => JsObject(
-        "key" -> JsString(x._1),
-        "value" -> x._2.toJson
-      )).toVector)
-    }
   }
 
 }

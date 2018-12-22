@@ -276,5 +276,48 @@ class RDIIApiTest extends WordSpec with Matchers
         }
       }
     }
+
+    "fit the model twice" in {
+      val route = mainRoute()
+      val trainData = 0.to(1000).map(_ => 1.0).toArray
+      val resolution: Duration = Duration.ofMinutes(10)
+      val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
+
+      val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12)
+        , Duration.ofMinutes(10), Duration.ofMinutes(10), "rdii-v0")
+
+      createModelRequest("rdii-test-id12") ~> route ~> check {
+        val mcr = responseAs[ModelCreatedResponse]
+        val fitRequest = HttpRequest(
+          HttpMethods.POST,
+          uri = s"/rdiis/${mcr.id}/fit",
+          entity = HttpEntity(MediaTypes.`application/json`, fitParams.toJson.compactPrint))
+
+        fitRequest ~> route ~> check {
+          status shouldEqual StatusCodes.OK
+          eventually(timeout(20 seconds)) {
+            val request = HttpRequest(HttpMethods.GET, uri = s"/rdiis/${mcr.id}")
+
+            request ~> route ~> check {
+              val modelStatus = responseAs[ModelStatus]
+              modelStatus.build shouldEqual 1
+
+              fitRequest ~> route ~> check {
+                status shouldEqual StatusCodes.OK
+                eventually(timeout(20 seconds)) {
+                  val request = HttpRequest(HttpMethods.GET, uri = s"/rdiis/${mcr.id}")
+
+                  request ~> route ~> check {
+                    val modelStatus2 = responseAs[ModelStatus]
+                    modelStatus2.build shouldBe 2
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
 }

@@ -7,12 +7,10 @@ import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
 import carldata.borsuk.envelope.ApiObjects._
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
-import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol._
 import carldata.borsuk.helper.PVCHelper
 import carldata.borsuk.rdiis.{RDII, RdiiApi}
 import spray.json._
 
-import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -26,8 +24,9 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
     val path: Path = Paths.get(envelopesPath + modelType)
     PVCHelper.loadModel(path, id).map {
       model =>
-        envelope.model = model.content.parseJson.convertTo[immutable.HashMap[String, EnvelopeResult]]
-        envelope.buildNumber += 1
+        val envelopeFileContent = model.content.parseJson.convertTo[EnvelopeFileContent](EnvelopeFileContentJsonProtocol.EnvelopeFileContentFormat)
+        envelope.model = envelopeFileContent.envelopeResults
+        envelope.buildNumber = envelopeFileContent.buildNumber
         envelope
     }
   }

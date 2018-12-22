@@ -9,10 +9,8 @@ import akka.http.scaladsl.server.StandardRoute
 import carldata.borsuk.helper.PVCHelper
 import carldata.borsuk.rdiis.ApiObjects._
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
-import carldata.borsuk.rdiis.RDIIObjectHashMapJsonProtocol._
 import spray.json._
 
-import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -27,8 +25,9 @@ class RdiiApi {
 
     PVCHelper.loadModel(path, id).map {
       model =>
-        rdii.model = model.content.parseJson.convertTo[immutable.HashMap[String, RDIIObject]]
-        rdii.buildNumber += 1
+        val rDIIFileContent = model.content.parseJson.convertTo[RDIIFileContent](RDIIFileContentJsonProtocol.RDIIFileContentFormat)
+        rdii.model = rDIIFileContent.rdiiResults
+        rdii.buildNumber = rDIIFileContent.buildNumber
         rdii
     }
   }
