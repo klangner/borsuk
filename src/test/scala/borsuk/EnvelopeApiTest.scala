@@ -29,10 +29,14 @@ class EnvelopeApiTest extends WordSpec
   with BeforeAndAfterAll {
 
   private val envelopesPath: String = "/borsuk_data/envelopes/"
+  private val rdiisPath: String = "/borsuk_data/rdiis/"
 
   override def afterAll(): Unit = {
     //cleaning
-    for (i <- 1 to 20) PVCHelper.deleteModel(Paths.get(envelopesPath + "envelope-v0"), "test-id" + i)
+    for (i <- 1 to 20) {
+      PVCHelper.deleteModel(Paths.get(envelopesPath + "envelope-v0"), "test-id" + i)
+      PVCHelper.deleteModel(Paths.get(rdiisPath + "rdii-v0"), "test-id" + i)
+    }
   }
 
   private def mainRoute(): Route = {
