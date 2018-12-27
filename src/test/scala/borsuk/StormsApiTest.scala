@@ -1,5 +1,6 @@
 package borsuk
 
+import java.nio.file.Paths
 import java.time.{Duration, LocalDateTime}
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -8,7 +9,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import carldata.borsuk.BasicApiObjects.TimeSeriesParams
 import carldata.borsuk.Routing
-import carldata.borsuk.helper.DateTimeHelper
+import carldata.borsuk.helper.{DateTimeHelper, PVCHelper}
 import carldata.borsuk.storms.ApiObjects._
 import carldata.borsuk.storms.ApiObjectsJsonProtocol._
 import carldata.series.Csv
@@ -23,6 +24,13 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
   private def mainRoute(): Route = {
     val routing = new Routing()
     routing.route()
+  }
+
+  private val stormsPath: String = "/borsuk_data/storms/"
+
+  override def afterAll(): Unit = {
+    //cleaning
+    PVCHelper.deleteModel(Paths.get(stormsPath + "storms-v0"), modelId)
   }
 
   private val modelId = "secret-id"
