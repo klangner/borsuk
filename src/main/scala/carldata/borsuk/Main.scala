@@ -37,7 +37,7 @@ object Main {
     Log.info("Server started on port 8080.")
     val routing = new Routing()
 
-    Await.result(Http().bindAndHandle(routing.route(), "0.0.0.0", 8081), Duration.Inf)
+    Await.result(Http().bindAndHandle(routing.route(), "0.0.0.0", 8080), Duration.Inf)
   }
 
 }
