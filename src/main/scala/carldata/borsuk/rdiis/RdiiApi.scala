@@ -94,7 +94,7 @@ class RdiiApi {
   def get(id: String, rdiiId: String, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
     loadModel(mt, id) match {
-      case Some(model) =>
+      case Some(model: RDII) =>
         model.get(rdiiId) match {
           case Some(rdii) =>
             val response: GetResponse = GetResponse(rdii._1, rdii._2, rdii._3, rdii._4, rdii._5, rdii._6)
