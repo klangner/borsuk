@@ -27,7 +27,6 @@ class RDIISerializationTest extends WordSpec with Matchers {
       ts,
       ts,
       ts,
-      Seq("1", "2", "3"),
       Session(Instant.EPOCH, Instant.EPOCH))
 
     "serialize to json and deserialize back to proper RDIIObject" in {
@@ -43,10 +42,6 @@ class RDIISerializationTest extends WordSpec with Matchers {
       rdiiObjectDeserialized.rainfall.values(0) shouldBe 1.0
       rdiiObjectDeserialized.rainfall.values(1) shouldBe 2.0
       rdiiObjectDeserialized.rainfall.values(2) shouldBe 3.0
-
-      rdiiObjectDeserialized.childIds.length shouldBe 3
-      rdiiObjectDeserialized.childIds(0) shouldBe "1"
-      rdiiObjectDeserialized.childIds(2) shouldBe "3"
 
 
     }

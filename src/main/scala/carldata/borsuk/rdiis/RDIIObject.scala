@@ -4,7 +4,7 @@ import java.time.{Duration, Instant, LocalDateTime}
 
 import carldata.borsuk.BasicApiObjectsJsonProtocol._
 import carldata.borsuk.helper.DateTimeHelper.dtToInstant
-import carldata.borsuk.helper.JsonHelper.stringFromValue
+import carldata.borsuk.helper.JsonHelper.{stringFromValue, _}
 import carldata.borsuk.helper.TimeSeriesHelper
 import carldata.series.Sessions.Session
 import carldata.series.TimeSeries
@@ -12,10 +12,9 @@ import spray.json.DefaultJsonProtocol
 
 import scala.collection.immutable
 import scala.collection.immutable.HashMap
-import carldata.borsuk.helper.JsonHelper._
 
 case class RDIIObject(sessionWindow: Duration, rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
-                      , inflow: TimeSeries[Double], childIds: Seq[String], session: Session)
+                      , inflow: TimeSeries[Double], session: Session)
 
 
 /**
@@ -63,25 +62,20 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
           , convertTimeSeriesParamsToTimeSeries(flowParams)
           , convertTimeSeriesParamsToTimeSeries(dwpParams)
           , convertTimeSeriesParamsToTimeSeries(inflow)
-          , x("child-ids").convertTo[Array[String]]
           , Session(sessionStart, sessionEnd)
         )
 
       case _ => RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty
-        , TimeSeries.empty, Seq(), Session(Instant.EPOCH, Instant.EPOCH))
+        , TimeSeries.empty, Session(Instant.EPOCH, Instant.EPOCH))
     }
 
     def write(obj: RDIIObject): JsObject = {
-
-      val childs = if (obj.childIds == Nil) Vector() else obj.childIds.map(_.toJson).toVector
-
       JsObject(
         "session-window" -> JsString(obj.sessionWindow.toString)
         , "rainfall" -> TimeSeriesHelper.toTimeSeriesParams(obj.rainfall).toJson
         , "flow" -> TimeSeriesHelper.toTimeSeriesParams(obj.flow).toJson
         , "dwp" -> TimeSeriesHelper.toTimeSeriesParams(obj.dwp).toJson
         , "inflow" -> TimeSeriesHelper.toTimeSeriesParams(obj.inflow).toJson
-        , "child-ids" -> JsArray(childs)
         , "sessionStart" -> JsString(obj.session.startIndex.toString.stripSuffix("Z"))
         , "sessionEnd" -> JsString(obj.session.endIndex.toString.stripSuffix("Z"))
       )
