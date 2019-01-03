@@ -112,7 +112,7 @@ class RDII(modelType: String, id: String) {
       .filter(x => x._2.inflow.nonEmpty)
       .toSeq
       .sortBy(_._1)
-    
+
     lessOrEqualModel.map { x =>
       (x._1, instantToLDT(x._2.session.startIndex), instantToLDT(x._2.session.endIndex))
     }
@@ -205,13 +205,12 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
         , flow = flowSection
         , dwp = dwp
         , inflow = slicedInflow
-        , childIds = Seq()
         , session = Session(shiftedSd.plus(1, ChronoUnit.DAYS)
           , shiftedEd.minus(1, ChronoUnit.DAYS).minus(slicedInflow.resolution)))
     }
     else {
       RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty
-        , TimeSeries.empty, Seq(), Session(Instant.EPOCH, Instant.EPOCH))
+        , TimeSeries.empty, Session(Instant.EPOCH, Instant.EPOCH))
     }
   }
 }
