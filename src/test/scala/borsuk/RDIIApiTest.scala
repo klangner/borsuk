@@ -73,7 +73,7 @@ class RDIIApiTest extends WordSpec with Matchers
       val tsp = TimeSeriesParams(LocalDateTime.now, resolution, trainData)
 
       val fitParams = FitRDIIParams(tsp, tsp, Duration.ofHours(12)
-        , Duration.ofHours(12), Duration.ofHours(12) , "rdii-v0")
+        , Duration.ofHours(12), Duration.ofHours(12), "rdii-v0")
 
       val request = HttpRequest(
         HttpMethods.POST,
@@ -270,6 +270,12 @@ class RDIIApiTest extends WordSpec with Matchers
 
               getRequest ~> route ~> check {
                 status shouldEqual StatusCodes.OK
+                val getResponse = responseAs[GetResponse]
+                getResponse.flow.length should be > 0
+                getResponse.rainfall.length should be > 0
+                getResponse.rdii.length should be > 0
+                getResponse.dwp.length should be > 0
+
               }
             }
           }

@@ -1,18 +1,21 @@
 package carldata.borsuk.rdiis
 
-import java.time.{Duration, LocalDateTime}
+import java.time.{Duration, Instant, LocalDateTime}
+
 import carldata.borsuk.BasicApiObjectsJsonProtocol._
 import carldata.borsuk.helper.DateTimeHelper.dtToInstant
 import carldata.borsuk.helper.JsonHelper.stringFromValue
 import carldata.borsuk.helper.TimeSeriesHelper
+import carldata.series.Sessions.Session
 import carldata.series.TimeSeries
 import spray.json.DefaultJsonProtocol
 
 import scala.collection.immutable
 import scala.collection.immutable.HashMap
+import carldata.borsuk.helper.JsonHelper._
 
 case class RDIIObject(sessionWindow: Duration, rainfall: TimeSeries[Double], flow: TimeSeries[Double], dwp: TimeSeries[Double]
-                      , inflow: TimeSeries[Double], childIds: Seq[String])
+                      , inflow: TimeSeries[Double], childIds: Seq[String], session: Session)
 
 
 /**
@@ -44,14 +47,28 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
           .map(_.convertTo[TimeSeriesParams])
           .getOrElse(TimeSeriesParams(LocalDateTime.now, Duration.ofSeconds(0), Array()))
 
-        RDIIObject(Duration.parse(x.get("session-window").map(stringFromValue).get),
-          convertTimeSeriesParamsToTimeSeries(rainfallParams),
-          convertTimeSeriesParamsToTimeSeries(flowParams),
-          convertTimeSeriesParamsToTimeSeries(dwpParams),
-          convertTimeSeriesParamsToTimeSeries(inflow),
-          x("child-ids").convertTo[Array[String]]
+        //keep session properties as readable date
+        val sessionStart: Instant = x.get("sessionStart")
+          .map(timestampFromValue)
+          .map(dtToInstant)
+          .getOrElse(Instant.EPOCH)
+        val sessionEnd: Instant = x.get("sessionEnd")
+          .map(timestampFromValue)
+          .map(dtToInstant)
+          .getOrElse(Instant.EPOCH)
+
+
+        RDIIObject(Duration.parse(x.get("session-window").map(stringFromValue).get)
+          , convertTimeSeriesParamsToTimeSeries(rainfallParams)
+          , convertTimeSeriesParamsToTimeSeries(flowParams)
+          , convertTimeSeriesParamsToTimeSeries(dwpParams)
+          , convertTimeSeriesParamsToTimeSeries(inflow)
+          , x("child-ids").convertTo[Array[String]]
+          , Session(sessionStart, sessionEnd)
         )
-      case _ => RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
+
+      case _ => RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty
+        , TimeSeries.empty, Seq(), Session(Instant.EPOCH, Instant.EPOCH))
     }
 
     def write(obj: RDIIObject): JsObject = {
@@ -59,12 +76,14 @@ object RDIIObjectJsonProtocol extends DefaultJsonProtocol {
       val childs = if (obj.childIds == Nil) Vector() else obj.childIds.map(_.toJson).toVector
 
       JsObject(
-        "session-window" -> JsString(obj.sessionWindow.toString),
-        "rainfall" -> TimeSeriesHelper.toTimeSeriesParams(obj.rainfall).toJson,
-        "flow" -> TimeSeriesHelper.toTimeSeriesParams(obj.flow).toJson,
-        "dwp" -> TimeSeriesHelper.toTimeSeriesParams(obj.dwp).toJson,
-        "inflow" -> TimeSeriesHelper.toTimeSeriesParams(obj.inflow).toJson,
-        "child-ids" -> JsArray(childs)
+        "session-window" -> JsString(obj.sessionWindow.toString)
+        , "rainfall" -> TimeSeriesHelper.toTimeSeriesParams(obj.rainfall).toJson
+        , "flow" -> TimeSeriesHelper.toTimeSeriesParams(obj.flow).toJson
+        , "dwp" -> TimeSeriesHelper.toTimeSeriesParams(obj.dwp).toJson
+        , "inflow" -> TimeSeriesHelper.toTimeSeriesParams(obj.inflow).toJson
+        , "child-ids" -> JsArray(childs)
+        , "sessionStart" -> JsString(obj.session.startIndex.toString.stripSuffix("Z"))
+        , "sessionEnd" -> JsString(obj.session.endIndex.toString.stripSuffix("Z"))
       )
     }
   }

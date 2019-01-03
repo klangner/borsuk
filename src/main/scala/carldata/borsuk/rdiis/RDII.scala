@@ -112,11 +112,10 @@ class RDII(modelType: String, id: String) {
       .filter(x => x._2.inflow.nonEmpty)
       .toSeq
       .sortBy(_._1)
-
-    val childIds = lessOrEqualModel.flatMap(_._2.childIds).distinct
-
-    lessOrEqualModel.filter(x => !childIds.contains(x._1))
-      .map(t => (t._1, instantToLDT(t._2.inflow.index.head), instantToLDT(t._2.inflow.index.last)))
+    
+    lessOrEqualModel.map { x =>
+      (x._1, instantToLDT(x._2.session.startIndex), instantToLDT(x._2.session.endIndex))
+    }
   }
 
   /**
@@ -151,8 +150,8 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
   private var stormSessionWindows: Duration = Duration.ofHours(12)
   private var dryDayWindow = Duration.ofHours(48)
 
-  val inflow: TimeSeries[Double] = Inflow.fromSession(Session(startDate.toInstant(ZoneOffset.UTC)
-    , endDate.plusDays(1).toInstant(ZoneOffset.UTC)), flow, allDWPDays)
+  val inflow: TimeSeries[Double] = Inflow.fromSession(Session(startDate.minusDays(1).toInstant(ZoneOffset.UTC)
+    , endDate.plusDays(2).toInstant(ZoneOffset.UTC)), flow, allDWPDays)
 
   def withDryDayWindow(window: Duration): RDIIBuilder = {
     dryDayWindow = window
@@ -165,11 +164,10 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
   }
 
   def build(): RDIIObject = {
-
-    val sd = startDate.toInstant(ZoneOffset.UTC)
-    val ed = endDate.plusDays(1).toInstant(ZoneOffset.UTC)
     // This algorithm works only if the series are aligned
     if (rainfall.nonEmpty) {
+      val sd = startDate.minusDays(1).toInstant(ZoneOffset.UTC)
+      val ed = endDate.plusDays(2).toInstant(ZoneOffset.UTC)
       // Slice data to session
       val sessionDays: Seq[LocalDate] = TimeSeriesHelper.slice(flow, sd.minus(1, ChronoUnit.DAYS), ed)
         .groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0))
@@ -180,7 +178,9 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
       //Take flow from dwp
       val patternInflows = patternDays.map(x => (x._1, DryWeatherPattern.get(x._2.getOrElse(LocalDate.MAX), flow)))
         .map(x => (x._1, TimeSeries.interpolate(x._2, x._2.resolution)))
-        .map { x => x._2.dataPoints.map(t => (LocalDateTime.of(x._1, instantToTime(t._1)), t._2)) }
+        .map { x =>
+          x._2.dataPoints.map(dt => (LocalDateTime.of(x._1, instantToTime(dt._1)), dt._2))
+        }
         .map { x =>
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
@@ -200,10 +200,18 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
       val flowSection: TimeSeries[Double] = TimeSeriesHelper.slice(flow, shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
 
-      RDIIObject(stormSessionWindows, rainfallSection, flowSection, dwp, slicedInflow, Seq())
+      RDIIObject(sessionWindow = stormSessionWindows
+        , rainfall = rainfallSection
+        , flow = flowSection
+        , dwp = dwp
+        , inflow = slicedInflow
+        , childIds = Seq()
+        , session = Session(shiftedSd.plus(1, ChronoUnit.DAYS)
+          , shiftedEd.minus(1, ChronoUnit.DAYS).minus(slicedInflow.resolution)))
     }
     else {
-      RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty, Seq())
+      RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty
+        , TimeSeries.empty, Seq(), Session(Instant.EPOCH, Instant.EPOCH))
     }
   }
 }
