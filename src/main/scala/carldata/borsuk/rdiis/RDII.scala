@@ -20,8 +20,6 @@ import scala.collection.immutable
 
 class RDII(modelType: String, id: String) {
 
-  import RDIIObjectHashMapJsonProtocol._
-
   private val Log = LoggerFactory.getLogger("RDII")
   var model: immutable.HashMap[String, RDIIObject] = immutable.HashMap.empty[String, RDIIObject]
   var buildNumber: Int = 0
@@ -170,7 +168,6 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
 
     val sd = startDate.toInstant(ZoneOffset.UTC)
     val ed = endDate.plusDays(1).toInstant(ZoneOffset.UTC)
-
     // This algorithm works only if the series are aligned
     if (rainfall.nonEmpty) {
       // Slice data to session
@@ -178,19 +175,18 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
         .groupByTime(_.truncatedTo(ChronoUnit.DAYS), _ => identity(0.0))
         .index
         .map(instantToDay)
-
       //Find dwp for every day in session
       val patternDays: Seq[(LocalDate, Option[LocalDate])] = sessionDays.map(x => (x, findDryDay(x, allDWPDays)))
       //Take flow from dwp
       val patternInflows = patternDays.map(x => (x._1, DryWeatherPattern.get(x._2.getOrElse(LocalDate.MAX), flow)))
+        .map(x => (x._1, TimeSeries.interpolate(x._2, x._2.resolution)))
         .map { x => x._2.dataPoints.map(t => (LocalDateTime.of(x._1, instantToTime(t._1)), t._2)) }
         .map { x =>
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-      val slicedInflow: TimeSeries[Double] = TimeSeriesHelper.slice(inflow, sd, ed.plus(inflow.resolution))
+      val slicedInflow: TimeSeries[Double] = TimeSeriesHelper.slice(TimeSeries.interpolate(inflow, inflow.resolution), sd, ed.plus(inflow.resolution))
       val (shiftedSd, shiftedEd) = if (slicedInflow.nonEmpty) (slicedInflow.index.head, slicedInflow.index.last.plus(slicedInflow.resolution)) else (sd, ed)
-
       val dwp: TimeSeries[Double] = TimeSeriesHelper.slice(TimeSeriesHelper.concat(patternInflows), shiftedSd, shiftedEd)
       //Adjust indexes in all series, dwp && inflows already are OK
       val rainfallSection: TimeSeries[Double] = if (dwp.isEmpty) TimeSeries.empty else
