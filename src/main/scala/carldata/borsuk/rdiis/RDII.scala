@@ -177,7 +177,6 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
       val patternDays: Seq[(LocalDate, Option[LocalDate])] = sessionDays.map(x => (x, findDryDay(x, allDWPDays)))
       //Take flow from dwp
       val patternInflows = patternDays.map(x => (x._1, DryWeatherPattern.get(x._2.getOrElse(LocalDate.MAX), flow)))
-        .map(x => (x._1, TimeSeries.interpolate(x._2, x._2.resolution)))
         .map { x =>
           x._2.dataPoints.map(dt => (LocalDateTime.of(x._1, instantToTime(dt._1)), dt._2))
         }
@@ -185,7 +184,7 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-      val slicedInflow: TimeSeries[Double] = TimeSeriesHelper.slice(TimeSeries.interpolate(inflow, inflow.resolution), sd, ed.plus(inflow.resolution))
+      val slicedInflow: TimeSeries[Double] = TimeSeriesHelper.slice(inflow, sd, ed.plus(inflow.resolution))
       val (shiftedSd, shiftedEd) = if (slicedInflow.nonEmpty) (slicedInflow.index.head, slicedInflow.index.last.plus(slicedInflow.resolution)) else (sd, ed)
       val dwp: TimeSeries[Double] = TimeSeriesHelper.slice(TimeSeriesHelper.concat(patternInflows), shiftedSd, shiftedEd)
       //Adjust indexes in all series, dwp && inflows already are OK
