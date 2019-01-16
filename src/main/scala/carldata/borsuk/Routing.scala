@@ -153,7 +153,7 @@ class Routing() {
       id => {
         post {
           withRequestTimeout(60.seconds) {
-            withSizeLimit(20 * MB) {
+            withSizeLimit(60 * MB) {
               entity(as[FitEnvelopeParams])(data => envelopeApi.fit(id, data))
             }
           }
