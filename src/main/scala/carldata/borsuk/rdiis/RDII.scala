@@ -184,28 +184,28 @@ case class RDIIBuilder(rainfall: TimeSeries[Double], flow: TimeSeries[Double], s
           val xs = x.unzip
           TimeSeries(xs._1.map(_.toInstant(ZoneOffset.UTC)), xs._2)
         }
-      val slicedInflow: TimeSeries[Double] = TimeSeriesHelper.slice(inflow, sd, ed.plus(inflow.resolution))
-      val (shiftedSd, shiftedEd) = if (slicedInflow.nonEmpty) (slicedInflow.index.head, slicedInflow.index.last.plus(slicedInflow.resolution)) else (sd, ed)
-      val dwp: TimeSeries[Double] = TimeSeriesHelper.slice(TimeSeriesHelper.concat(patternInflows), shiftedSd, shiftedEd)
+
+      val slicedInflow: TimeSeries[Double] = TimeSeriesHelper.slice(inflow, sd, ed)
+      val dwp: TimeSeries[Double] = TimeSeriesHelper.slice(TimeSeriesHelper.concat(patternInflows), sd, ed)
       //Adjust indexes in all series, dwp && inflows already are OK
       val rainfallSection: TimeSeries[Double] = if (dwp.isEmpty) TimeSeries.empty else
         TimeSeriesHelper.slice(
           TimeSeriesHelper.slice(rainfall,
-            startDate.minusMonths(3).toInstant(ZoneOffset.UTC), shiftedEd.plus(1, ChronoUnit.HOURS))
+            startDate.minusMonths(3).toInstant(ZoneOffset.UTC), ed.plus(1, ChronoUnit.HOURS))
             .groupByTime(_.truncatedTo(ChronoUnit.HOURS), _.map(_._2).sum)
             .addMissing(dwp.resolution, (_, _, _) => 0.0)
             .filter(x => dwp.index.contains(x._1))
-          , shiftedSd, shiftedEd)
+          , sd, ed)
 
-      val flowSection: TimeSeries[Double] = TimeSeriesHelper.slice(flow, shiftedSd, shiftedEd).filter(x => dwp.index.contains(x._1))
+      val flowSection: TimeSeries[Double] = TimeSeriesHelper.slice(flow, sd, ed).filter(x => dwp.index.contains(x._1))
 
       RDIIObject(sessionWindow = stormSessionWindows
         , rainfall = rainfallSection
         , flow = flowSection
         , dwp = dwp
         , inflow = slicedInflow
-        , session = Session(shiftedSd.plus(1, ChronoUnit.DAYS)
-          , shiftedEd.minus(1, ChronoUnit.DAYS).minus(slicedInflow.resolution)))
+        , session = Session(sd.plus(1, ChronoUnit.DAYS)
+          , ed.minus(1, ChronoUnit.DAYS)))
     }
     else {
       RDIIObject(Duration.ZERO, TimeSeries.empty, TimeSeries.empty, TimeSeries.empty
