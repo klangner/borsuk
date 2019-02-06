@@ -70,6 +70,8 @@ class Envelope(modelType: String, id: String) {
 
       val (rainfall2, flow2) = alignTimeSeries(rainfall, flow)
 
+      rdii.model = immutable.HashMap.empty[String, RDIIObject]
+
       val envelopes = createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow)
         .zipWithIndex
         .map {
@@ -95,6 +97,7 @@ class Envelope(modelType: String, id: String) {
             (sessionWindowAndStorm._2.toString, new EnvelopeResult(dataPoints, r, sessionWindow))
         }.toList
 
+      rdii.buildNumber += 1
       rdii.save()
       model = immutable.HashMap(envelopes: _*)
       buildNumber += 1
