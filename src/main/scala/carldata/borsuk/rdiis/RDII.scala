@@ -60,7 +60,7 @@ class RDII(modelType: String, id: String) {
         .map(x =>
           x._2 ->
             StormParams(x._1, rainfall.resolution, TimeSeriesHelper.slice(rainfall, x._1.startIndex
-              , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
+              , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values)
         ).toList
       val highestIndex = baseSessions.map(_._1).max
 
