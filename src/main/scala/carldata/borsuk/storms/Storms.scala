@@ -18,7 +18,7 @@ import scala.collection.immutable.HashMap
 
 object Storms {
 
-  case class StormParams(session: Session, sessionWindow: Duration, values: Vector[Double], childIds: Seq[String])
+  case class StormParams(session: Session, sessionWindow: Duration, values: Vector[Double])
 
   private val Log = LoggerFactory.getLogger("Storms")
 
@@ -33,7 +33,7 @@ object Storms {
           x._2 ->
             StormParams(x._1, rainfall.resolution
               , TimeSeriesHelper.slice(rainfall, x._1.startIndex
-                , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values, Seq())
+                , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values)
         ).toList
 
       if (baseSessions != Nil) {
@@ -69,7 +69,7 @@ object Storms {
     else {
       val sessionWindow: Duration = sessionWindows.head
       val first: (Int, StormParams) = (prev.head._1
-        , StormParams(prev.head._2.session, sessionWindow, prev.head._2.values, prev.head._2.childIds))
+        , StormParams(prev.head._2.session, sessionWindow, prev.head._2.values))
 
 
       val next: List[(Int, StormParams)] = prev.tail.foldLeft[List[(Int, StormParams)]](List(first))((zs, x) => {
@@ -81,12 +81,11 @@ object Storms {
           (highestIndex + x._1
             , StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex)
             , sessionWindow
-            , zs.head._2.values ++ gapValues ++ x._2.values
-            , zs.head._2.childIds ++ Seq(zs.head._1.toString, x._1.toString))
+            , zs.head._2.values ++ gapValues ++ x._2.values)
           ) :: zs.tail
         } //merge sessions
         else {
-          val x2 = (highestIndex + x._1, StormParams(x._2.session, sessionWindow, x._2.values, x._2.childIds))
+          val x2 = (highestIndex + x._1, StormParams(x._2.session, sessionWindow, x._2.values))
           x2 :: zs
         }
 
@@ -125,12 +124,11 @@ object StormParamsJsonProtocol extends DefaultJsonProtocol {
           Session(dtToInstant(timestampFromValue(sessionJson.fields("start-date"))),
             dtToInstant(timestampFromValue(sessionJson.fields("end-date")))),
           Duration.parse(stringFromValue(x("duration"))),
-          arrayFromValue(x("values"), doubleFromValue).toVector,
-          x("child-ids").convertTo[Array[String]].toSeq
+          arrayFromValue(x("values"), doubleFromValue).toVector
         )
       case _ =>
         Storms.StormParams(Session(dtToInstant(LocalDateTime.now), dtToInstant(LocalDateTime.now)),
-          Duration.ZERO, Vector(), Seq())
+          Duration.ZERO, Vector())
     }
 
     def write(obj: Storms.StormParams): JsValue = {
@@ -140,8 +138,7 @@ object StormParamsJsonProtocol extends DefaultJsonProtocol {
           "end-date" -> JsString(instantToLDT(obj.session.endIndex).toString)
         ),
         "duration" -> JsString(obj.sessionWindow.toString),
-        "values" -> JsArray(obj.values.map(JsNumber(_))),
-        "child-ids" -> JsArray(obj.childIds.map(_.toJson).toVector)
+        "values" -> JsArray(obj.values.map(JsNumber(_)))
       )
     }
   }

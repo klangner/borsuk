@@ -18,8 +18,7 @@ class StormParamsSerializationTest extends WordSpec with Matchers {
     Session(dtToInstant(LocalDateTime.of(2018, 1, 1, 0, 0, 0)),
       dtToInstant(LocalDateTime.of(2018, 1, 2, 0, 0, 0))),
     Duration.parse("PT12H"),
-    Vector(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0),
-    Seq("1", "2", "3")
+    Vector(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0)
   )
 
   "StormParams" should {
@@ -34,9 +33,6 @@ class StormParamsSerializationTest extends WordSpec with Matchers {
       stormParamsDeserialized.values(0) shouldBe stormParams.values(0)
       stormParamsDeserialized.values(4) shouldBe stormParams.values(4)
       stormParamsDeserialized.values(9) shouldBe stormParams.values(9)
-      stormParamsDeserialized.childIds.length shouldBe stormParams.childIds.length
-      stormParamsDeserialized.childIds(0) shouldBe stormParams.childIds(0)
-      stormParamsDeserialized.childIds(2) shouldBe stormParams.childIds(2)
     }
   }
 
@@ -54,9 +50,6 @@ class StormParamsSerializationTest extends WordSpec with Matchers {
       stormParamsHashMapDeserialized("key2").values(0) shouldBe stormParams.values(0)
       stormParamsHashMapDeserialized("key2").values(4) shouldBe stormParams.values(4)
       stormParamsHashMapDeserialized("key2").values(9) shouldBe stormParams.values(9)
-      stormParamsHashMapDeserialized("key2").childIds.length shouldBe stormParams.childIds.length
-      stormParamsHashMapDeserialized("key2").childIds(0) shouldBe stormParams.childIds(0)
-      stormParamsHashMapDeserialized("key2").childIds(2) shouldBe stormParams.childIds(2)
     }
   }
 }
