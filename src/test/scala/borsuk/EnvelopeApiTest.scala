@@ -70,6 +70,7 @@ class EnvelopeApiTest extends WordSpec
 
   "The Envelope" should {
 
+
     "create new model" in {
       createEnvelopeModelRequest("envelope-v0", "test-id1") ~> mainRoute() ~> check {
         val resp = responseAs[ModelCreatedResponse]
@@ -124,6 +125,9 @@ class EnvelopeApiTest extends WordSpec
       }
     }
 
+
+
+
     "fit the model" in {
       val route = mainRoute()
       createEnvelopeModelRequest("envelope-v0", "test-id6") ~> route ~> check {
@@ -154,6 +158,8 @@ class EnvelopeApiTest extends WordSpec
 
       }
     }
+
+
 
     "list the existing model" in {
       val route = mainRoute()
@@ -450,14 +456,14 @@ class EnvelopeApiTest extends WordSpec
 
         fitEnvelopeRequest("test-id13", fitEnvelopeParams) ~> route ~> check {
           status shouldBe StatusCodes.OK
-          eventually(timeout(10.seconds), interval(2.seconds)) {
+          eventually(timeout(30.seconds), interval(2.seconds)) {
             checkEnvelopeModelStatus("test-id13") ~> route ~> check {
               status shouldBe StatusCodes.OK
               val modelStatus1 = responseAs[ModelStatus]
               modelStatus1.build shouldBe 1
               fitEnvelopeRequest("test-id13", fitEnvelopeParams) ~> route2 ~> check {
                 status shouldBe StatusCodes.OK
-                eventually(timeout(10.seconds), interval(2.seconds)) {
+                eventually(timeout(30.seconds), interval(2.seconds)) {
                   checkEnvelopeModelStatus("test-id13") ~> route2 ~> check {
                     status shouldBe StatusCodes.OK
                     val modelStatus2 = responseAs[ModelStatus]
@@ -472,6 +478,7 @@ class EnvelopeApiTest extends WordSpec
 
       }
     }
+
 
   }
 }

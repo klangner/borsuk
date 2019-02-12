@@ -17,7 +17,7 @@ class StormParamsSerializationTest extends WordSpec with Matchers {
   val stormParams = StormParams(
     Session(dtToInstant(LocalDateTime.of(2018, 1, 1, 0, 0, 0)),
       dtToInstant(LocalDateTime.of(2018, 1, 2, 0, 0, 0))),
-    Duration.parse("PT12H"),
+    Seq(Duration.parse("PT12H")),
     Vector(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0)
   )
 

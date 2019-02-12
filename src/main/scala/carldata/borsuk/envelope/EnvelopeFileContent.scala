@@ -52,7 +52,7 @@ object EnvelopeResultHashMapJsonProtocol extends DefaultJsonProtocol {
             case JsObject(fields) => (
               stringFromValue(fields("key")),
               fields("value").convertTo[EnvelopeResult])
-            case _ => ("", new EnvelopeResult(Seq(), Seq(), Duration.ZERO))
+            case _ => ("", new EnvelopeResult(Seq(), Seq(), Seq()))
           }.toMap
 
           val hash = immutable.HashMap.empty

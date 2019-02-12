@@ -18,7 +18,7 @@ import scala.collection.immutable.HashMap
 
 object Storms {
 
-  case class StormParams(session: Session, sessionWindow: Duration, values: Vector[Double])
+  case class StormParams(session: Session, sessionWindow: Seq[Duration], values: Vector[Double])
 
   private val Log = LoggerFactory.getLogger("Storms")
 
@@ -26,12 +26,11 @@ object Storms {
   def getAllStorms(rainfall: TimeSeries[Double]
                    , listOfSessionWindows: Option[Seq[Duration]]): List[(String, StormParams)] = {
     if (rainfall.nonEmpty) {
-      Log.debug("Get all storms")
       val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall)
         .zipWithIndex
         .map(x =>
           x._2 ->
-            StormParams(x._1, rainfall.resolution
+            StormParams(x._1, Seq(rainfall.resolution)
               , TimeSeriesHelper.slice(rainfall, x._1.startIndex
                 , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values)
         ).toList
@@ -46,11 +45,9 @@ object Storms {
             baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
               .map(x => Duration.between(x._1, x._2))
               .distinct.sorted
-
           mergeSessions(baseSessions, baseSessions.toSet, complexListOfSessionWindows, rainfall.resolution, highestIndex)
 
         }
-
         mergedSession
       }
         .map(x => (x._1.toString, x._2))
@@ -60,38 +57,65 @@ object Storms {
     else List()
   }
 
+  def joinOrAppend(xs: List[(Int, StormParams)], ys: List[(Int, StormParams)]): Set[(Int, StormParams)] = {
+    (xs ++ ys)
+      .groupBy(x => x._2.session)
+      .map { grouped =>
+        (grouped._2.head._1, StormParams(grouped._1, grouped._2.flatMap(x => x._2.sessionWindow), grouped._2.head._2.values))
+      }
+      .toSet
+  }
+
+  def joinOrAppendOld(newSp: (Int, StormParams), xs: List[(Int, StormParams)]): List[(Int, StormParams)] = {
+    val index = xs.indexWhere(x => x._2.session == newSp._2.session)
+    if (index == -1) { //element with this session not exist yet in the list, lets add it
+      newSp :: xs
+    }
+    else { // element exist so add
+      val x = xs(index)
+      val sp = StormParams(x._2.session, newSp._2.sessionWindow ++ x._2.sessionWindow, x._2.values)
+      xs.updated(index, (xs(index)._1, sp))
+    }
+  }
+
   @tailrec
   def mergeSessions(prev: List[(Int, StormParams)], res: Set[(Int, StormParams)]
                     , sessionWindows: Seq[Duration], resolution: Duration
                     , highestIndex: Int): List[(Int, StormParams)] = {
-
     if (sessionWindows.isEmpty) res.toList
     else {
       val sessionWindow: Duration = sessionWindows.head
       val first: (Int, StormParams) = (prev.head._1
-        , StormParams(prev.head._2.session, sessionWindow, prev.head._2.values))
+        , StormParams(prev.head._2.session, prev.head._2.sessionWindow, prev.head._2.values))
 
 
       val next: List[(Int, StormParams)] = prev.tail.foldLeft[List[(Int, StormParams)]](List(first))((zs, x) => {
+
         if (sessionWindow.compareTo(Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)) >= 0) {
           val gapDuration = Duration.between(zs.head._2.session.endIndex, x._2.session.startIndex)
 
           val gapValues = for (_ <- 1 until (gapDuration.toMillis / resolution.toMillis).toInt) yield 0.0
 
-          (highestIndex + x._1
+          val newSp = (highestIndex + x._1
             , StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex)
-            , sessionWindow
+            , Seq(sessionWindow)
             , zs.head._2.values ++ gapValues ++ x._2.values)
-          ) :: zs.tail
+          )
+          newSp :: zs.tail
+          //joinOrAppend(newSp, zs.tail)
         } //merge sessions
         else {
-          val x2 = (highestIndex + x._1, StormParams(x._2.session, sessionWindow, x._2.values))
-          x2 :: zs
+          val newSp: (Int, StormParams) = (highestIndex + x._1, StormParams(x._2.session, Seq(sessionWindow), x._2.values))
+          //joinOrAppend(newSp, zs)
+
+          newSp :: zs
         }
 
+      }
 
-      }).reverse
-      mergeSessions(prev, res ++ next, sessionWindows.tail, resolution, highestIndex + next.length)
+      ).reverse
+      //res ++ next
+      mergeSessions(prev, joinOrAppend(res.toList, next), sessionWindows.tail, resolution, highestIndex + next.length)
     }
   }
 
@@ -123,12 +147,13 @@ object StormParamsJsonProtocol extends DefaultJsonProtocol {
         Storms.StormParams(
           Session(dtToInstant(timestampFromValue(sessionJson.fields("start-date"))),
             dtToInstant(timestampFromValue(sessionJson.fields("end-date")))),
-          Duration.parse(stringFromValue(x("duration"))),
+          //Duration.parse(stringFromValue(x("duration"))),
+          arrayFromValue(x("duration"), durationFromValue).toSeq,
           arrayFromValue(x("values"), doubleFromValue).toVector
         )
       case _ =>
         Storms.StormParams(Session(dtToInstant(LocalDateTime.now), dtToInstant(LocalDateTime.now)),
-          Duration.ZERO, Vector())
+          Seq(), Vector())
     }
 
     def write(obj: Storms.StormParams): JsValue = {
@@ -137,7 +162,8 @@ object StormParamsJsonProtocol extends DefaultJsonProtocol {
           "start-date" -> JsString(instantToLDT(obj.session.startIndex).toString),
           "end-date" -> JsString(instantToLDT(obj.session.endIndex).toString)
         ),
-        "duration" -> JsString(obj.sessionWindow.toString),
+        "duration" -> JsArray(obj.sessionWindow.map(x => JsString(x.toString)).toVector),
+        //"duration" -> JsString(obj.sessionWindow.toString),
         "values" -> JsArray(obj.values.map(JsNumber(_)))
       )
     }
@@ -177,6 +203,8 @@ class Storms(modelType: String, id: String) {
 
   import carldata.borsuk.storms.StormParamsHashMapJsonProtocol._
 
+  import scala.math.Ordering.Implicits._
+
   private val Log = LoggerFactory.getLogger("Storms")
 
   var model: immutable.HashMap[String, Storms.StormParams] = immutable.HashMap.empty[String, Storms.StormParams]
@@ -212,13 +240,20 @@ class Storms(modelType: String, id: String) {
   /**
     * List all storms
     */
+
   def list(sessionWindow: Duration): Seq[(String, Session)] = {
     Log.debug("List for model: " + this.id)
+
     if (model.nonEmpty) {
-      model.filter(x => x._2.sessionWindow.compareTo(sessionWindow) <= 0)
+      model.filter(x => x._2.sessionWindow.max.compareTo(sessionWindow) <= 0)
         .groupBy(_._2.sessionWindow)
         .toSeq.maxBy(_._1)._2
         .map(x => (x._1, x._2.session)).toSeq
+
+      /*      model.filter(x => x._2.sessionWindow.compareTo(sessionWindow) <= 0)
+              .groupBy(_._2.sessionWindow)
+              .toSeq.maxBy(_._1)._2
+              .map(x => (x._1, x._2.session)).toSeq*/
     }
     else Seq()
   }

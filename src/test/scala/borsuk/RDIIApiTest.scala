@@ -261,10 +261,10 @@ class RDIIApiTest extends WordSpec with Matchers
               val rdiis = responseAs[ListResponse].rdii
               rdiis.length should be > 0
               val json = response.entity.toString
-              val getRequest = HttpRequest(HttpMethods.GET, uri = s"/rdiis/${mcr.id}/rdii/0")
+              val getRequest = HttpRequest(HttpMethods.GET, uri = s"/rdiis/${mcr.id}/rdii/2382")
               //lets check date format (if dont have "Z" - which tell that is UTC zone)
-              val singleEventStartDate = json.split(""""start-date":"""")(4).split(""""""").head
-              val singleEventEndDate = json.split(""""end-date":"""")(4).split(""""""").head
+              val singleEventStartDate = json.split(""""start-date":"""")(12).split(""""""").head
+              val singleEventEndDate = json.split(""""end-date":"""")(12).split(""""""").head
               singleEventStartDate shouldBe "2014-01-26T09:20"
               singleEventEndDate shouldBe "2014-02-02T10:30"
 
