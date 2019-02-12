@@ -22,12 +22,11 @@ class RdiiApi {
   private val Log = LoggerFactory.getLogger(this.getClass.getName)
 
   def loadModel(modelType: String, id: String): Option[RDII] = {
-    Log.debug("loadModel type: " + modelType + " and id: " + id + " takes: " )
     val rdii = new RDII(modelType, id)
 
     val path = Paths.get(rdiisPath + modelType)
 
-    PVCHelper.loadModel(path, id).map {
+    DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id, PVCHelper.loadModel(path, id)).map {
       model =>
         val rDIIFileContent = model.content.parseJson.convertTo[RDIIFileContent](RDIIFileContentJsonProtocol.RDIIFileContentFormat)
         rdii.model = rDIIFileContent.rdiiResults
