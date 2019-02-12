@@ -245,15 +245,19 @@ class Storms(modelType: String, id: String) {
     Log.debug("List for model: " + this.id)
 
     if (model.nonEmpty) {
-      model.filter(x => x._2.sessionWindow.max.compareTo(sessionWindow) <= 0)
-        .groupBy(_._2.sessionWindow)
-        .toSeq.maxBy(_._1)._2
-        .map(x => (x._1, x._2.session)).toSeq
+      val filterExact = model.filter(_._2.sessionWindow.contains(sessionWindow))
+        .map(x => (x._1, x._2.session))
+        .toSeq
 
-      /*      model.filter(x => x._2.sessionWindow.compareTo(sessionWindow) <= 0)
-              .groupBy(_._2.sessionWindow)
-              .toSeq.maxBy(_._1)._2
-              .map(x => (x._1, x._2.session)).toSeq*/
+      if (filterExact.nonEmpty) filterExact
+      else {
+        //This means that duration is above maximum already listed session windows. Return biggest.
+        model.filter(x => x._2.sessionWindow.max.compareTo(sessionWindow) <= 0)
+          .groupBy(_._2.sessionWindow)
+          .toSeq.maxBy(_._1)._2
+          .map(x => (x._1, x._2.session)).toSeq
+      }
+
     }
     else Seq()
   }
