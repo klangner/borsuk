@@ -11,7 +11,7 @@ import carldata.borsuk.envelope.ApiObjects.{CreateEnvelopeParams, FitEnvelopePar
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
 import carldata.borsuk.envelope.EnvelopeResultHashMapJsonProtocol._
 import carldata.borsuk.envelope.{Envelope, EnvelopeApi, EnvelopeResult}
-import carldata.borsuk.helper.{Model, PVCHelper}
+import carldata.borsuk.helper.{DateTimeHelper, Model, PVCHelper}
 import carldata.borsuk.prediction.ApiObjects.{CreatePredictionParams, FitPredictionParams, PredictionRequest}
 import carldata.borsuk.prediction.ApiObjectsJsonProtocol._
 import carldata.borsuk.prediction.PredictionAPI
@@ -26,6 +26,7 @@ import carldata.borsuk.storms.Storms.StormParams
 import carldata.borsuk.storms.{Storms, StormsApi}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
+import org.slf4j.LoggerFactory
 import spray.json._
 
 import scala.collection.immutable
@@ -39,6 +40,8 @@ class Routing() {
   val stormsApi = new StormsApi()
   val envelopeApi = new EnvelopeApi(RDIIApi)
   private val stormsPath: Path = Paths.get("/borsuk_data/storms/")
+
+  private val Log = LoggerFactory.getLogger(Main.getClass.getName)
 
   val settings: CorsSettings.Default = CorsSettings.defaultSettings.copy(allowedMethods = Seq(
     HttpMethods.GET,
@@ -92,24 +95,24 @@ class Routing() {
       withRequestTimeout(60.seconds) {
         withSizeLimit(20 * MB) {
           post {
-            entity(as[FitRDIIParams])(data => RDIIApi.fit(id, data))
+            entity(as[FitRDIIParams])(data => DateTimeHelper.logTime("RDIIFit id: " + id, RDIIApi.fit(id, data)))
           }
         }
       }
     } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String], "type".as[String] ?)) {
       (id, sessionWindow, modelType) =>
         get {
-          RDIIApi.list(id, Duration.parse(sessionWindow), modelType)
+          DateTimeHelper.logTime("RDIIList type: " + modelType + " and id: " + id + " and sessionWindow: " + sessionWindow, RDIIApi.list(id, Duration.parse(sessionWindow), modelType))
         }
     } ~ (path("rdiis" / Segment / "rdii" / Segment) & parameters("type".as[String] ?)) {
       (modelId, rdiiId, modelType) =>
         get {
-          RDIIApi.get(modelId, rdiiId, modelType)
+          DateTimeHelper.logTime("RDIIGet type: " + modelType + " and modelId: " + modelId + " and RDIIId: " + rdiiId, RDIIApi.get(modelId, rdiiId, modelType))
         }
     } ~ (path("rdiis" / Segment) & parameters("type".as[String] ?)) {
       (id, modelType) =>
         get {
-          RDIIApi.status(id, modelType)
+          DateTimeHelper.logTime("RDIIStatus type: " + modelType + " and id: " + id, RDIIApi.status(id, modelType))
         }
     } ~ path("storms") {
       post {

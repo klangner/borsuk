@@ -15,7 +15,7 @@
         <graylogPort>12201</graylogPort>
     </appender>
 
-    <root level="info">
+    <root level="debug">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="GELF" />
     </root>

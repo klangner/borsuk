@@ -6,9 +6,11 @@ import java.time.Duration
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.helper.PVCHelper
+import carldata.borsuk.Main
+import carldata.borsuk.helper.{DateTimeHelper, PVCHelper}
 import carldata.borsuk.rdiis.ApiObjects._
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
+import org.slf4j.LoggerFactory
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,8 +19,10 @@ import scala.concurrent.Future
 class RdiiApi {
 
   private val rdiisPath: String = "/borsuk_data/rdiis/"
+  private val Log = LoggerFactory.getLogger(this.getClass.getName)
 
   def loadModel(modelType: String, id: String): Option[RDII] = {
+    Log.debug("loadModel type: " + modelType + " and id: " + id + " takes: " )
     val rdii = new RDII(modelType, id)
 
     val path = Paths.get(rdiisPath + modelType)
@@ -56,7 +60,7 @@ class RdiiApi {
 
   /** Fit the model to the training data */
   def fit(id: String, params: FitRDIIParams): StandardRoute = {
-    loadModel(params.modelType, id) match {
+    DateTimeHelper.logTime("loadModel in RDIIFit type: " + params.modelType + " and id: " + id, loadModel(params.modelType, id)) match {
       case Some(model) =>
         Future {
           model.fit(params)
@@ -71,7 +75,7 @@ class RdiiApi {
   /** List the models of the training data */
   def list(id: String, sessionWindow: Duration, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
-    loadModel(mt, id) match {
+    DateTimeHelper.logTime("loadModel in RDIIList type: " + mt + " and id: " + id, loadModel(mt, id)) match {
       case Some(model) =>
 
         val response = ListResponse {
@@ -93,7 +97,7 @@ class RdiiApi {
   /** Get the model of the training data */
   def get(id: String, rdiiId: String, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
-    loadModel(mt, id) match {
+    DateTimeHelper.logTime("loadModel in RDIIGet type: " + mt + " and id: " + id, loadModel(mt, id)) match {
       case Some(model: RDII) =>
         model.get(rdiiId) match {
           case Some(rdii) =>
@@ -118,7 +122,7 @@ class RdiiApi {
     */
   def status(id: String, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
-    loadModel(mt, id) match {
+    DateTimeHelper.logTime("loadModel in RDIIStatus type: " + mt + " and id: " + id, loadModel(mt, id)) match {
       case Some(model) =>
         val status = ModelStatus(model.buildNumber)
         complete(HttpResponse(
