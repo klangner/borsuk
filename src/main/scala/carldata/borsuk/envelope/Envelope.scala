@@ -71,13 +71,18 @@ class Envelope(modelType: String, id: String) {
       val (rainfall2, flow2) = alignTimeSeries(rainfall, flow)
 
       rdii.model = immutable.HashMap.empty[String, RDIIObject]
+      Log.debug("In Fit start caclulating storms..: " + this.id)
 
-      val envelopes = createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow)
+      val cs = createStorms(rainfall2, minSessionWindow, maxSessionWindow, stormIntensityWindow)
+      Log.debug("In Fit start caclulating storms.. #2!: " + this.id)
+      val envelopes = cs
         .zipWithIndex
         .map {
           sessionWindowAndStorm =>
+
             val storms: Seq[(String, Storms.StormParams)] = sessionWindowAndStorm._1._2
             val sessionWindow = sessionWindowAndStorm._1._1
+            Log.debug("In Fit start caclulating rdiis..: " + sessionWindow.last)
             val rdiis = createRdiis(storms, rainfall2, flow2)
 
             rdii.model ++= immutable.HashMap(rdiis.map(x => (x._1, x._2)): _*)
@@ -129,15 +134,15 @@ class Envelope(modelType: String, id: String) {
 
   def createStorms(rainfall: TimeSeries[Double], minSessionWindow: Duration
                    , maxSessionWindow: Duration
-                   , intensityWindow: Duration): Map[Duration, List[(String, Storms.StormParams)]] = {
+                   , intensityWindow: Duration): Map[Seq[Duration], List[(String, Storms.StormParams)]] = {
 
     val listOfSessionWindows: Seq[Duration] = for {
       d <- minSessionWindow.toMinutes to maxSessionWindow.toMinutes by Duration.ofMinutes(5).toMinutes
     } yield Duration.ofMinutes(d)
 
     Storms.getAllStorms(rainfall, Some(listOfSessionWindows))
-      .filter(x => x._2.sessionWindow.compareTo(minSessionWindow) >= 0)
-      .filter(x => x._2.sessionWindow.compareTo(maxSessionWindow) <= 0)
+      .filter(x => x._2.sessionWindow.min.compareTo(minSessionWindow) >= 0)
+      .filter(x => x._2.sessionWindow.max.compareTo(maxSessionWindow) <= 0)
       .groupBy(_._2.sessionWindow)
       .map {
         s =>

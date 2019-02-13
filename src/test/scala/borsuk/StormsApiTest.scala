@@ -107,8 +107,8 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
         fitModelRequest(modelId, fitParams) ~> route ~> check {
           eventually(timeout(20.seconds), interval(2.seconds)) {
             listModelRequest(modelId, "PT5M") ~> route ~> check {
-              val stormsCount = responseAs[ListStormsResponse].storms.length
-              stormsCount shouldEqual 4
+              val stormsCount = responseAs[ListStormsResponse].storms
+              stormsCount.length shouldEqual 4
             }
           }
         }
@@ -184,8 +184,8 @@ class StormsApiTest extends WordSpec with Matchers with ScalatestRouteTest with 
           fitModelRequest(modelId, fitParams) ~> route ~> check {
             listModelRequest(modelId, "PT10M")
           } ~> route ~> check {
-            val stormsCount = responseAs[ListStormsResponse].storms.length
-            stormsCount shouldEqual 3
+            val stormsCount = responseAs[ListStormsResponse].storms
+            stormsCount.length shouldEqual 3
             listModelRequest(modelId, "PT20M")
           } ~> route ~> check {
             val stormsCount = responseAs[ListStormsResponse].storms.length

@@ -9,9 +9,8 @@ import carldata.borsuk.helper.{Model, PVCHelper, TimeSeriesHelper}
 import carldata.borsuk.rdiis.ApiObjects.FitRDIIParams
 import carldata.borsuk.rdiis.DryWeatherPattern._
 import carldata.borsuk.storms.Storms
-import carldata.borsuk.storms.Storms.StormParams
 import carldata.series.Sessions.Session
-import carldata.series.{Gen, Sessions, TimeSeries}
+import carldata.series.{Gen, TimeSeries}
 import org.slf4j.LoggerFactory
 import spray.json._
 
@@ -55,37 +54,18 @@ class RDII(modelType: String, id: String) {
 
       val allDWPDays: Seq[LocalDate] = DryWeatherPattern.findAllDryDays(rainfall2, params.dryDayWindow)
 
-      val baseSessions: List[(Int, StormParams)] = Sessions.findSessions(rainfall, minSessionWindow)
-        .zipWithIndex
-        .map(x =>
-          x._2 ->
-            StormParams(x._1, rainfall.resolution, TimeSeriesHelper.slice(rainfall, x._1.startIndex
-              , x._1.endIndex.plusSeconds(rainfall.resolution.getSeconds)).values)
-        ).toList
-      val highestIndex = baseSessions.map(_._1).max
-
-      val storms = if (baseSessions != Nil) {
-        val listOfSessionWindows: Seq[Duration] =
-          baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
-            .map(x => Duration.between(x._1, x._2))
-            .distinct.sorted
-
-        val maxSessionWindow = if (params.maxSessionWindow == Duration.ZERO) listOfSessionWindows.last
-        else params.maxSessionWindow
-
-        Storms.mergeSessions(baseSessions, baseSessions.toSet, listOfSessionWindows.filter(d => d.compareTo(maxSessionWindow) <= 0)
-          , rainfall.resolution, highestIndex)
-      }
-      else List()
-
-      val rdiis: List[(String, RDIIObject)] = storms.map {
+      val listOfSessionWindows: Seq[Duration] = for {
+        d <- minSessionWindow.toMinutes to params.maxSessionWindow.toMinutes by Duration.ofMinutes(5).toMinutes
+      } yield Duration.ofMinutes(d)
+      val storms = Storms.getAllStorms(rainfall, Some(listOfSessionWindows))
+      val rdiis: List[(String, RDIIObject)] = storms.par.map {
         x =>
 
           (x._1.toString, RDIIBuilder(rainfall2, flow, instantToLDT(x._2.session.startIndex), instantToLDT(x._2.session.endIndex), allDWPDays)
             .withDryDayWindow(params.dryDayWindow)
-            .withStormSessionWindows(x._2.sessionWindow)
+            .withStormSessionWindows(x._2.sessionWindow.max)
             .build())
-      }
+      }.toList
 
       model = immutable.HashMap(rdiis: _*)
       buildNumber += 1

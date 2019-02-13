@@ -22,11 +22,11 @@ class EnvelopeSerializationTest extends WordSpec with Matchers {
         dtToInstant(LocalDateTime.of(2018, 1, 1, 10, 7, 19))),
       Sessions.Session(
         dtToInstant(LocalDateTime.of(2018, 1, 2, 9, 3, 37)),
-        dtToInstant(LocalDateTime.of(2018, 1, 2, 12, 9, 13))),
+        dtToInstant(LocalDateTime.of(2018, 1, 2, 12, 9, 13)))
     )
 
     val dataPoints = sessions.zip(Seq(1.0, 2.0)).zip(Seq(3.0, 4.0))
-    val envelopeResult = new EnvelopeResult(dataPoints, Seq(1.0, 2.0, 3.0), Duration.parse("PT12H"))
+    val envelopeResult = new EnvelopeResult(dataPoints, Seq(1.0, 2.0, 3.0), Seq(Duration.parse("PT12H")))
 
     "serialize and deserialize back to proper EnvelopeResult" in {
 
