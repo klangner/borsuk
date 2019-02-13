@@ -45,6 +45,7 @@ object Storms {
             baseSessions.map(x => x._2.session.endIndex).zip(baseSessions.tail.map(x => x._2.session.startIndex))
               .map(x => Duration.between(x._1, x._2))
               .distinct.sorted
+
           mergeSessions(baseSessions, baseSessions.toSet, complexListOfSessionWindows, rainfall.resolution, highestIndex)
 
         }
@@ -57,7 +58,7 @@ object Storms {
     else List()
   }
 
-  def joinOrAppend(xs: List[(Int, StormParams)], ys: List[(Int, StormParams)]): Set[(Int, StormParams)] = {
+  def append(xs: List[(Int, StormParams)], ys: List[(Int, StormParams)]): Set[(Int, StormParams)] = {
     (xs ++ ys)
       .groupBy(x => x._2.session)
       .map { grouped =>
@@ -66,27 +67,16 @@ object Storms {
       .toSet
   }
 
-  def joinOrAppendOld(newSp: (Int, StormParams), xs: List[(Int, StormParams)]): List[(Int, StormParams)] = {
-    val index = xs.indexWhere(x => x._2.session == newSp._2.session)
-    if (index == -1) { //element with this session not exist yet in the list, lets add it
-      newSp :: xs
-    }
-    else { // element exist so add
-      val x = xs(index)
-      val sp = StormParams(x._2.session, newSp._2.sessionWindow ++ x._2.sessionWindow, x._2.values)
-      xs.updated(index, (xs(index)._1, sp))
-    }
-  }
-
   @tailrec
   def mergeSessions(prev: List[(Int, StormParams)], res: Set[(Int, StormParams)]
                     , sessionWindows: Seq[Duration], resolution: Duration
                     , highestIndex: Int): List[(Int, StormParams)] = {
+
     if (sessionWindows.isEmpty) res.toList
     else {
       val sessionWindow: Duration = sessionWindows.head
       val first: (Int, StormParams) = (prev.head._1
-        , StormParams(prev.head._2.session, prev.head._2.sessionWindow, prev.head._2.values))
+        , StormParams(prev.head._2.session, Seq(sessionWindow), prev.head._2.values))
 
 
       val next: List[(Int, StormParams)] = prev.tail.foldLeft[List[(Int, StormParams)]](List(first))((zs, x) => {
@@ -96,26 +86,21 @@ object Storms {
 
           val gapValues = for (_ <- 1 until (gapDuration.toMillis / resolution.toMillis).toInt) yield 0.0
 
-          val newSp = (highestIndex + x._1
+          (highestIndex + x._1
             , StormParams(Session(zs.head._2.session.startIndex, x._2.session.endIndex)
             , Seq(sessionWindow)
             , zs.head._2.values ++ gapValues ++ x._2.values)
-          )
-          newSp :: zs.tail
-          //joinOrAppend(newSp, zs.tail)
+          ) :: zs.tail
         } //merge sessions
         else {
-          val newSp: (Int, StormParams) = (highestIndex + x._1, StormParams(x._2.session, Seq(sessionWindow), x._2.values))
-          //joinOrAppend(newSp, zs)
-
-          newSp :: zs
+          (highestIndex + x._1, StormParams(x._2.session, Seq(sessionWindow), x._2.values)) :: zs
         }
 
       }
 
       ).reverse
-      //res ++ next
-      mergeSessions(prev, joinOrAppend(res.toList, next), sessionWindows.tail, resolution, highestIndex + next.length)
+
+      mergeSessions(prev, append(res.toList, next), sessionWindows.tail, resolution, highestIndex + next.length)
     }
   }
 
@@ -251,7 +236,7 @@ class Storms(modelType: String, id: String) {
 
       if (filterExact.nonEmpty) filterExact
       else {
-        //This means that duration is above maximum already listed session windows. Return biggest.
+        //This means that duration is above maximum already listed. Return biggest.
         model.filter(x => x._2.sessionWindow.max.compareTo(sessionWindow) <= 0)
           .groupBy(_._2.sessionWindow)
           .toSeq.maxBy(_._1)._2
