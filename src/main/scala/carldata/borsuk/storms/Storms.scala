@@ -204,6 +204,9 @@ class Storms(modelType: String, id: String) {
   def save() {
     Log.debug("Save model: " + this.id)
     val path = Paths.get("/borsuk_data/storms/", this.modelType)
+    //New Binary format version
+    PVCHelper.saveModelBinary[immutable.HashMap[String, Storms.StormParams]](path, this.id, this.model)
+    //Old JSON format version
     val model = Model(this.modelType, this.id, this.model.toJson(StormParamsHashMapFormat).toString)
     PVCHelper.saveModel(path, model)
     Log.debug("Model: " + this.id + " saved")

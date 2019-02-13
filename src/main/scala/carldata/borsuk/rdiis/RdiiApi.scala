@@ -27,6 +27,7 @@ class RdiiApi {
     val path = Paths.get(rdiisPath + modelType)
 
     val fileContent: Option[RDIIFileContent] =
+      // New Binary format version
       DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id
         , PVCHelper.loadModelBinary[RDIIFileContent](path, id))
 

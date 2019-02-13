@@ -1,6 +1,6 @@
 package carldata.borsuk.helper
 
-import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.io._
 import java.nio.file.{Files, Path, Paths}
 
 import scala.collection.JavaConverters._
@@ -48,7 +48,6 @@ object PVCHelper {
     }
   }
 
-
   /**
     * Load single model
     *
@@ -79,7 +78,10 @@ object PVCHelper {
     }
   }
 
-  def saveModelBianry[T](path: Path, id: String, obj: AnyRef): Unit = {
+  /**
+    * Save model to disk binary
+    **/
+  def saveModelBinary[T](path: Path, id: String, obj: AnyRef): Unit = {
     val filePath = Paths.get(path.toString, id)
     if (Files.notExists(path)) {
       Files.createDirectories(path)
@@ -92,15 +94,30 @@ object PVCHelper {
     fos.close()
   }
 
+  /**
+    * Load single model binary
+    *
+    * @param path to directory with model
+    * @param id   of model
+    * @return single model
+    */
   def loadModelBinary[T](path: Path, id: String): Option[T] = {
     if (modelExist(path, id)) {
       val modelPath = Paths.get(path.toString + "/" + id)
+
       val fis = new FileInputStream(modelPath.toString)
       val ois = new ObjectInputStream(fis)
-      val obj = ois.readObject()
-      ois.close()
-      fis.close()
-      Some(obj.asInstanceOf[T])
+      try {
+        val obj = ois.readObject()
+        Some(obj.asInstanceOf[T])
+      }
+      catch {
+        case e: Exception => None
+      }
+      finally {
+        ois.close()
+        fis.close()
+      }
     }
     else None
   }

@@ -98,7 +98,8 @@ class RDII(modelType: String, id: String) {
     Log.debug("Save model: " + this.id)
     val path = Paths.get("/borsuk_data/rdiis/", this.modelType)
     val rDIIFileContent = new RDIIFileContent(this.model, buildNumber)
-    PVCHelper.saveModelBianry(path, this.id, rDIIFileContent)
+    //New Binary format version
+    PVCHelper.saveModelBinary[RDIIFileContent](path, this.id, rDIIFileContent)
     //Old JSON format version
     //val model = Model(this.modelType, this.id, rDIIFileContent.toJson(RDIIFileContentJsonProtocol.RDIIFileContentFormat).toString)
     //PVCHelper.saveModel(path, model)

@@ -110,8 +110,11 @@ class Envelope(modelType: String, id: String) {
     Log.debug("Save model: " + this.id)
     val path = Paths.get("/borsuk_data/envelopes/", this.modelType)
     val envelopeFileContent = new EnvelopeFileContent(this.model, buildNumber)
-    val model = Model(this.modelType, this.id, envelopeFileContent.toJson(EnvelopeFileContentFormat).toString)
-    PVCHelper.saveModel(path, model)
+    //New Binary format version
+    PVCHelper.saveModelBinary[EnvelopeFileContent](path, this.id, envelopeFileContent)
+    //Old JSON format version
+    //val model = Model(this.modelType, this.id, envelopeFileContent.toJson(EnvelopeFileContentFormat).toString)
+    //PVCHelper.saveModel(path, model)
     Log.debug("Model: " + this.id + " saved")
   }
 

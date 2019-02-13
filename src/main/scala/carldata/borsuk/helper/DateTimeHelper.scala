@@ -74,7 +74,7 @@ object DateTimeHelper {
     val result = block
     val t1 = System.nanoTime()
 
-    Log.debug(text + " takes: " + (t1 - t0)/ Math.pow(10, 9) + "s")
+    Log.debug(text + " takes: " + (t1 - t0)/ Math.pow(10, 6) + "ms")
     result
   }
 
