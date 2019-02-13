@@ -26,13 +26,25 @@ class RdiiApi {
 
     val path = Paths.get(rdiisPath + modelType)
 
-    DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id, PVCHelper.loadModel(path, id)).map {
-      model =>
-        val rDIIFileContent = model.content.parseJson.convertTo[RDIIFileContent](RDIIFileContentJsonProtocol.RDIIFileContentFormat)
-        rdii.model = rDIIFileContent.rdiiResults
-        rdii.buildNumber = rDIIFileContent.buildNumber
+    val fileContent: Option[RDIIFileContent] =
+      DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id
+        , PVCHelper.loadModelBinary[RDIIFileContent](path, id))
+
+    fileContent.map {
+      fc =>
+        rdii.model = fc.rdiiResults
+        rdii.buildNumber = fc.buildNumber
         rdii
     }
+
+    // Old JSON format version
+    //DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id, PVCHelper.loadModel(path, id)).map {
+    //  model =>
+    //    val rDIIFileContent = model.content.parseJson.convertTo[RDIIFileContent](RDIIFileContentJsonProtocol.RDIIFileContentFormat)
+    //    rdii.model = rDIIFileContent.rdiiResults
+    //    rdii.buildNumber = rDIIFileContent.buildNumber
+    //    rdii
+    //}
   }
 
   /**
