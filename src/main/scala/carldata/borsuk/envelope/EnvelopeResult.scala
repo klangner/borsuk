@@ -3,12 +3,12 @@ package carldata.borsuk.envelope
 import java.time.{Duration, Instant}
 
 import carldata.borsuk.helper.DateTimeHelper.{dtToInstant, instantToLDT}
-import carldata.borsuk.helper.JsonHelper.{doubleFromValue, stringFromValue, timestampFromValue}
+import carldata.borsuk.helper.JsonHelper._
 import carldata.series.Sessions
 import spray.json.{DefaultJsonProtocol, JsArray, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
 
-class EnvelopeResult(points: Seq[((Sessions.Session, Double), Double)], regression: Seq[Double], window: Duration) {
-  val sessionWindow: Duration = this.window
+class EnvelopeResult(points: Seq[((Sessions.Session, Double), Double)], regression: Seq[Double], window: Seq[Duration]) {
+  val sessionWindow: Seq[Duration] = this.window
   val rainfall: Seq[Double] = this.points.unzip._1.map(_._2)
   val flows: Seq[Double] = this.points.unzip._2
   val dataPoints: Seq[(Double, Double)] = points.map(x => (x._1._2, x._2))
@@ -26,8 +26,8 @@ object EnvelopeResultJsonProtocol extends DefaultJsonProtocol {
       json match {
         case JsObject(fields) =>
 
-          val window = Duration.parse(stringFromValue(fields("sessionWindow")))
-
+          //val window = Duration.parse(stringFromValue(fields("sessionWindow")))
+          val window = arrayFromValue(fields("sessionWindow"), durationFromValue).toSeq
           val rainfall: Seq[Double] = fields("rainfall") match {
             case JsArray(elements) => elements.map(doubleFromValue)
             case _ => Seq()
@@ -58,13 +58,14 @@ object EnvelopeResultJsonProtocol extends DefaultJsonProtocol {
 
           new EnvelopeResult(points, regression, window)
 
-        case _ => new EnvelopeResult(Seq(), Seq(), Duration.ZERO)
+        case _ => new EnvelopeResult(Seq(), Seq(), Seq())
       }
     }
 
     def write(obj: EnvelopeResult): JsValue = {
       JsObject(
-        "sessionWindow" -> JsString(obj.sessionWindow.toString),
+        "sessionWindow" -> JsArray(obj.sessionWindow.map(x=> JsString(x.toString)).toVector),
+        //"sessionWindow" -> JsString(obj.sessionWindow.toString),
         "rainfall" -> JsArray(obj.rainfall.map(JsNumber(_)).toVector),
         "flows" -> JsArray(obj.flows.map(JsNumber(_)).toVector),
         "dataPoints" -> JsArray(obj.dataPoints.map(x => JsObject(

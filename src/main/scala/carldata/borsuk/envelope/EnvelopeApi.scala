@@ -14,7 +14,6 @@ import spray.json._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-
 class EnvelopeApi(rdiiApi: RdiiApi) {
   private val envelopesPath: String = "/borsuk_data/envelopes/"
 
@@ -68,9 +67,10 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
     val mt = if (modelType.isDefined) modelType.get else "envelope-v0"
     loadModel(mt, id) match {
       case Some(envelopeModel: Envelope) =>
+        val list = envelopeModel.list().map(x => ApiObjects.EnvelopeObject(x._1, x._2.sessionWindow.max)).toArray
 
         complete(HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`,
-          ListResponse(envelopeModel.list().map(x => ApiObjects.EnvelopeObject(x._1, x._2.sessionWindow)).toArray)
+          ListResponse(list)
             .toJson.compactPrint)))
       case None => complete(StatusCodes.NotFound)
     }
