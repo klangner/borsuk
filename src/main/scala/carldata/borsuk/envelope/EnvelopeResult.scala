@@ -7,7 +7,7 @@ import carldata.borsuk.helper.JsonHelper._
 import carldata.series.Sessions
 import spray.json.{DefaultJsonProtocol, JsArray, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
 
-class EnvelopeResult(points: Seq[((Sessions.Session, Double), Double)], regression: Seq[Double], window: Seq[Duration]) {
+class EnvelopeResult(points: Seq[((Sessions.Session, Double), Double)], regression: Seq[Double], window: Seq[Duration]) extends Serializable {
   val sessionWindow: Seq[Duration] = this.window
   val rainfall: Seq[Double] = this.points.unzip._1.map(_._2)
   val flows: Seq[Double] = this.points.unzip._2
