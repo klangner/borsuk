@@ -6,9 +6,11 @@ import java.time.Duration
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import carldata.borsuk.helper.PVCHelper
+import carldata.borsuk.Main
+import carldata.borsuk.helper.{DateTimeHelper, PVCHelper}
 import carldata.borsuk.rdiis.ApiObjects._
 import carldata.borsuk.rdiis.ApiObjectsJsonProtocol._
+import org.slf4j.LoggerFactory
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,19 +19,32 @@ import scala.concurrent.Future
 class RdiiApi {
 
   private val rdiisPath: String = "/borsuk_data/rdiis/"
+  private val Log = LoggerFactory.getLogger(this.getClass.getName)
 
   def loadModel(modelType: String, id: String): Option[RDII] = {
     val rdii = new RDII(modelType, id)
 
     val path = Paths.get(rdiisPath + modelType)
 
-    PVCHelper.loadModel(path, id).map {
-      model =>
-        val rDIIFileContent = model.content.parseJson.convertTo[RDIIFileContent](RDIIFileContentJsonProtocol.RDIIFileContentFormat)
-        rdii.model = rDIIFileContent.rdiiResults
-        rdii.buildNumber = rDIIFileContent.buildNumber
+    val fileContent: Option[RDIIFileContent] =
+      // New Binary format version
+      PVCHelper.loadModelBinary[RDIIFileContent](path, id)
+
+    fileContent.map {
+      fc =>
+        rdii.model = fc.rdiiResults
+        rdii.buildNumber = fc.buildNumber
         rdii
     }
+
+    // Old JSON format version
+    //DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id, PVCHelper.loadModel(path, id)).map {
+    //  model =>
+    //    val rDIIFileContent = model.content.parseJson.convertTo[RDIIFileContent](RDIIFileContentJsonProtocol.RDIIFileContentFormat)
+    //    rdii.model = rDIIFileContent.rdiiResults
+    //    rdii.buildNumber = rDIIFileContent.buildNumber
+    //    rdii
+    //}
   }
 
   /**

@@ -9,7 +9,7 @@ import spray.json.{DefaultJsonProtocol, JsArray, JsNumber, JsObject, JsString, J
 import scala.collection.immutable
 import scala.collection.immutable.HashMap
 
-class EnvelopeFileContent(er: immutable.HashMap[String, EnvelopeResult], bn: Int) {
+class EnvelopeFileContent(er: immutable.HashMap[String, EnvelopeResult], bn: Int) extends Serializable {
   val envelopeResults: HashMap[String, EnvelopeResult] = er
   val buildNumber: Int = bn
 }

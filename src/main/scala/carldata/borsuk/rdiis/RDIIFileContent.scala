@@ -7,7 +7,7 @@ import spray.json._
 import scala.collection.immutable
 import scala.collection.immutable.HashMap
 
-class RDIIFileContent(er: immutable.HashMap[String, RDIIObject], bn: Int) {
+class RDIIFileContent(er: immutable.HashMap[String, RDIIObject], bn: Int) extends Serializable  {
   val rdiiResults: immutable.HashMap[String, RDIIObject] = er
   val buildNumber: Int = bn
 }

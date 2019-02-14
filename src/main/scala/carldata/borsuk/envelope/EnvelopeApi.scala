@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
 import carldata.borsuk.envelope.ApiObjects._
 import carldata.borsuk.envelope.ApiObjectsJsonProtocol._
-import carldata.borsuk.helper.PVCHelper
+import carldata.borsuk.helper.{DateTimeHelper, PVCHelper}
 import carldata.borsuk.rdiis.{RDII, RdiiApi}
 import spray.json._
 
@@ -21,13 +21,25 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
     val envelope = new Envelope(modelType, id)
 
     val path: Path = Paths.get(envelopesPath + modelType)
-    PVCHelper.loadModel(path, id).map {
-      model =>
-        val envelopeFileContent = model.content.parseJson.convertTo[EnvelopeFileContent](EnvelopeFileContentJsonProtocol.EnvelopeFileContentFormat)
-        envelope.model = envelopeFileContent.envelopeResults
-        envelope.buildNumber = envelopeFileContent.buildNumber
+    val fileContent: Option[EnvelopeFileContent] =
+    // New Binary format version
+      PVCHelper.loadModelBinary[EnvelopeFileContent](path, id)
+
+    fileContent.map {
+      fc =>
+        envelope.model = fc.envelopeResults
+        envelope.buildNumber = fc.buildNumber
         envelope
     }
+
+    // Old JSON format version
+    //PVCHelper.loadModel(path, id).map {
+    //  model =>
+    //    val envelopeFileContent = model.content.parseJson.convertTo[EnvelopeFileContent](EnvelopeFileContentJsonProtocol.EnvelopeFileContentFormat)
+    //      envelope.model = envelopeFileContent.envelopeResults
+    //      envelope.buildNumber = envelopeFileContent.buildNumber
+    //      envelope
+    //  }
   }
 
   /**

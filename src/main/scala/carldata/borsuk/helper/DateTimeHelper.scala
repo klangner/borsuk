@@ -4,10 +4,14 @@ import java.time._
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 
+import org.slf4j.LoggerFactory
+
 /**
   * Created by Krzysztof Langner on 2018-03-21.
   */
 object DateTimeHelper {
+
+  private val Log = LoggerFactory.getLogger(this.getClass.getName)
 
   def dateParse(str: String): LocalDateTime = {
     val formatter = new DateTimeFormatterBuilder()
@@ -65,5 +69,22 @@ object DateTimeHelper {
     instantToLDT(dt).toLocalTime
   }
 
+  /***
+    * Time logger for function
+    * @param text comment what you want to show
+    * @param block function which we want to calculate the time of running
+    * @tparam R type of function block
+    * @return results of function block
+    * @example DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id, PVCHelper.loadModelBinary[EnvelopeFileContent](path, id))
+    * @example DateTimeHelper.logTime("loadModel in RDIIList type: " + mt + " and id: " + id, loadModel(mt, id))
+    */
+  def logTime[R](text: String, block: => R): R = {
+    val t0 = System.nanoTime()
+    val result = block
+    val t1 = System.nanoTime()
+
+    Log.debug(text + " takes: " + (t1 - t0)/ Math.pow(10, 6) + "ms")
+    result
+  }
 
 }
