@@ -11,7 +11,6 @@ libraryDependencies ++= Seq(
   "com.github.haifengl" % "smile-netlib" % "1.5.1",
   "io.github.carldata" %% "timeseries" % "0.6.6",
   "ch.megard" %% "akka-http-cors" % "0.2.2",
-  "io.suzaku" %% "boopickle" % "1.3.0",
 
 
   // Log dependencies
@@ -34,3 +33,5 @@ assemblyMergeStrategy in assembly := {
 scalacOptions := Seq("-unchecked", "-deprecation")
 
 assemblyJarName in assembly := "borsuk.jar"
+
+fork := true
