@@ -95,24 +95,24 @@ class Routing() {
       withRequestTimeout(60.seconds) {
         withSizeLimit(20 * MB) {
           post {
-            entity(as[FitRDIIParams])(data => DateTimeHelper.logTime("RDIIFit id: " + id, RDIIApi.fit(id, data)))
+            entity(as[FitRDIIParams])(data => RDIIApi.fit(id, data))
           }
         }
       }
     } ~ (path("rdiis" / Segment / "rdii") & parameters("sessionWindow".as[String], "type".as[String] ?)) {
       (id, sessionWindow, modelType) =>
         get {
-          DateTimeHelper.logTime("RDIIList type: " + modelType + " and id: " + id + " and sessionWindow: " + sessionWindow, RDIIApi.list(id, Duration.parse(sessionWindow), modelType))
+          RDIIApi.list(id, Duration.parse(sessionWindow), modelType)
         }
     } ~ (path("rdiis" / Segment / "rdii" / Segment) & parameters("type".as[String] ?)) {
       (modelId, rdiiId, modelType) =>
         get {
-          DateTimeHelper.logTime("RDIIGet type: " + modelType + " and modelId: " + modelId + " and RDIIId: " + rdiiId, RDIIApi.get(modelId, rdiiId, modelType))
+          RDIIApi.get(modelId, rdiiId, modelType)
         }
     } ~ (path("rdiis" / Segment) & parameters("type".as[String] ?)) {
       (id, modelType) =>
         get {
-          DateTimeHelper.logTime("RDIIStatus type: " + modelType + " and id: " + id, RDIIApi.status(id, modelType))
+          RDIIApi.status(id, modelType)
         }
     } ~ path("storms") {
       post {

@@ -69,6 +69,15 @@ object DateTimeHelper {
     instantToLDT(dt).toLocalTime
   }
 
+  /***
+    * Time logger for function
+    * @param text comment what you want to show
+    * @param block function which we want to calculate the time of running
+    * @tparam R type of function block
+    * @return results of function block
+    * @example DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id, PVCHelper.loadModelBinary[EnvelopeFileContent](path, id))
+    * @example DateTimeHelper.logTime("loadModel in RDIIList type: " + mt + " and id: " + id, loadModel(mt, id))
+    */
   def logTime[R](text: String, block: => R): R = {
     val t0 = System.nanoTime()
     val result = block

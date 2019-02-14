@@ -23,8 +23,7 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
     val path: Path = Paths.get(envelopesPath + modelType)
     val fileContent: Option[EnvelopeFileContent] =
     // New Binary format version
-      DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id
-        , PVCHelper.loadModelBinary[EnvelopeFileContent](path, id))
+      PVCHelper.loadModelBinary[EnvelopeFileContent](path, id)
 
     fileContent.map {
       fc =>

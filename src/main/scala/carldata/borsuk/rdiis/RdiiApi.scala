@@ -28,8 +28,7 @@ class RdiiApi {
 
     val fileContent: Option[RDIIFileContent] =
       // New Binary format version
-      DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id
-        , PVCHelper.loadModelBinary[RDIIFileContent](path, id))
+      PVCHelper.loadModelBinary[RDIIFileContent](path, id)
 
     fileContent.map {
       fc =>
@@ -72,7 +71,7 @@ class RdiiApi {
 
   /** Fit the model to the training data */
   def fit(id: String, params: FitRDIIParams): StandardRoute = {
-    DateTimeHelper.logTime("loadModel in RDIIFit type: " + params.modelType + " and id: " + id, loadModel(params.modelType, id)) match {
+    loadModel(params.modelType, id) match {
       case Some(model) =>
         Future {
           model.fit(params)
@@ -87,7 +86,7 @@ class RdiiApi {
   /** List the models of the training data */
   def list(id: String, sessionWindow: Duration, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
-    DateTimeHelper.logTime("loadModel in RDIIList type: " + mt + " and id: " + id, loadModel(mt, id)) match {
+    loadModel(mt, id) match {
       case Some(model) =>
 
         val response = ListResponse {
@@ -109,7 +108,7 @@ class RdiiApi {
   /** Get the model of the training data */
   def get(id: String, rdiiId: String, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
-    DateTimeHelper.logTime("loadModel in RDIIGet type: " + mt + " and id: " + id, loadModel(mt, id)) match {
+    loadModel(mt, id) match {
       case Some(model: RDII) =>
         model.get(rdiiId) match {
           case Some(rdii) =>
@@ -134,7 +133,7 @@ class RdiiApi {
     */
   def status(id: String, modelType: Option[String]): StandardRoute = {
     val mt = if (modelType.isDefined) modelType.get else "rdii-v0"
-    DateTimeHelper.logTime("loadModel in RDIIStatus type: " + mt + " and id: " + id, loadModel(mt, id)) match {
+    loadModel(mt, id) match {
       case Some(model) =>
         val status = ModelStatus(model.buildNumber)
         complete(HttpResponse(
