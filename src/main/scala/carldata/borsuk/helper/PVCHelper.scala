@@ -88,7 +88,8 @@ object PVCHelper {
     }
 
     val fos = new FileOutputStream(filePath.toString)
-    val oos = new ObjectOutputStream(fos)
+    val bos = new BufferedOutputStream(fos)
+    val oos = new ObjectOutputStream(bos)
     oos.writeObject(obj)
     oos.close()
     fos.close()
@@ -106,7 +107,8 @@ object PVCHelper {
       val modelPath = Paths.get(path.toString + "/" + id)
 
       val fis = new FileInputStream(modelPath.toString)
-      val ois = new ObjectInputStream(fis)
+      val bis = new BufferedInputStream(fis)
+      val ois = new ObjectInputStream(bis)
       try {
         val obj = ois.readObject()
         Some(obj.asInstanceOf[T])

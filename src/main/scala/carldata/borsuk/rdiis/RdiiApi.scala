@@ -28,7 +28,7 @@ class RdiiApi {
 
     val fileContent: Option[RDIIFileContent] =
       // New Binary format version
-      PVCHelper.loadModelBinary[RDIIFileContent](path, id)
+      DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id, PVCHelper.loadModelBinary[RDIIFileContent](path, id))
 
     fileContent.map {
       fc =>
