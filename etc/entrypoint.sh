@@ -1,4 +1,2 @@
 #!/bin/sh
-java -Dlogback.configurationFile=/root/gelf.xml  -jar /root/borsuk.jar --data-url=$DATA_URL -XX:MaxRAM=3892m -Xmx3892m -Xss3500m -XX:+UseParNewGC -XX:+UseConcMarkSweepGC
-
-
+java -XX:MaxRAM=3892m -Xmx3892m -Xss3500m -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/borsuk_data/dumps/borsuk.bin -Dlogback.configurationFile=/root/gelf.xml -jar /root/borsuk.jar --data-url=$DATA_URL
