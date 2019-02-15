@@ -3,6 +3,7 @@ package carldata.borsuk
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -13,7 +14,7 @@ object Main {
 
   private val Log = LoggerFactory.getLogger(Main.getClass.getName)
 
-  implicit val system: ActorSystem = ActorSystem("borsuk")
+  implicit val system: ActorSystem = ActorSystem("borsuk", ConfigFactory.load())
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   case class Params(dataUrl: String)
