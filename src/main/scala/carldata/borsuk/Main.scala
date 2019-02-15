@@ -14,7 +14,7 @@ object Main {
 
   private val Log = LoggerFactory.getLogger(Main.getClass.getName)
 
-  implicit val system: ActorSystem = ActorSystem("borsuk", ConfigFactory.load())
+  implicit var system: ActorSystem = ActorSystem("borsuk", ConfigFactory.load())
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   case class Params(dataUrl: String)
@@ -34,6 +34,15 @@ object Main {
   def main(args: Array[String]) {
     val params = parseArg(args)
 
+    val loggerConfigString = ConfigFactory.parseString(
+      s"""
+        akka.actor.deployment {
+          akka {
+            logger-startup-timeout = 30s
+          }
+        }
+      """)
+    this.system = ActorSystem("fw-data-service", ConfigFactory.load(loggerConfigString))
     // HTTP listener will run in main thread
     Log.info("Server started on port 8080.")
     val routing = new Routing()
