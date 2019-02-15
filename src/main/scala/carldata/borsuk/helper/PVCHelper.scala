@@ -3,11 +3,15 @@ package carldata.borsuk.helper
 import java.io._
 import java.nio.file.{Files, Path, Paths}
 
+import org.slf4j.LoggerFactory
+
 import scala.collection.JavaConverters._
 
 case class Model(modelType: String, id: String, content: String)
 
 object PVCHelper {
+
+  private val Log = LoggerFactory.getLogger(this.getClass.getName)
 
   /**
     * Load all models from disk
@@ -114,7 +118,9 @@ object PVCHelper {
         Some(obj.asInstanceOf[T])
       }
       catch {
-        case e: Exception => None
+        case e: Exception =>
+          Log.error(e.getMessage)
+          None
       }
       finally {
         ois.close()
