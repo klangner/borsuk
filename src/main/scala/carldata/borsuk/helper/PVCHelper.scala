@@ -6,6 +6,7 @@ import java.nio.file.{Files, Path, Paths}
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 case class Model(modelType: String, id: String, content: String)
 
@@ -96,6 +97,7 @@ object PVCHelper {
     val oos = new ObjectOutputStream(bos)
     oos.writeObject(obj)
     oos.close()
+    bos.close()
     fos.close()
   }
 
@@ -110,22 +112,24 @@ object PVCHelper {
     if (modelExist(path, id)) {
       val modelPath = Paths.get(path.toString + "/" + id)
 
+      var ois = None: Option[ObjectInputStream]
       val fis = new FileInputStream(modelPath.toString)
       val bis = new BufferedInputStream(fis)
-      val ois = new ObjectInputStream(bis)
-      try {
-        val obj = ois.readObject()
+
+      val model = Try {
+        ois = Some(new ObjectInputStream(bis))
+
+        val obj = ois.get.readObject()
         Some(obj.asInstanceOf[T])
+      }.getOrElse {
+        Log.error("cannot read file")
+        None
       }
-      catch {
-        case e: Exception =>
-          Log.error(e.getMessage)
-          None
-      }
-      finally {
-        ois.close()
-        fis.close()
-      }
+
+      ois.get.close()
+      bis.close()
+      fis.close()
+      model
     }
     else None
   }
