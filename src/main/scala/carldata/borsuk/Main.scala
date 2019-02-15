@@ -14,7 +14,7 @@ object Main {
 
   private val Log = LoggerFactory.getLogger(Main.getClass.getName)
 
-  implicit var system: ActorSystem = ActorSystem("borsuk", ConfigFactory.load())
+  implicit var system: ActorSystem = ActorSystem("borsuk")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   case class Params(dataUrl: String)
