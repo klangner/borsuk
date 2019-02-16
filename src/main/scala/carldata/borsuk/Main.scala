@@ -42,7 +42,7 @@ object Main {
           }
         }
       """)
-    this.system = ActorSystem("fw-data-service", ConfigFactory.load(loggerConfigString))
+    this.system = ActorSystem("borsuk", ConfigFactory.load(loggerConfigString))
     // HTTP listener will run in main thread
     Log.info("Server started on port 8080.")
     val routing = new Routing()

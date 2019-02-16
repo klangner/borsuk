@@ -126,7 +126,9 @@ object PVCHelper {
         None
       }
 
-      ois.get.close()
+      ois match {
+        case Some(value) => value.close()
+      }
       bis.close()
       fis.close()
       model
