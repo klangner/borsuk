@@ -112,23 +112,20 @@ object PVCHelper {
     if (modelExist(path, id)) {
       val modelPath = Paths.get(path.toString + "/" + id)
 
-      var ois = None: Option[ObjectInputStream]
       val fis = new FileInputStream(modelPath.toString)
       val bis = new BufferedInputStream(fis)
 
       val model = Try {
-        ois = Some(new ObjectInputStream(bis))
+        val ois = new ObjectInputStream(bis)
 
-        val obj = ois.get.readObject()
+        val obj = ois.readObject()
+        ois.close()
         Some(obj.asInstanceOf[T])
       }.getOrElse {
         Log.error("cannot read file")
         None
       }
 
-      ois match {
-        case Some(value) => value.close()
-      }
       bis.close()
       fis.close()
       model
