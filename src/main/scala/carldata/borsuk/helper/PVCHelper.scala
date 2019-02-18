@@ -3,11 +3,16 @@ package carldata.borsuk.helper
 import java.io._
 import java.nio.file.{Files, Path, Paths}
 
+import org.slf4j.LoggerFactory
+
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 case class Model(modelType: String, id: String, content: String)
 
 object PVCHelper {
+
+  private val Log = LoggerFactory.getLogger(this.getClass.getName)
 
   /**
     * Load all models from disk
@@ -88,9 +93,11 @@ object PVCHelper {
     }
 
     val fos = new FileOutputStream(filePath.toString)
-    val oos = new ObjectOutputStream(fos)
+    val bos = new BufferedOutputStream(fos)
+    val oos = new ObjectOutputStream(bos)
     oos.writeObject(obj)
     oos.close()
+    bos.close()
     fos.close()
   }
 
@@ -106,18 +113,22 @@ object PVCHelper {
       val modelPath = Paths.get(path.toString + "/" + id)
 
       val fis = new FileInputStream(modelPath.toString)
-      val ois = new ObjectInputStream(fis)
-      try {
+      val bis = new BufferedInputStream(fis)
+
+      val model = Try {
+        val ois = new ObjectInputStream(bis)
+
         val obj = ois.readObject()
-        Some(obj.asInstanceOf[T])
-      }
-      catch {
-        case e: Exception => None
-      }
-      finally {
         ois.close()
-        fis.close()
+        Some(obj.asInstanceOf[T])
+      }.getOrElse {
+        Log.error("cannot read file")
+        None
       }
+
+      bis.close()
+      fis.close()
+      model
     }
     else None
   }

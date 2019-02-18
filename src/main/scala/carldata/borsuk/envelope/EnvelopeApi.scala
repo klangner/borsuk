@@ -21,15 +21,14 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
     val envelope = new Envelope(modelType, id)
 
     val path: Path = Paths.get(envelopesPath + modelType)
-    val fileContent: Option[EnvelopeFileContent] =
     // New Binary format version
-      PVCHelper.loadModelBinary[EnvelopeFileContent](path, id)
+    PVCHelper.loadModelBinary[EnvelopeFileContent](path, id) match {
+      case Some(content) =>
+        envelope.model = content.envelopeResults
+        envelope.buildNumber = content.buildNumber
+        Some(envelope)
 
-    fileContent.map {
-      fc =>
-        envelope.model = fc.envelopeResults
-        envelope.buildNumber = fc.buildNumber
-        envelope
+      case None => None
     }
 
     // Old JSON format version

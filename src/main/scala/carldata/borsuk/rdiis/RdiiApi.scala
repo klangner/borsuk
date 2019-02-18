@@ -26,15 +26,14 @@ class RdiiApi {
 
     val path = Paths.get(rdiisPath + modelType)
 
-    val fileContent: Option[RDIIFileContent] =
-      // New Binary format version
-      PVCHelper.loadModelBinary[RDIIFileContent](path, id)
+    // New Binary format version
+    PVCHelper.loadModelBinary[RDIIFileContent](path, id) match {
+      case Some(content) =>
+        rdii.model = content.rdiiResults
+        rdii.buildNumber = content.buildNumber
+        Some(rdii)
 
-    fileContent.map {
-      fc =>
-        rdii.model = fc.rdiiResults
-        rdii.buildNumber = fc.buildNumber
-        rdii
+      case None => None
     }
 
     // Old JSON format version

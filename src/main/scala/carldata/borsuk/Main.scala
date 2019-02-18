@@ -32,7 +32,6 @@ object Main {
 
   def main(args: Array[String]) {
     val params = parseArg(args)
-
     // HTTP listener will run in main thread
     Log.info("Server started on port 8080.")
     val routing = new Routing()
