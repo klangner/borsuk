@@ -21,9 +21,8 @@ class EnvelopeApi(rdiiApi: RdiiApi) {
     val envelope = new Envelope(modelType, id)
 
     val path: Path = Paths.get(envelopesPath + modelType)
-    //val fileContent: Option[EnvelopeFileContent] =
     // New Binary format version
-    DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id, PVCHelper.loadModelBinary[EnvelopeFileContent](path, id)) match {
+    PVCHelper.loadModelBinary[EnvelopeFileContent](path, id) match {
       case Some(content) =>
         envelope.model = content.envelopeResults
         envelope.buildNumber = content.buildNumber

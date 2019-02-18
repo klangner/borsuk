@@ -27,7 +27,7 @@ class RdiiApi {
     val path = Paths.get(rdiisPath + modelType)
 
     // New Binary format version
-    DateTimeHelper.logTime("PVCHelper.loadModel with path: " + path + " and id: " + id, PVCHelper.loadModelBinary[RDIIFileContent](path, id)) match {
+    PVCHelper.loadModelBinary[RDIIFileContent](path, id) match {
       case Some(content) =>
         rdii.model = content.rdiiResults
         rdii.buildNumber = content.buildNumber
