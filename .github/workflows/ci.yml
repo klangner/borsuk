@@ -1,0 +1,15 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: SBT Action
+      uses: lokkju/github-action-sbt@v0.2.2
+      with:
+        commands: test
+        sbt_project_directory: ./test
